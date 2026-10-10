@@ -20,6 +20,10 @@ Alla tolkningar följer normhierarkin i paketets README. Inga evidensklassade el
 
 React 19 + Vite 8 + TypeScript 5.9 (strikt), react-router 7, Dexie 4 (IndexedDB), supabase-js 2, vite-plugin-pwa (Workbox, endast statisk precache), egen SVG-graf, ingen CSS-ram. Planerade set skapas på servern först när de berörs (utförda/ändrade/överhoppade) – minskar synk och är fullt spårbart via planens snapshot. Profilpatchar är idempotenta (lika värden ⇒ tillämpat) efter att E2E hittade falsk konflikt vid förlorad ack. Magisk länk är primär inloggning; lösenord finns som alternativ (båda e-postbaserade, används av automatiska tester).
 
+## 2b. Inloggning
+
+Klassisk e-post + lösenord är huvudväg (önskat av produktägaren 2026-10-10). E-postlänkar använder implicit flöde så att de fungerar i valfri webbläsare; sifferkoder i mejl stöds när mallarna innehåller dem (lokalt; i staging först med egen SMTP). Lokal Supabase kör med e-postbekräftelse påslagen så att testerna speglar staging.
+
 ## 3. Alla H-värden (ruleSetVersion `STYRKA-RULES/1.0.0-app.1`)
 
 ### Från paketet (oförändrade)

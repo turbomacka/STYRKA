@@ -9,8 +9,10 @@ Miljö: Windows 10, Node 22.13, lokal Supabase (Postgres 17.11, GoTrue 2.197, Po
 | Referenssmoke (paketets egen) | `npm run test:reference` | **26/26 PASS**, SHA256 för `decision_engine.ts` = manifest |
 | Enhet + property + offline/synk | `vitest --project unit` | **97/97 PASS** (inkl. 600 + 300 slumpade profiler, 2000 ekvivalensfall) |
 | Komponenter (jsdom + axe) | `vitest --project ui` | **8/8 PASS** |
-| DB/RLS/RPC/demo mot riktig Supabase | `vitest --project db` | **28/28 PASS** (se not om intermittent timeout nedan) |
-| E2E | `playwright test` | **22 PASS, 2 SKIP** (WebKit: service worker-offline och Tab-fokus stöds inte av WebKit-emuleringen på Windows) |
+| DB/RLS/RPC/demo mot riktig Supabase | `vitest --project db` | **28/28 PASS** (se not om intermittent timeout nedan; ytterligare en gång föll filens förberedelse i en körning direkt efter omstart av lokal Supabase – ej reproducerat i tre efterföljande körningar) |
+| E2E | `playwright test` | **58 PASS, 2 SKIP** (WebKit: service worker-offline och Tab-fokus stöds inte av WebKit-emuleringen på Windows) |
+| Inloggning (del av E2E, alla 3 profiler) | `e2e/auth.spec.ts` | skapa konto + bekräftelse, befintlig e-post, fel lösenord/validering, glömt lösenord via kod och länk, länk öppnad i **annan webbläsare** (bekräftelse och återställning), konto utan lösenord, obekräftad inloggning, byt lösenord, inloggning via e-post utan lösenord |
+| Staging (manuellt) | `npm run test:staging`, `playwright -c playwright.staging.config.ts` | 5/5 och 2/2 mot styrka-staging |
 | Lint / typecheck / audit | | 0 fel, 0 sårbarheter (`npm audit`) |
 
 **Not (ärligt redovisat):** I en av tre upprepade körningar av DB-sviten fick testet "10 parallella identiska anrop" en `statement timeout` från Postgres. 60 efterföljande rundor reproducerade det inte. Felet klassas nu som transient (`DB_UNAVAILABLE`) och klientens kö försöker igen med samma eventId, vilket är idempotent – ingen dubblett kan uppstå. Rotorsaken bedöms som I/O-stall i Docker/WSL men är inte bevisad; bör bevakas i staging.

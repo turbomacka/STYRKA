@@ -1,20 +1,22 @@
 /**
  * Testhjälpare mot lokal Supabase. Klienter använder ENBART anon/publishable-nyckeln och riktig Auth.
  * Superuser-anslutning (pg) används bara för att verifiera databasens faktiska tillstånd i test.
+ * Bekräftade testkonton skapas med lokal service role (e-postbekräftelse är på, som i staging) – endast i testprocessen.
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
 import { execSync } from 'node:child_process';
 import pg from 'pg';
 
-function localEnv(): { url: string; anon: string; dbUrl: string } {
+function localEnv(): { url: string; anon: string; dbUrl: string; service: string } {
   const out = execSync('npx supabase status -o env', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
   const get = (k: string) => new RegExp(`^${k}="?([^"\\n]+)"?`, 'm').exec(out)?.[1];
   const url = get('API_URL');
   const anon = get('ANON_KEY');
   const dbUrl = get('DB_URL');
-  if (!url || !anon || !dbUrl) throw new Error('Lokal Supabase körs inte – starta med `npm run db:start`.');
-  return { url, anon, dbUrl };
+  const service = get('SERVICE_ROLE_KEY');
+  if (!url || !anon || !dbUrl || !service) throw new Error('Lokal Supabase körs inte – starta med `npm run db:start`.');
+  return { url, anon, dbUrl, service };
 }
 
 export const env = localEnv();
@@ -26,11 +28,14 @@ export function anonClient(): SupabaseClient {
 export type TestUser = { id: string; email: string; client: SupabaseClient };
 
 export async function newUser(label: string): Promise<TestUser> {
-  const client = anonClient();
+  const admin = createClient(env.url, env.service, { auth: { persistSession: false, autoRefreshToken: false } });
   const email = `${label}-${randomUUID().slice(0, 8)}@test.styrka.local`;
-  const { data, error } = await client.auth.signUp({ email, password: 'Testlosen-123!' });
-  if (error || !data.user || !data.session) throw new Error(`signUp misslyckades: ${error?.message}`);
-  return { id: data.user.id, email, client };
+  const created = await admin.auth.admin.createUser({ email, password: 'Testlosen-123!', email_confirm: true });
+  if (created.error || !created.data.user) throw new Error(`createUser misslyckades: ${created.error?.message}`);
+  const client = anonClient();
+  const { error } = await client.auth.signInWithPassword({ email, password: 'Testlosen-123!' });
+  if (error) throw new Error(`inloggning misslyckades: ${error.message}`);
+  return { id: created.data.user.id, email, client };
 }
 
 export async function withProfile(u: TestUser): Promise<void> {

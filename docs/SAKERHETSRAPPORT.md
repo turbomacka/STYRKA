@@ -45,6 +45,13 @@
 - "Enable automatic RLS" skapade `public.rls_auto_enable()` (SECURITY DEFINER, event trigger). Den kan inte anropas som RPC; ingen åtgärd krävs, men den ska nämnas vid säkerhetsgranskning.
 - Röktest `tests/staging/staging_smoke.test.ts` 5/5. Secret-nyckeln hämtas via CLI inne i testprocessen enbart för att skapa/radera bekräftade testkonton; den skrivs aldrig till fil eller logg.
 
+## 3c. Inloggning (uppdaterad 2026-10-10)
+
+- Klassisk inloggning med e-post och lösenord (minst 8 tecken i klienten; lokalt även i Auth), bekräftelse av e-post krävs (lokalt och i staging), glömt lösenord, byt lösenord, samt inloggning via e-post utan lösenord för befintliga konton (`shouldCreateUser: false`).
+- **Flöde: implicit (supabase-js standard för SPA) i stället för PKCE.** Skäl: PKCE kräver att e-postlänken öppnas i samma webbläsare som begärde den; i staging gjorde det att länkar öppnade i e-postappens webbläsare tyst misslyckades. Avvägning: med implicit flöde levereras token i URL-fragmentet (skickas aldrig till server, rensas direkt av klienten). Bör omprövas vid säkerhetsgranskning; med egen SMTP kan mallar med `token_hash` + `verifyOtp` ge samma robusthet utan token i URL.
+- **Kontouppräkning:** "Skapa konto" med befintlig e-post ger beskedet att kontot finns (efterfrågad tydlig återkoppling). "Glömt lösenordet" svarar neutralt. Begränsas av Supabase rate limits. Produktbeslut att bekräfta.
+- Staging (gratisnivå + Supabase standardmejl): e-postmallar kan inte ändras ⇒ mejlen innehåller bara länkar (ingen kod), och mejl går endast till projektets teammedlemmar. Minsta lösenordslängd i staging-Auth är 6 (klienten kräver 8) eftersom `config push` avvisas när mallarna ingår. Båda löses med egen SMTP.
+
 ## 4. Kända risker och begränsningar
 
 | Risk | Bedömning / åtgärd |

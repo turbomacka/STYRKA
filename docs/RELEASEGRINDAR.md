@@ -29,6 +29,6 @@
 
 ## Vad produktägaren konkret behöver göra härnäst
 
-1. ~~Supabase staging och hosting~~ klart. Kvar: sätt Site URL/Redirect URL i Supabase (Authentication → URL Configuration) och egen SMTP om andra än teammedlemmar ska kunna logga in med e-postlänk.
+1. ~~Supabase staging, hosting, Site URL/Redirect URL~~ klart. Kvar: **egen SMTP** (t.ex. Resend/Brevo) om andra än teammedlemmar ska kunna skapa konto/återställa lösenord, och för svenska mejl med kod. Därefter: `npx supabase config push` (mallar + minsta lösenordslängd 8) – konfigurationen finns redan i `supabase/config.toml` under `[remotes.staging]`.
 2. Låta fackperson granska H-värdena och områdesmappningen.
 3. Beställa juridisk bedömning enligt RD01–RD05.

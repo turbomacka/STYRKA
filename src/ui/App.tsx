@@ -19,19 +19,58 @@ import { ExerciseSettingsScreen, Profile } from './screens/Profile';
 import { DataAccount, Restrictions, SyncScreen } from './screens/Account';
 import { Privacy } from './screens/Privacy';
 import { UpdatePrompt } from './UpdatePrompt';
+import { NewPasswordScreen } from './screens/NewPassword';
+import { initialAuthCallback } from './authCallback';
 
-function useSession(sb: SupabaseClient): { session: Session | null; loading: boolean } {
+const RECOVERY_KEY = 'styrka_password_recovery';
+function readFlag(): boolean {
+  try {
+    return sessionStorage.getItem(RECOVERY_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+function writeFlag(on: boolean): void {
+  try {
+    if (on) sessionStorage.setItem(RECOVERY_KEY, '1');
+    else sessionStorage.removeItem(RECOVERY_KEY);
+  } catch {
+    /* privat läge */
+  }
+}
+
+/** Session + återställningsläge (efter godkänd kod/länk för glömt lösenord visas "Välj nytt lösenord" först). */
+function useSession(sb: SupabaseClient): { session: Session | null; loading: boolean; recovery: boolean; endRecovery: () => void } {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [recovery, setRecovery] = useState(readFlag);
   useEffect(() => {
-    sb.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    const { data } = sb.auth.onAuthStateChange((event, s) => {
+      setSession(s);
+      if (event === 'PASSWORD_RECOVERY') {
+        writeFlag(true);
+        setRecovery(true);
+      } else if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
+        writeFlag(false);
+        setRecovery(false);
+      }
+    });
+    sb.auth.getSession().then(({ data: d }) => {
+      setSession(d.session);
+      // Reserv om PASSWORD_RECOVERY hann skickas före prenumerationen: återställningslänk med kod i URL:en.
+      if (d.session && initialAuthCallback.recovery && initialAuthCallback.hadCode) {
+        writeFlag(true);
+        setRecovery(true);
+      }
       setLoading(false);
     });
-    const { data } = sb.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => data.subscription.unsubscribe();
   }, [sb]);
-  return { session, loading };
+  const endRecovery = () => {
+    writeFlag(false);
+    setRecovery(false);
+  };
+  return { session, loading, recovery, endRecovery };
 }
 
 /**
@@ -143,12 +182,14 @@ export function App() {
 }
 
 function Configured({ sb }: { sb: SupabaseClient }) {
-  const { session, loading } = useSession(sb);
+  const { session, loading, recovery, endRecovery } = useSession(sb);
   if (loading) return <p className="page" aria-busy="true">Laddar…</p>;
   return (
     <BrowserRouter>
       <UpdatePrompt />
-      {session ? (
+      {session && recovery ? (
+        <NewPasswordScreen supabase={sb} onDone={endRecovery} />
+      ) : session ? (
         <SignedIn session={session} sb={sb} />
       ) : (
         <Routes>

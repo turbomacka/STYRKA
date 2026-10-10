@@ -27,7 +27,10 @@ export function supabase(): SupabaseClient {
   if (!url || !key) throw new Error('SUPABASE_NOT_CONFIGURED');
   if (!client) {
     assertPublicKey(key);
-    client = createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' } });
+    // Implicit flöde (supabase-js standard för SPA): e-postlänkar fungerar i vilken webbläsare de än öppnas i.
+    // PKCE kräver att länken öppnas i samma webbläsare som begärde den, vilket inte fungerar när mejlet läses
+    // i e-postappens webbläsare eller på annan enhet, eller för installerad PWA på iOS. Se SAKERHETSRAPPORT.
+    client = createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' } });
   }
   return client;
 }

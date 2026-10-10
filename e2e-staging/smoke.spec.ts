@@ -28,9 +28,8 @@ test('staging: inloggning, intro, pass med synk till staging-databasen, utan CSP
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'STYRKA' })).toBeVisible();
     await page.screenshot({ path: `${dir}/S01-valkommen.png`, fullPage: true });
-    await page.getByRole('button', { name: 'Logga in med lösenord' }).click();
-    await page.getByLabel('E-post').fill(email);
-    await page.getByLabel('Lösenord').fill(password);
+    await page.getByLabel('E-post', { exact: true }).fill(email);
+    await page.getByLabel('Lösenord', { exact: true }).fill(password);
     await page.getByRole('button', { name: 'Logga in', exact: true }).click();
     await expect(page.getByText('Intro 1/4')).toBeVisible({ timeout: 20_000 });
     await onboard(page);

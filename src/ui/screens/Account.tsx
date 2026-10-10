@@ -9,6 +9,7 @@ import { eraseAccount, eraseHealthData, exportCsv, exportJson, signOutLocal } fr
 import { Banner, ConfirmTwice, EmptyState, PageHeader } from '../components/common';
 import { ConflictResolver, ConsentPanel, RestrictionPicker } from '../components/widgets';
 import { useServices } from '../services';
+import { PasswordForm } from './NewPassword';
 import { MODE_SV, REACTION_SV, SIDE_SV, T } from '../strings';
 
 function ruleText(r: LocalRestriction): string {
@@ -120,8 +121,9 @@ function download(name: string, content: string, type: string) {
 
 /** S15 Data & konto: export, radera hälsoprofil, radera konto, logga ut (tvåstegsbekräftelse). */
 export function DataAccount({ onSignedOut }: { onSignedOut: () => Promise<void> }) {
-  const { ctx, online, syncStatus } = useServices();
+  const { ctx, online, syncStatus, supabase } = useServices();
   const nav = useNavigate();
+  const [pwOpen, setPwOpen] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'info' | 'danger'; text: string } | null>(null);
   const pending = syncStatus?.pending ?? 0;
   const date = new Date().toISOString().slice(0, 10);
@@ -141,6 +143,20 @@ export function DataAccount({ onSignedOut }: { onSignedOut: () => Promise<void> 
           </button>
         </div>
       </section>
+      {supabase && (
+        <section className="card stack">
+          <h2>Lösenord</h2>
+          <p className="small muted">Byt lösenord, eller skapa ett om du hittills loggat in med kod via e-post.</p>
+          {!online && <Banner kind="warn">Byte av lösenord kräver internetanslutning.</Banner>}
+          {pwOpen ? (
+            <PasswordForm supabase={supabase} mode="change" onDone={() => { setPwOpen(false); setMsg({ kind: 'info', text: 'Lösenordet är bytt.' }); }} onSkip={() => setPwOpen(false)} skipLabel="Avbryt" />
+          ) : (
+            <button type="button" className="btn block" disabled={!online} onClick={() => setPwOpen(true)}>
+              Byt lösenord
+            </button>
+          )}
+        </section>
+      )}
       <section className="card stack">
         <h2>Hälsorelaterade uppgifter</h2>
         <p className="small muted">Raderar rapporterade besvär, begränsningar och återkallar samtycket. Träningshistoriken behålls.</p>
