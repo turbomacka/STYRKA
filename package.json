@@ -20,7 +20,9 @@
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
     "db:stop": "supabase stop",
-    "test:staging": "vitest run --project staging"
+    "test:staging": "vitest run --project staging",
+    "build:staging": "tsc -p tsconfig.app.json --noEmit && vite build --mode staging && node scripts/write-headers.mjs staging",
+    "deploy:staging": "npm run build:staging && wrangler deploy"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.117.3",
@@ -53,6 +55,7 @@
     "typescript-eslint": "8.71.1",
     "vite": "8.3.4",
     "vite-plugin-pwa": "2.0.0",
-    "vitest": "5.0.3"
+    "vitest": "5.0.3",
+    "wrangler": "4.149.0"
   }
 }

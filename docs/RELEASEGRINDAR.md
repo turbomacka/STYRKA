@@ -1,6 +1,8 @@
 # Releasegrindar G0–G5 (status 2026-10-10)
 
-**Staging-databas:** Supabase-projekt `styrka-staging` (ref `zjjlttbwofohyqmklvkf`, eu-north-1 Stockholm). Migrationer 001–003 tillämpade 2026-10-10; röktest mot staging `npm run test:staging` 5/5 godkända (anon, idempotens, revisionskonflikt, A/B-isolering, direktskrivning nekad, samtycke, kontoradering). Testkonton raderade efteråt. Hosting av appen återstår.
+**Staging-databas:** Supabase-projekt `styrka-staging` (ref `zjjlttbwofohyqmklvkf`, eu-north-1 Stockholm). Migrationer 001–003 tillämpade 2026-10-10; röktest mot staging `npm run test:staging` 5/5 godkända (anon, idempotens, revisionskonflikt, A/B-isolering, direktskrivning nekad, samtycke, kontoradering). Testkonton raderade efteråt.
+
+**Staging-app:** https://styrka-staging.homeboard-mh.workers.dev (Cloudflare Workers Static Assets, endast statiska filer, `noindex`). Säkerhetsheaders verifierade (CSP med connect-src endast staging-Supabase, HSTS, nosniff, frame-ancestors/X-Frame-Options, Referrer-Policy, Permissions-Policy). Webbläsarröktest `npx playwright test -c playwright.staging.config.ts` 2/2 (Android/iPhone-emulering): inloggning, intro, pass, synk verifierad i staging-databasen, service worker registrerad, inga CSP-fel.
 
 | Grind | Status | Kommentar |
 |---|---|---|
@@ -27,6 +29,6 @@
 
 ## Vad produktägaren konkret behöver göra härnäst
 
-1. ~~Supabase staging~~ klart. Kvar: Cloudflare Pages (eller likvärdig hosting) – kör `npx wrangler login` i terminalen.
+1. ~~Supabase staging och hosting~~ klart. Kvar: sätt Site URL/Redirect URL i Supabase (Authentication → URL Configuration) och egen SMTP om andra än teammedlemmar ska kunna logga in med e-postlänk.
 2. Låta fackperson granska H-värdena och områdesmappningen.
 3. Beställa juridisk bedömning enligt RD01–RD05.

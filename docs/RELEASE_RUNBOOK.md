@@ -4,7 +4,9 @@ Gäller **staging**. Produktion kräver att G5 är godkänd och ett separat, utt
 
 ## 1. Engångsuppsättning av staging
 
-Status: steg 1 och 3 utförda (`styrka-staging`, ref `zjjlttbwofohyqmklvkf`). Steg 2 (auth-URL:er) görs när hostingadressen finns. Röktest: `npm run test:staging`.
+Status: steg 1, 3, 4 och 5 utförda. Databas `styrka-staging` (ref `zjjlttbwofohyqmklvkf`), app https://styrka-staging.homeboard-mh.workers.dev via Cloudflare Workers Static Assets (`wrangler.jsonc`; Pages-kommandot i wrangler 4.149 delegerar till Workers). Publicera: `npm run deploy:staging` (läser `.env.staging` som inte versionshanteras och skriver `dist/_headers`). Röktest: `npm run test:staging` och `npx playwright test -c playwright.staging.config.ts`. Steg 2 (auth-URL:er, SMTP) görs i Supabase-dashboarden.
+
+**Rollback av app:** `npx wrangler rollback` (föregående version) eller `npx wrangler versions list` + `npx wrangler versions deploy <id>`.
 
 1. Supabase: skapa projekt `styrka-staging` i EU-region. Notera projekt-URL och **anon/publishable**-nyckel (aldrig secret/service_role i klient eller CI-loggar).
 2. Auth: aktivera e-post (magic link), sätt Site URL till staging-domänen, redirect-URL:er, rimliga rate limits (lokala testvärden i `supabase/config.toml` gäller inte här), e-postbekräftelse på.
