@@ -40,7 +40,7 @@ export default defineConfig({
     projects: [
       {
         extends: true,
-        test: { name: 'unit', include: ['tests/unit/**/*.test.{ts,tsx}'], environment: 'node' },
+        test: { name: 'unit', include: ['tests/unit/**/*.test.{ts,tsx}'], environment: 'node', setupFiles: ['fake-indexeddb/auto'] },
       },
       {
         extends: true,

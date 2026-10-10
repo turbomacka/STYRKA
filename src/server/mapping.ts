@@ -1,0 +1,321 @@
+/** Översättning mellan lokala poster (gram, camelCase) och serverrader (numeric-sträng, snake_case). */
+import type { ExerciseId, Experience, Mode } from '../domain/decision_engine';
+import { exercise, type Area, type EquipmentSlug } from '../domain/catalog';
+import type { PlanSnapshot, PlannedExercise, Readiness, RuleKind, SessionKind, SessionStatus, SetKind, SetStatus, Side, SymptomReaction, Technique } from '../domain/model';
+import { decimalStringToGrams, gramsToDecimalString } from '../domain/units';
+import type { LocalAudit, LocalConsent, LocalExerciseSettings, LocalProfile, LocalProgram, LocalRestriction, LocalSession, LocalSessionExercise, LocalSet, LocalSymptom } from '../storage/db';
+
+const dec = (g: number | null): string | null => (g === null ? null : gramsToDecimalString(g));
+const grams = (v: unknown): number | null => (v === null || v === undefined ? null : decimalStringToGrams(String(v)));
+
+export function profileRow(p: LocalProfile): Record<string, unknown> {
+  return {
+    planned_sessions_per_week: p.plannedSessionsPerWeek,
+    minutes_per_session: p.minutesPerSession,
+    experience: p.experience,
+    age_years: p.ageYears,
+    adult_confirmed: p.adultConfirmed,
+    timezone: p.timezone,
+    goals: p.goals,
+    substitutions: p.substitutions,
+    favorites: p.favorites,
+    bodyweight_kg: dec(p.bodyweightGrams),
+    privacy_notice_version: p.privacyNoticeVersion,
+    onboarding_completed_at: p.onboardingCompletedAt,
+  };
+}
+
+export function profileFromRow(r: Record<string, unknown>, equipment: string[]): LocalProfile {
+  return {
+    userId: r.user_id as string,
+    plannedSessionsPerWeek: r.planned_sessions_per_week as number,
+    minutesPerSession: r.minutes_per_session as number,
+    experience: r.experience as Experience,
+    goals: (r.goals ?? {}) as LocalProfile['goals'],
+    equipment: equipment as EquipmentSlug[],
+    substitutions: (r.substitutions ?? {}) as LocalProfile['substitutions'],
+    favorites: (r.favorites ?? []) as ExerciseId[],
+    bodyweightGrams: grams(r.bodyweight_kg),
+    adultConfirmed: r.adult_confirmed as boolean,
+    ageYears: (r.age_years as number | null) ?? null,
+    timezone: (r.timezone as string) ?? 'Europe/Stockholm',
+    revision: r.revision as number,
+    onboardingCompletedAt: (r.onboarding_completed_at as string | null) ?? null,
+    privacyNoticeVersion: (r.privacy_notice_version as string | null) ?? null,
+    syncState: 'synced',
+  };
+}
+
+export function exerciseSettingsRow(userId: string, s: LocalExerciseSettings): Record<string, unknown> {
+  return {
+    id: s.id,
+    user_id: userId,
+    exercise_slug: s.exerciseId,
+    variant_key: s.variantKey,
+    experience: s.experience ?? 'novice',
+    experience_override: s.experience !== null,
+    // Utan eget steg lagras katalogens standardsteg (samma effektiva värde som motorn använder).
+    increment_kg: dec(s.incrementGrams) ?? dec(Math.round(exercise(s.exerciseId).defaultIncrementKg * 1000)),
+    estimate_kg: dec(s.estimateGrams),
+    estimate_kind: s.estimateKind,
+    estimate_reps: s.estimateReps,
+    estimate_rir: s.estimateRir,
+    estimate_measured: s.estimateMeasured,
+    estimate_tested_at: s.estimateTestedAt,
+    estimate_confidence: s.estimateKind === null ? 'unknown' : s.estimateKind === 'submax' ? 'low' : s.estimateKind === '1rm' && s.estimateMeasured ? 'high' : 'medium',
+    max_load_kg: dec(s.maxLoadGrams),
+    machine_min_kg: dec(s.machineMinGrams),
+    machine_max_kg: dec(s.machineMaxGrams),
+    updated_at: s.updatedAt,
+  };
+}
+
+export function exerciseSettingsFromRow(r: Record<string, unknown>): LocalExerciseSettings {
+  return {
+    id: r.id as string,
+    exerciseId: r.exercise_slug as ExerciseId,
+    variantKey: (r.variant_key as string) ?? 'default',
+    experience: r.experience_override ? (r.experience as Experience) : null,
+    incrementGrams: grams(r.increment_kg),
+    estimateGrams: grams(r.estimate_kg),
+    estimateKind: (r.estimate_kind as LocalExerciseSettings['estimateKind']) ?? null,
+    estimateReps: (r.estimate_reps as number | null) ?? null,
+    estimateRir: (r.estimate_rir as number | null) ?? null,
+    estimateMeasured: !!r.estimate_measured,
+    estimateTestedAt: (r.estimate_tested_at as string | null) ?? null,
+    maxLoadGrams: grams(r.max_load_kg),
+    machineMinGrams: grams(r.machine_min_kg),
+    machineMaxGrams: grams(r.machine_max_kg),
+    updatedAt: r.updated_at as string,
+    syncState: 'synced',
+  };
+}
+
+export function restrictionRow(userId: string, r: LocalRestriction): Record<string, unknown> {
+  return { id: r.id, user_id: userId, rule_kind: r.kind, exercise_a: r.exerciseA, exercise_b: r.exerciseB, affected_area: r.area, side: r.side, max_sets: r.maxSets, max_mode: r.maxMode, active: r.active, description: r.description, created_at: r.createdAt, updated_at: r.updatedAt };
+}
+
+export function restrictionFromRow(r: Record<string, unknown>): LocalRestriction {
+  return {
+    id: r.id as string,
+    kind: r.rule_kind as RuleKind,
+    exerciseA: (r.exercise_a as ExerciseId | null) ?? null,
+    exerciseB: (r.exercise_b as ExerciseId | null) ?? null,
+    area: (r.affected_area as Area | null) ?? null,
+    side: (r.side as Side | null) ?? null,
+    maxSets: (r.max_sets as number | null) ?? null,
+    maxMode: (r.max_mode as Mode | null) ?? null,
+    active: r.active as boolean,
+    description: (r.description as string | null) ?? null,
+    createdAt: r.created_at as string,
+    updatedAt: r.updated_at as string,
+    syncState: 'synced',
+  };
+}
+
+export function symptomRow(userId: string, s: LocalSymptom): Record<string, unknown> {
+  return { id: s.id, user_id: userId, session_id: s.sessionId, area: s.area, side: s.side, reaction: s.reaction, pain: s.pain, reported_at: s.reportedAt, resolved_at: s.resolvedAt };
+}
+
+export function symptomFromRow(r: Record<string, unknown>): LocalSymptom {
+  return { id: r.id as string, sessionId: (r.session_id as string | null) ?? null, area: r.area as Area, side: (r.side as Side | null) ?? null, reaction: r.reaction as SymptomReaction, pain: (r.pain as number | null) ?? null, reportedAt: r.reported_at as string, resolvedAt: (r.resolved_at as string | null) ?? null, syncState: 'synced' };
+}
+
+export function consentRow(userId: string, c: LocalConsent): Record<string, unknown> {
+  return { user_id: userId, consent_version: c.consentVersion, granted_at: c.grantedAt, withdrawn_at: c.withdrawnAt, revision: c.revision };
+}
+
+export function consentFromRow(r: Record<string, unknown>): LocalConsent {
+  return { userId: r.user_id as string, consentVersion: r.consent_version as string, grantedAt: (r.granted_at as string | null) ?? null, withdrawnAt: (r.withdrawn_at as string | null) ?? null, revision: r.revision as number, syncState: 'synced' };
+}
+
+export function programRow(userId: string, p: LocalProgram): Record<string, unknown> {
+  return { id: p.id, user_id: userId, template: p.template, version: p.version, rotation_index: p.rotationIndex, active: p.active === 1, created_at: p.createdAt, planned_sessions_per_week: p.plannedSessionsPerWeek, revision: p.revision, ended_at: p.endedAt };
+}
+
+export function programFromRow(r: Record<string, unknown>): LocalProgram {
+  return { id: r.id as string, template: r.template as string, version: r.version as string, plannedSessionsPerWeek: (r.planned_sessions_per_week as number) ?? 2, rotationIndex: r.rotation_index as number, active: r.active ? 1 : 0, createdAt: r.created_at as string, endedAt: (r.ended_at as string | null) ?? null, revision: (r.revision as number) ?? 1, syncState: 'synced' };
+}
+
+export function sessionRow(userId: string, s: LocalSession): Record<string, unknown> {
+  return {
+    id: s.id,
+    user_id: userId,
+    program_id: s.programId,
+    kind: s.kind,
+    status: s.status,
+    local_timezone: s.timezone,
+    started_at: s.startedAt,
+    finished_at: s.finishedAt,
+    planned_minutes: s.plannedMinutes,
+    perceived_readiness: s.readiness,
+    is_replacement_for_planned: s.isReplacementForPlanned,
+    template_key: s.templateKey,
+    rotation_index: s.rotationIndex,
+    counts_as_planned_at: s.countsAsPlannedAt,
+    client_created_at: s.clientCreatedAt,
+    revision: s.revision,
+    updated_at: s.finishedAt ?? s.startedAt ?? s.clientCreatedAt,
+  };
+}
+
+export function sessionFromRow(r: Record<string, unknown>, snapshot: PlanSnapshot): LocalSession {
+  return {
+    id: r.id as string,
+    programId: (r.program_id as string | null) ?? null,
+    kind: r.kind as SessionKind,
+    status: r.status as SessionStatus,
+    timezone: (r.local_timezone as string) ?? 'Europe/Stockholm',
+    startedAt: (r.started_at as string | null) ?? null,
+    finishedAt: (r.finished_at as string | null) ?? null,
+    plannedMinutes: (r.planned_minutes as number) ?? snapshot.budgetMinutes,
+    readiness: (r.perceived_readiness as Readiness | null) ?? null,
+    templateKey: (r.template_key as string | null) ?? null,
+    rotationIndex: (r.rotation_index as number | null) ?? null,
+    countsAsPlannedAt: (r.counts_as_planned_at as string | null) ?? null,
+    isReplacementForPlanned: !!r.is_replacement_for_planned,
+    clientCreatedAt: (r.client_created_at as string) ?? (r.created_at as string),
+    snapshot,
+    revision: (r.revision as number) ?? 1,
+    syncState: 'synced',
+  };
+}
+
+export function sessionExerciseRow(userId: string, e: LocalSessionExercise): Record<string, unknown> {
+  return {
+    id: e.id,
+    user_id: userId,
+    session_id: e.sessionId,
+    exercise_slug: e.exerciseId,
+    variant_key: e.variantKey,
+    order_index: e.orderIndex,
+    mode: e.mode,
+    band_min: e.bandMin,
+    band_max: e.bandMax,
+    target_sets: e.targetSets,
+    recommendation_snapshot: { ...e.snapshot, replacedById: undefined },
+    created_at: e.createdAt,
+  };
+}
+
+export function sessionExerciseFromRow(r: Record<string, unknown>, replacedById: string | null): LocalSessionExercise {
+  return {
+    id: r.id as string,
+    sessionId: r.session_id as string,
+    exerciseId: r.exercise_slug as ExerciseId,
+    variantKey: (r.variant_key as string) ?? 'default',
+    orderIndex: r.order_index as number,
+    mode: r.mode as Mode,
+    bandMin: r.band_min as number,
+    bandMax: r.band_max as number,
+    targetSets: r.target_sets as number,
+    snapshot: r.recommendation_snapshot as PlannedExercise,
+    replacedById,
+    createdAt: r.created_at as string,
+    syncState: 'synced',
+  };
+}
+
+/** Fullständig payload för skapande via apply_set_mutation. */
+export function setCreatePayload(s: LocalSet): Record<string, unknown> {
+  return {
+    sessionExerciseId: s.sessionExerciseId,
+    ordinal: s.ordinal,
+    kind: s.kind,
+    status: s.status,
+    targetKg: dec(s.targetGrams),
+    targetReps: s.targetReps,
+    targetSeconds: s.targetSeconds,
+    actualKg: dec(s.actualGrams),
+    actualReps: s.actualReps,
+    actualSeconds: s.actualSeconds,
+    rir: s.rir,
+    technique: s.technique,
+    occurredAt: s.occurredAt,
+    deleted: s.deleted,
+  };
+}
+
+const SET_FIELD_MAP: Array<[keyof LocalSet, string, (v: unknown) => unknown]> = [
+  ['status', 'status', (v) => v],
+  ['targetGrams', 'targetKg', (v) => dec(v as number | null)],
+  ['targetReps', 'targetReps', (v) => v],
+  ['targetSeconds', 'targetSeconds', (v) => v],
+  ['actualGrams', 'actualKg', (v) => dec(v as number | null)],
+  ['actualReps', 'actualReps', (v) => v],
+  ['actualSeconds', 'actualSeconds', (v) => v],
+  ['rir', 'rir', (v) => v],
+  ['technique', 'technique', (v) => v],
+  ['occurredAt', 'occurredAt', (v) => v],
+  ['deleted', 'deleted', (v) => v],
+  ['ordinal', 'ordinal', (v) => v],
+  ['kind', 'kind', (v) => v],
+];
+
+/** Ändrade fält (changedFields) mellan två versioner av ett lokalt set. */
+export function setPatchPayload(before: LocalSet, after: LocalSet): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, wire, conv] of SET_FIELD_MAP) if (before[k] !== after[k]) out[wire] = conv(after[k]);
+  return out;
+}
+
+/** Hela den användarredigerbara delen av setet som patch (för "behåll min version" vid konflikt). */
+export function setFullPatch(s: LocalSet): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, wire, conv] of SET_FIELD_MAP) out[wire] = conv(s[k]);
+  return out;
+}
+
+export function setFromRow(r: Record<string, unknown>, se: { sessionId: string; exerciseId: ExerciseId }): LocalSet {
+  return {
+    id: r.id as string,
+    sessionId: se.sessionId,
+    sessionExerciseId: r.session_exercise_id as string,
+    exerciseId: se.exerciseId,
+    ordinal: r.ordinal as number,
+    kind: r.kind as SetKind,
+    status: r.status as SetStatus,
+    targetGrams: grams(r.target_kg),
+    targetReps: (r.target_reps as number | null) ?? null,
+    targetSeconds: (r.target_seconds as number | null) ?? null,
+    actualGrams: grams(r.actual_kg),
+    actualReps: (r.actual_reps as number | null) ?? null,
+    actualSeconds: (r.actual_seconds as number | null) ?? null,
+    rir: (r.rir as number | null) ?? null,
+    technique: (r.technique as Technique | null) ?? null,
+    occurredAt: (r.occurred_at as string | null) ?? null,
+    deleted: r.deleted_at !== null && r.deleted_at !== undefined,
+    serverRevision: r.revision as number,
+    createQueued: true,
+    manualOverride: false,
+    syncState: 'synced',
+    updatedAt: (r.server_received_at as string) ?? '',
+  };
+}
+
+/** Applicera konfliktvyns servervärden (wire-format) på ett lokalt set. */
+export function applyServerSetValues(s: LocalSet, server: Record<string, unknown>, revision: number): LocalSet {
+  return {
+    ...s,
+    status: (server.status as SetStatus) ?? s.status,
+    actualGrams: grams(server.actualKg),
+    actualReps: (server.actualReps as number | null) ?? null,
+    actualSeconds: (server.actualSeconds as number | null) ?? null,
+    rir: (server.rir as number | null) ?? null,
+    technique: (server.technique as Technique | null) ?? null,
+    occurredAt: (server.occurredAt as string | null) ?? null,
+    deleted: !!server.deleted,
+    targetGrams: server.targetKg !== undefined ? grams(server.targetKg) : s.targetGrams,
+    targetReps: server.targetReps !== undefined ? ((server.targetReps as number | null) ?? null) : s.targetReps,
+    serverRevision: revision,
+    syncState: 'synced',
+  };
+}
+
+export function auditRow(userId: string, a: LocalAudit): Record<string, unknown> {
+  return { id: a.id, user_id: userId, session_id: a.sessionId, engine_version: a.engineVersion, inputs_hash: a.inputsHash, reason_codes: a.reasonCodes, plan_snapshot: a.snapshot, generated_at: a.generatedAt };
+}
+
+export function auditFromRow(r: Record<string, unknown>): LocalAudit {
+  return { id: r.id as string, sessionId: r.session_id as string, engineVersion: r.engine_version as string, inputsHash: r.inputs_hash as string, reasonCodes: (r.reason_codes as string[]) ?? [], snapshot: r.plan_snapshot as PlanSnapshot, generatedAt: r.generated_at as string, syncState: 'synced' };
+}
