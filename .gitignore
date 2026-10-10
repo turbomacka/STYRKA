@@ -12,3 +12,4 @@ supabase/.branches
 supabase/.temp
 *.log
 spec/.reference-dist/
+docs/evidence/screenshots/*/test-failed-*.png

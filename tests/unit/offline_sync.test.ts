@@ -368,4 +368,21 @@ describe('offline local-first', () => {
     expect(got.templateKey).toBe(expected.templateKey);
     expect(got.exercises).toEqual(expected.exercises);
   });
+
+  it('profilpatch med förlorad ack ⇒ ingen falsk konflikt vid retry (idempotent)', async () => {
+    const h = harness();
+    await onboard(h);
+    h.server.dropNextAck = 1;
+    await h.sync.syncNow();
+    const r = await h.sync.syncNow();
+    expect(r.conflicts).toBe(0);
+    expect(await h.sync.conflicts()).toHaveLength(0);
+    expect((await h.db.profile.get(h.userId))!.revision).toBe(1);
+    // Verklig samtidig ändring från annan enhet ger fortfarande konflikt.
+    h.server.profiles.get(h.userId)!.minutes_per_session = 90;
+    h.server.profiles.get(h.userId)!.revision = 2;
+    await patchProfile(h.ctx, { minutesPerSession: 45 });
+    await h.sync.syncNow();
+    expect(await h.sync.conflicts()).toHaveLength(1);
+  });
 });

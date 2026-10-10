@@ -13,6 +13,30 @@ import type { ExerciseId } from '../domain/decision_engine';
 import type { PlanSnapshot } from '../domain/model';
 import { outbox, type AppContext } from './context';
 
+function sameValue(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (a === null || b === null || a === undefined || b === undefined) return (a ?? null) === (b ?? null);
+  if ((typeof a === 'string' || typeof a === 'number') && (typeof b === 'string' || typeof b === 'number')) {
+    const na = Number(a), nb = Number(b);
+    if (String(a).trim() !== '' && String(b).trim() !== '' && Number.isFinite(na) && Number.isFinite(nb)) return na === nb;
+    const da = Date.parse(String(a)), db = Date.parse(String(b));
+    if (/\d{4}-\d{2}-\d{2}T/.test(String(a)) && Number.isFinite(da) && Number.isFinite(db)) return da === db;
+    return false;
+  }
+  if (typeof a === 'object' && typeof b === 'object') {
+    if (Array.isArray(a) !== Array.isArray(b)) return false;
+    const ka = Object.keys(a as object).filter((k) => (a as Record<string, unknown>)[k] !== undefined);
+    const kb = Object.keys(b as object).filter((k) => (b as Record<string, unknown>)[k] !== undefined);
+    return ka.length === kb.length && ka.every((k) => sameValue((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]));
+  }
+  return false;
+}
+
+/** Alla fält i patchen har redan samma värde på servern. */
+export function patchAlreadyApplied(patch: Record<string, unknown>, server: Record<string, unknown>): boolean {
+  return Object.keys(patch).every((k) => sameValue(patch[k], server[k]));
+}
+
 export type SyncStatus = { state: 'idle' | 'syncing' | 'offline' | 'auth_required' | 'error'; pending: number; conflicts: number; failed: number; lastSyncedAt: string | null; nextRetryAt: string | null };
 
 export type SyncRunResult = { sent: number; applied: number; duplicates: number; conflicts: number; rejected: number; stoppedBy: TransportError['code'] | null };
@@ -200,7 +224,9 @@ export class SyncEngine {
           base = (await db.profile.get(userId))?.revision ?? 0;
           await db.outbox.update(entry.seq!, { op: { ...op, baseRevision: base } });
         }
-        const r = await transport.patchProfile(userId, base, op.patch);
+        let r = await transport.patchProfile(userId, base, op.patch);
+        // Idempotens vid förlorad ack: servern har redan exakt de värden vi skickade ⇒ tillämpat, ingen konflikt.
+        if (r.status === 'conflict' && patchAlreadyApplied(op.patch, r.server)) r = { status: 'applied', revision: r.revision };
         if (r.status === 'applied') {
           await db.transaction('rw', [db.outbox, db.profile], async () => {
             await db.outbox.delete(entry.seq!);

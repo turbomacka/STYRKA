@@ -1,0 +1,105 @@
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useLiveQuery } from 'dexie-react-hooks';
+import type { PlanSnapshot } from '../../domain/model';
+import { previewExtra, previewNext, startSession } from '../../application/training';
+import { Banner, EmptyState, PageHeader, Stepper, Warnings } from '../components/common';
+import { LiftCard } from '../components/widgets';
+import { FLAGS, useServices } from '../services';
+import { T, TEMPLATE_SV, reasonText } from '../strings';
+import { exercise } from '../../domain/catalog';
+
+export type PreviewState = { kind: 'extra'; minutes: number; readiness: 'good' | 'normal' | 'tired' | 'pain'; painAreas?: string[] } | null;
+
+/** Viktförslag kan stängas av med feature flag utan att historik påverkas (04 §4). */
+export function applyLoadFlag(p: PlanSnapshot): PlanSnapshot {
+  if (FLAGS.loadRecommendationsEnabled) return p;
+  return { ...p, exercises: p.exercises.map((e) => ({ ...e, kg: null, calibration: e.loadKind === 'external_kg' || e.loadKind === 'assistance_kg', reasons: [...e.reasons, 'LOAD_RECOMMENDATIONS_DISABLED'] })) };
+}
+
+/** S07 Passförhandsvisning: ordning, set/reps/kg, tidsestimat, kort varför; ändra tid; starta. */
+export function Preview() {
+  const { ctx } = useServices();
+  const nav = useNavigate();
+  const loc = useLocation();
+  const extra = (loc.state as PreviewState) ?? null;
+  const profile = useLiveQuery(() => ctx.db.profile.get(ctx.userId), [ctx]);
+  const [minutes, setMinutes] = useState<number | null>(extra?.minutes ?? null);
+  const [plan, setPlan] = useState<PlanSnapshot | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (minutes === null && profile) setMinutes(profile.minutesPerSession);
+  }, [profile, minutes]);
+
+  useEffect(() => {
+    if (minutes === null) return;
+    let alive = true;
+    const p = extra ? previewExtra(ctx, { minutes, readiness: extra.readiness, painAreas: extra.painAreas as never }) : previewNext(ctx, minutes);
+    p.then((x) => alive && setPlan(applyLoadFlag(x))).catch(() => alive && setErr('Kunde inte ta fram förslag.'));
+    return () => {
+      alive = false;
+    };
+  }, [ctx, minutes, extra]);
+
+  async function start() {
+    if (!plan) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const s = await startSession(ctx, plan);
+      nav(`/pass/${s.id}`, { replace: true });
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      setErr(code === 'INVALID_STATE' ? 'Du har redan ett pågående pass.' : code === 'LOCAL_SAVE_FAILED' ? 'Kunde inte spara på enheten. Kontrollera lagringsutrymmet och försök igen.' : 'Passet kunde inte startas.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const showRir = profile?.experience !== 'novice';
+  return (
+    <div className="page full stack">
+      <PageHeader title={extra ? 'Spontanpass' : TEMPLATE_SV[plan?.templateKey ?? ''] ?? T.TITLE_NEXT} back={() => nav(-1)} />
+      {!FLAGS.loadRecommendationsEnabled && <Banner kind="info">Viktförslag är tillfälligt avstängda. Välj själv vikt för varje övning.</Banner>}
+      {minutes !== null && <div className="card"><Stepper label="Tid för passet" value={minutes} min={15} max={120} step={5} onChange={setMinutes} format={(v) => `${v} min`} /></div>}
+      {plan && (
+        <>
+          <p className="num muted">Uppskattad tid: cirka {Math.round(plan.estimatedMinutes)} min inklusive uppvärmning och vila.</p>
+          <Warnings codes={plan.warnings} />
+          {plan.exercises.length === 0 ? (
+            <EmptyState title="Inget pass att föreslå">
+              <p>{T.WARN_EMPTY}</p>
+            </EmptyState>
+          ) : (
+            <ol className="list" style={{ display: 'grid', gap: 12 }} aria-label="Övningsordning">
+              {plan.exercises.map((p) => (
+                <LiftCard key={p.exerciseId} p={p} showRir={showRir} />
+              ))}
+            </ol>
+          )}
+          {plan.removed.length > 0 && (
+            <details>
+              <summary>Därför saknas vissa övningar</summary>
+              <ul className="list small">
+                {plan.removed.map((r, i) => (
+                  <li key={i}>
+                    {exercise(r.exerciseId).nameSv}: {reasonText(r.reason)?.text ?? 'utesluten av regel eller tid'}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          <p className="small muted">{T.DISCLAIMER}</p>
+        </>
+      )}
+      {err && <Banner kind="danger">{err}</Banner>}
+      <div className="bottom-cta">
+        <button type="button" className="btn primary block big" disabled={!plan || plan.exercises.length === 0 || busy} onClick={start}>
+          Starta
+        </button>
+      </div>
+    </div>
+  );
+}

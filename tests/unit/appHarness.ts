@@ -81,10 +81,12 @@ export class FakeServer implements SyncTransport {
     const cur = this.profiles.get(userId);
     if (!cur) {
       this.profiles.set(userId, { ...patch, user_id: userId, revision: base + 1 });
+      this.maybeDrop();
       return { status: 'applied', revision: base + 1 };
     }
     if (cur.revision !== base) return { status: 'conflict', revision: cur.revision, server: { ...cur } };
     this.profiles.set(userId, { ...cur, ...patch, revision: base + 1 });
+    this.maybeDrop();
     return { status: 'applied', revision: base + 1 };
   }
   async replaceEquipment(userId: string, equipment: EquipmentSlug[]): Promise<void> {
