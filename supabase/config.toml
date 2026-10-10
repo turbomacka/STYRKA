@@ -197,7 +197,7 @@ password_requirements = ""
 
 [auth.rate_limit]
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
-email_sent = 60
+email_sent = 1000
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
 sms_sent = 30
 # Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.
@@ -244,6 +244,16 @@ otp_expiry = 3600
 # pass = "env(SENDGRID_API_KEY)"
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
+
+# Svenska mallar med engångskod ({{ .Token }}) – koden fungerar oavsett var mejlet öppnas.
+# Samma innehåll ska läggas in i staging/produktion via dashboarden (Authentication → Emails).
+[auth.email.template.magic_link]
+subject = "Din inloggningskod till STYRKA"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.confirmation]
+subject = "Bekräfta din e-post för STYRKA"
+content_path = "./supabase/templates/confirmation.html"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
