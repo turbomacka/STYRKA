@@ -10,6 +10,8 @@ export function classify(error: PgError, status?: number): TransportError {
   const st = status ?? error?.status;
   const msg = error?.message ?? '';
   if (!st || /fetch|network|Failed to fetch|NetworkError|ECONNREFUSED|Load failed/i.test(msg)) return new TransportError('OFFLINE', 'nätverk');
+  // Statement timeout/serialiseringsfel: transient – kön försöker igen med samma eventId (idempotent).
+  if (error?.code === '57014' || error?.code === '40001' || error?.code === '40P01') return new TransportError('DB_UNAVAILABLE', error.code);
   if (st === 401 || error?.code === 'PGRST301' || error?.code === 'PGRST303') return new TransportError('AUTH_REQUIRED');
   if (error?.code === '42501') return new TransportError('FORBIDDEN');
   if (st === 403) return new TransportError('FORBIDDEN');

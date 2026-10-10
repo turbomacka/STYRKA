@@ -386,3 +386,17 @@ describe('offline local-first', () => {
     expect(await h.sync.conflicts()).toHaveLength(1);
   });
 });
+
+import { classify } from '../../src/server/supabaseTransport';
+describe('felklassning (03 §6 felmatris)', () => {
+  it('nätfel ⇒ OFFLINE, 401 ⇒ AUTH_REQUIRED, RLS ⇒ FORBIDDEN, timeout/serialisering ⇒ DB_UNAVAILABLE (retry), 4xx ⇒ VALIDATION_ERROR', () => {
+    expect(classify({ message: 'TypeError: Failed to fetch' }).code).toBe('OFFLINE');
+    expect(classify({ message: 'x' }, 401).code).toBe('AUTH_REQUIRED');
+    expect(classify({ message: 'x', code: '42501' }, 403).code).toBe('FORBIDDEN');
+    for (const code of ['57014', '40001', '40P01']) {
+      const e = classify({ message: 'x', code }, 500);
+      expect([e.code, e.retryable]).toEqual(['DB_UNAVAILABLE', true]);
+    }
+    expect(classify({ message: 'x', code: '23514' }, 400)).toMatchObject({ code: 'VALIDATION_ERROR', retryable: false });
+  });
+});

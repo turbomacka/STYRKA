@@ -53,9 +53,13 @@ export function setPayload(seId: string, over: Record<string, unknown> = {}): Re
 }
 
 export async function mutate(u: TestUser, eventId: string, setId: string, baseRevision: number | null, payload: Record<string, unknown>) {
-  const { data, error } = await u.client.rpc('apply_set_mutation', { event_id: eventId, set_id: setId, base_revision: baseRevision, payload });
-  if (error) throw new Error(`rpc: ${error.message}`);
-  return data as { status: string; code?: string; revision?: number; recordId?: string; server?: Record<string, unknown> };
+  // Samma beteende som klientens synk: transienta DB-fel försöks igen med SAMMA eventId.
+  for (let attempt = 0; ; attempt++) {
+    const { data, error } = await u.client.rpc('apply_set_mutation', { event_id: eventId, set_id: setId, base_revision: baseRevision, payload });
+    if (error && ['57014', '40001', '40P01'].includes(error.code) && attempt < 3) continue;
+    if (error) throw new Error(`rpc: ${error.message}`);
+    return data as { status: string; code?: string; revision?: number; recordId?: string; server?: Record<string, unknown> };
+  }
 }
 
 let pool: pg.Pool | null = null;

@@ -93,3 +93,18 @@ test('tangentbord: starta pass och logga set utan mus; skärmläsarstatus annons
   const live = page.locator('[aria-live="polite"].visually-hidden');
   await expect(live).toHaveText(/Set 1 sparat/);
 });
+
+test.describe('mörkt läge', () => {
+  test.use({ colorScheme: 'dark' });
+  test('samma informationshierarki och godkänd kontrast i mörkt läge', async ({ page }, info) => {
+    await signUp(page, uniqueEmail('dark'));
+    await onboard(page);
+    await axe(page, 'S06-mörkt');
+    await page.screenshot({ path: `docs/evidence/screenshots/${info.project.name}/S06-idag-morkt.png`, fullPage: true });
+    await page.getByRole('button', { name: 'Starta dagens pass' }).click();
+    await page.getByRole('button', { name: 'Starta', exact: true }).click();
+    await page.getByRole('button', { name: 'Klart, set 1' }).click();
+    await axe(page, 'S08-mörkt');
+    await page.screenshot({ path: `docs/evidence/screenshots/${info.project.name}/S08-trana-morkt.png`, fullPage: true });
+  });
+});
