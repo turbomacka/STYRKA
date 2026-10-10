@@ -2,7 +2,9 @@
 
 Gäller **staging**. Produktion kräver att G5 är godkänd och ett separat, uttryckligt beslut av produktägaren.
 
-## 1. Engångsuppsättning av staging (kräver konton – ej utfört)
+## 1. Engångsuppsättning av staging
+
+Status: steg 1 och 3 utförda (`styrka-staging`, ref `zjjlttbwofohyqmklvkf`). Steg 2 (auth-URL:er) görs när hostingadressen finns. Röktest: `npm run test:staging`.
 
 1. Supabase: skapa projekt `styrka-staging` i EU-region. Notera projekt-URL och **anon/publishable**-nyckel (aldrig secret/service_role i klient eller CI-loggar).
 2. Auth: aktivera e-post (magic link), sätt Site URL till staging-domänen, redirect-URL:er, rimliga rate limits (lokala testvärden i `supabase/config.toml` gäller inte här), e-postbekräftelse på.

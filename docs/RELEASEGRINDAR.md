@@ -1,5 +1,7 @@
 # Releasegrindar G0–G5 (status 2026-10-10)
 
+**Staging-databas:** Supabase-projekt `styrka-staging` (ref `zjjlttbwofohyqmklvkf`, eu-north-1 Stockholm). Migrationer 001–003 tillämpade 2026-10-10; röktest mot staging `npm run test:staging` 5/5 godkända (anon, idempotens, revisionskonflikt, A/B-isolering, direktskrivning nekad, samtycke, kontoradering). Testkonton raderade efteråt. Hosting av appen återstår.
+
 | Grind | Status | Kommentar |
 |---|---|---|
 | **G0 Byggbar** | ✅ lokalt | `npm ci`, lint, typecheck, enhetstester, migrationer på lokal Supabase, inga hemligheter i repo/bygge. CI-flöde finns (`.github/workflows/ci.yml`) men har inte körts – repot har ingen fjärr-remote. |
@@ -25,6 +27,6 @@
 
 ## Vad produktägaren konkret behöver göra härnäst
 
-1. Skapa (eller ge åtkomst till) ett **staging**-projekt i Supabase (EU-region) och ett Cloudflare Pages-projekt (eller likvärdig hosting). Detta kräver konto/betalning och har därför inte gjorts.
+1. ~~Supabase staging~~ klart. Kvar: Cloudflare Pages (eller likvärdig hosting) – kör `npx wrangler login` i terminalen.
 2. Låta fackperson granska H-värdena och områdesmappningen.
 3. Beställa juridisk bedömning enligt RD01–RD05.

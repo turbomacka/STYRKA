@@ -38,6 +38,13 @@
 - Inga hälso- eller styrkevärden i URL, loggar eller telemetri (ingen telemetri finns). Auth-token i localStorage (Supabase-standard).
 - `npm audit`: 0 sårbarheter; beroenden pinnade exakt, lockfil committad.
 
+## 3b. Staging (verifierat 2026-10-10)
+
+- Schemadump: RLS på alla 13 tabeller, 49 policys, klientroller har endast SELECT på `training_sets`/`mutation_receipts` och SELECT/INSERT/DELETE på `session_exercises`.
+- Projektet skapades med "Automatically expose new tables" avstängt: endast uttryckliga grants i migrationerna gäller. Följd: `service_role` saknar SELECT/INSERT på appens tabeller (behövs inte av appen; driftfunktioner körs som funktionsägare).
+- "Enable automatic RLS" skapade `public.rls_auto_enable()` (SECURITY DEFINER, event trigger). Den kan inte anropas som RPC; ingen åtgärd krävs, men den ska nämnas vid säkerhetsgranskning.
+- Röktest `tests/staging/staging_smoke.test.ts` 5/5. Secret-nyckeln hämtas via CLI inne i testprocessen enbart för att skapa/radera bekräftade testkonton; den skrivs aldrig till fil eller logg.
+
 ## 4. Kända risker och begränsningar
 
 | Risk | Bedömning / åtgärd |

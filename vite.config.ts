@@ -50,6 +50,11 @@ export default defineConfig({
         extends: true,
         test: { name: 'db', include: ['tests/db/**/*.test.ts'], environment: 'node', testTimeout: 30000, hookTimeout: 60000, fileParallelism: false },
       },
+      {
+        // Endast manuellt mot länkat staging-projekt; ingår inte i standardkörningen.
+        extends: true,
+        test: { name: 'staging', include: ['tests/staging/**/*.test.ts'], environment: 'node', testTimeout: 30000, hookTimeout: 60000 },
+      },
     ],
   },
 });
