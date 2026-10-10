@@ -1,0 +1,28 @@
+import {describe,it,expect} from 'vitest';
+import {ENGINE_VERSION,estimatedOneRepMax,roundDownKg,initialPrescription,recoveryGate,recommendNext,validateHeavyPair,urgencyForSpontaneous,estimateMinutes} from '../../src/domain/decision_engine';
+const base=initialPrescription({exerciseId:'bench_press',estimate:{kind:'1rm',kg:100},experience:'intermediate',mode:'heavy',increment:2.5});
+const done=(target=5,rir:number|null=3,kg=base.kg!)=>({kind:'work' as const,status:'done' as const,plannedKg:kg,actualKg:kg,plannedReps:target,actualReps:target,rir,technique:'controlled' as const});
+const exposure=(target=5,rir:number|null=3,kg=base.kg!)=>({exerciseId:'bench_press' as const,whenUtc:'2026-10-01T12:00:00Z',complete:true,plannedTargetReps:target,bandMax:7,sets:[done(target,rir,kg),done(target,rir,kg),done(target,rir,kg)],symptom:'none' as const});
+describe('STYRKA reference engine',()=>{
+ it('versions every recommendation',()=>expect(base.engineVersion).toBe(ENGINE_VERSION));
+ it('uses Epley for 3RM',()=>expect(estimatedOneRepMax({kind:'3rm',kg:90})).toBe(99));
+ it('rejects impossible initial estimate',()=>expect(()=>estimatedOneRepMax({kind:'1rm',kg:-3})).toThrow());
+ it('never rounds initial load upward',()=>expect(roundDownKg(77.499,2.5)).toBe(75));
+ it('intermediate initial bench is 77.5 kg',()=>expect(base.kg).toBe(77.5));
+ it('novice starts lighter',()=>expect(initialPrescription({exerciseId:'bench_press',estimate:{kind:'1rm',kg:100},experience:'novice',mode:'heavy',increment:2.5}).kg).toBe(65));
+ it('unknown strength gives calibration, no invented kg',()=>expect(initialPrescription({exerciseId:'squat',estimate:null,experience:'novice',mode:'heavy',increment:2.5}).kg).toBeNull());
+ it('assisted pull-ups cannot use a freeweight e1RM',()=>expect(initialPrescription({exerciseId:'assisted_pullup',estimate:{kind:'1rm',kg:100},experience:'novice',mode:'light',increment:5}).kg).toBeNull());
+ it('last heavy exposure within 24h gets caution',()=>expect(recoveryGate(20,'none',false).state).toBe('caution'));
+ it('symptom with functional decline blocks progression',()=>expect(recoveryGate(100,'limping',true).state).toBe('review_required'));
+ it('no routine bonus for 4 days rest',()=>expect(recoveryGate(96,'none',false).factor).toBe(1));
+ it('30d gap triggers cautious restart',()=>expect(recoveryGate(720,'none',false).factor).toBe(.9));
+ it('can increase target reps after quality success',()=>expect(recommendNext({previous:base,history:[exposure()],experience:'intermediate',increment:2.5,hoursSinceRelevant:72,relevantSymptoms:'none',impactedRegion:false}).reps).toBe(6));
+ it('does not increase after RIR 0',()=>expect(recommendNext({previous:base,history:[exposure(5,0)],experience:'intermediate',increment:2.5,hoursSinceRelevant:72,relevantSymptoms:'none',impactedRegion:false}).kg).toBe(base.kg));
+ it('holds if recovery is short',()=>expect(recommendNext({previous:base,history:[exposure()],experience:'intermediate',increment:2.5,hoursSinceRelevant:30,relevantSymptoms:'none',impactedRegion:false}).reps).toBe(base.reps));
+ it('user exercise block wins over prior success',()=>expect(recommendNext({previous:base,history:[exposure()],experience:'intermediate',increment:2.5,hoursSinceRelevant:72,relevantSymptoms:'none',impactedRegion:false,blockExercise:true}).kg).toBeNull());
+ it('unresolved limp blocks affected exercise even after 4 days',()=>expect(recommendNext({previous:base,history:[exposure()],experience:'intermediate',increment:2.5,hoursSinceRelevant:96,relevantSymptoms:'limping',impactedRegion:true}).state).toBe('review_required'));
+ it('forbidden squat-deadlift heavy combination is rejected',()=>expect(validateHeavyPair([{exerciseId:'squat',mode:'heavy',sets:4},{exerciseId:'deadlift',mode:'heavy',sets:3}],'squat','deadlift')).toBe(false));
+ it('heavy squat + light deadlift passes heavy-pair test',()=>expect(validateHeavyPair([{exerciseId:'squat',mode:'heavy',sets:4},{exerciseId:'deadlift',mode:'light',sets:2}],'squat','deadlift')).toBe(true));
+ it('extra session next day avoids heavy matching pattern',()=>expect(urgencyForSpontaneous({minutes:20,lastHeavyRelevantHours:20,symptom:'none'}).allowHeavy).toBe(false));
+ it('time estimator includes rest and warmup',()=>expect(estimateMinutes([{kind:'barbell_compound',mode:'heavy',sets:3,firstBarbell:true}])).toBeGreaterThan(12));
+});

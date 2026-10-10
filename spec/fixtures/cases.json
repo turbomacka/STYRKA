@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0.0",
+  "purpose": "Normativa deterministiska motorexempel och kvalitetsfall",
+  "cases": [
+    {"id":"P01","description":"3RM 90 kg => e1RM 99 kg","input":{"kind":"3rm","kg":90},"expected":{"e1rm":99}},
+    {"id":"P02","description":"Nybörjare bänk e1RM 100, tung start","input":{"exerciseId":"bench_press","experience":"novice","mode":"heavy","e1rm":100,"stepKg":2.5},"expected":{"kg":65,"sets":2,"targetReps":8}},
+    {"id":"P03","description":"Medelvan bänk e1RM 100, tung start","input":{"exerciseId":"bench_press","experience":"intermediate","mode":"heavy","e1rm":100,"stepKg":2.5},"expected":{"kg":77.5,"sets":3,"targetReps":5}},
+    {"id":"P04","description":"Okänd maxstyrka","input":{"exerciseId":"squat","estimate":null},"expected":{"kg":null,"reason":"CALIBRATION_REQUIRED"}},
+    {"id":"P05","description":"Två tunga benövningar förbjudna","input":{"restriction":"block_pair_heavy","exercises":["squat_heavy","deadlift_heavy"]},"expected":{"allowed":false}},
+    {"id":"P06","description":"Tung böj + lätt marklyft tillåtet enligt parregel","input":{"restriction":"block_pair_heavy","exercises":["squat_heavy","deadlift_light"]},"expected":{"allowed":true}},
+    {"id":"P07","description":"Hälta efter knäbelastning","input":{"affected":"knee","symptom":"limping","exerciseId":"squat"},"expected":{"state":"review_required","autoIncrease":false}},
+    {"id":"P08","description":"Spontanpass 20 timmar efter tung benbelastning","input":{"minutes":20,"relevantHours":20},"expected":{"automaticallyRecommendHeavySameMovement":false}},
+    {"id":"P09","description":"Fyramånadershistorik med offlineperiod","input":{"offlineEvents":10,"replayedEvents":10},"expected":{"uniqueCommittedEvents":10}},
+    {"id":"P10","description":"Konton A och B","input":{"actor":"A","resourceOwner":"B"},"expected":{"select":false,"insert":false,"update":false,"delete":false}},
+    {"id":"P11","description":"Klart set klickas två gånger","input":{"eventId":"same-id","retries":2},"expected":{"savedWorkSets":1}},
+    {"id":"P12","description":"Pass avbryts efter 1 av 3 planerade set","input":{"plannedSets":3,"doneSets":1,"voluntaryAbort":true},"expected":{"treatAsFailure":false}}
+  ]
+}

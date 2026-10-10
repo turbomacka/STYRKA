@@ -1,0 +1,99 @@
+{
+  "name": "STYRKA utvecklingspaket",
+  "version": "2.0.0",
+  "created_at": "2026-10-10",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "be6100a434e41a2e5342a871ce521936e3374571089b61e631bf7aa24ff150f1"
+    },
+    {
+      "path": "STARTA_HAR_KODAGENT.md",
+      "sha256": "4b8d02200b84686d89b3647d90e0e2ca54d48bde38effc549a3fa86b45c19a89"
+    },
+    {
+      "path": "STYRKA_FULLSPEC_v2.md",
+      "sha256": "c2db53ca4ef6c9dad0a1bf3d09bf4bde617db04266869279a8842c3caab12852"
+    },
+    {
+      "path": "VERIFIERINGSRAPPORT.md",
+      "sha256": "4c9075dc53e0c9debb8ac997ece24973e7744c05e3350d26efd4f67c5782838e"
+    },
+    {
+      "path": "db/001_schema.sql",
+      "sha256": "24b5781fb541218e57a03dab84eaf157a9f9fe0461e80f9feff5e024bd1c0d8e"
+    },
+    {
+      "path": "db/002_seed_catalog.sql",
+      "sha256": "e79850a1c1863d373c2ca7d4274694bd952247461bbccbe69582ef2590a732c2"
+    },
+    {
+      "path": "docs/01_PRODUKT_OCH_UX.md",
+      "sha256": "62b1664a1dcbee38288189f076ff9aedda42b19cb52ceee34d808ede9912d5a0"
+    },
+    {
+      "path": "docs/02_ALGORITM_OCH_PLANERING.md",
+      "sha256": "3d6426de22ed839d42d2ad9833a560e5fbb592e24912987a0e73d83811f59056"
+    },
+    {
+      "path": "docs/03_DATA_API_SAKERHET.md",
+      "sha256": "79c31c2e00f4638a8665523ef13882f7461563c928822dcf1de9cd2924fdd20e"
+    },
+    {
+      "path": "docs/04_TEST_ACCEPTANS_DRIFT.md",
+      "sha256": "78028b6bd4ea091e1c2a4e71b2bd699485f6501ad0b461ed05981dff2f1e99d2"
+    },
+    {
+      "path": "docs/05_EVIDENS_OCH_BESLUT.md",
+      "sha256": "3059d4decbf6e8c9bc80babf5b5a8765b383542b65274cb9cbf2154d69d3c54a"
+    },
+    {
+      "path": "docs/06_AGENT_INSTRUKTION.md",
+      "sha256": "8a5b313a1cc08598e6785524ee1cc60d75d393a1367f85ba9c4f4b4dab23df69"
+    },
+    {
+      "path": "docs/07_SPÅRBARHET.md",
+      "sha256": "43ade7ece7bd0f95a586c6e5354a8388a499608211ef62ffe13172a38ee5fdca"
+    },
+    {
+      "path": "docs/08_EXAKT_PLANERARE.md",
+      "sha256": "962e1519a9ee72afc1104595521cc77cd37d50838cb15073af6c8d872c8cd62c"
+    },
+    {
+      "path": "docs/09_IDEMPOTENT_TRANSAKTION.md",
+      "sha256": "330a7820367cc0b766e02ffde409e727288e3ee1e2de269e160d3e8a1e158087"
+    },
+    {
+      "path": "docs/10_UI_KOMPONENTER_OCH_TEXTER.md",
+      "sha256": "6099b0a2fbe91e00e245229b729195b631224b50f2eb772248e80842d668f316"
+    },
+    {
+      "path": "fixtures/cases.json",
+      "sha256": "fb04796fc49ac27c638e4f3617905505c4ec5d5b7257cf001ee0ebfb374bffba"
+    },
+    {
+      "path": "fixtures/planner_templates.json",
+      "sha256": "1553ee88c8764561031fae17744dc99561944a6a5ac42844be5a56b290950260"
+    },
+    {
+      "path": "package.json",
+      "sha256": "ff9dece3eac35baba0e08960a5fced8e100081adb46808fde22d839f212aab75"
+    },
+    {
+      "path": "src/decision_engine.ts",
+      "sha256": "a7d13b490078dd813a1f6ea87b82aa45e18cc78a39563fcd3cfabc41b923fae2"
+    },
+    {
+      "path": "tests/engine.test.ts",
+      "sha256": "8c36139c333fb1c02e6c66fdb9c4b4effde96f5e36255991e54e983a03d080dd"
+    },
+    {
+      "path": "tests/smoke.node.cjs",
+      "sha256": "881bafb738b2d118d29518691439f49e17654b1e3c0d99ca853cb6ab72426cce"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "8b9938957000351025fa02b259fcbf35a2c826cd94b9abdbccb9a8aada968299"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "version":"1.0.0",
+  "note":"Deterministiska startmallar. H-regler; motorn tillämpar utrustning, begränsningar, nivå och tidsbudget före visning. main/heavy beskriver planeringsroll, inte klinisk säkert läge.",
+  "exerciseSets":{"mainHeavy":3,"deadliftHeavy":2,"moderate":2,"light":2,"accessory":2},
+  "splits":{
+    "1":["single_A","single_B","single_C"],
+    "2":["A","B","C"],
+    "3":["A","B","C"],
+    "4":["lower_squat","upper_bench","lower_deadlift","upper_press"],
+    "5":["lower_squat","upper_bench","lower_deadlift","upper_pull","mixed_light"],
+    "6":["lower_squat","upper_bench","lower_deadlift","upper_pull","mixed_light","upper_press"],
+    "7":["lower_squat","upper_bench","lower_deadlift","upper_pull","mixed_light","upper_press","short_accessories"]
+  },
+  "templates":{
+    "A":[["squat","heavy",3],["bench_press","moderate",3],["lat_pulldown","moderate",2],["cable_lateral_raise","light",2]],
+    "B":[["bench_press","heavy",3],["deadlift","light",2],["lat_pulldown","moderate",2],["biceps_curl","light",2],["triceps_pushdown","light",2]],
+    "C":[["deadlift","heavy",2],["squat","light",2],["overhead_press","moderate",3],["lat_pulldown","moderate",2],["cable_lateral_raise","light",2]],
+    "single_A":[["squat","heavy",3],["bench_press","moderate",2],["lat_pulldown","moderate",2]],
+    "single_B":[["bench_press","heavy",3],["romanian_deadlift","moderate",2],["cable_row","moderate",2]],
+    "single_C":[["deadlift","heavy",2],["overhead_press","moderate",2],["lat_pulldown","moderate",2]],
+    "lower_squat":[["squat","heavy",3],["romanian_deadlift","light",2],["cable_crunch","light",2]],
+    "upper_bench":[["bench_press","heavy",3],["lat_pulldown","moderate",3],["cable_lateral_raise","light",2]],
+    "lower_deadlift":[["deadlift","heavy",2],["squat","light",2],["cable_crunch","light",2]],
+    "upper_press":[["overhead_press","heavy",3],["cable_row","moderate",3],["triceps_pushdown","light",2]],
+    "upper_pull":[["lat_pulldown","moderate",3],["chest_supported_row","moderate",2],["biceps_curl","light",2]],
+    "mixed_light":[["bench_press","light",2],["split_squat","light",2],["cable_lateral_raise","light",2]],
+    "short_accessories":[["cable_lateral_raise","light",2],["biceps_curl","light",2],["triceps_pushdown","light",2]]
+  },
+  "replacementFamilies":{
+    "lat_pulldown":["assisted_pullup","pullup"],
+    "cable_row":["chest_supported_row"],
+    "deadlift":["romanian_deadlift"],
+    "squat":["leg_press","split_squat"],
+    "cable_lateral_raise":[]
+  },
+  "minimumPassMinutes":15,
+  "maximumPassMinutes":120
+}
