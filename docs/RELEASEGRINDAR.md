@@ -12,6 +12,8 @@
 
 **ÄA-PLAN-001 (2026-10-11):** migration 006 tillämpad på staging före frontend (version `c47b2336`). Röktest API **7/7** (inkl. planrevisioner/anteckningar: RLS, append-only, hälsoradering), webbläsare **4/4**. Inga syntetiska testkonton kvar.
 
+**ÄA-BAL-001 (2026-10-12):** migration 007 tillämpad på staging före frontend (version `e59e3e66`). Röktest API **8/8** (inkl. balansbeslut med RLS), webbläsare **4/4**. Inga syntetiska testkonton kvar.
+
 | Grind | Status | Kommentar |
 |---|---|---|
 | **G0 Byggbar** | ✅ lokalt | `npm ci`, lint, typecheck, enhetstester, migrationer på lokal Supabase, inga hemligheter i repo/bygge. CI-flöde finns (`.github/workflows/ci.yml`) men har inte körts – repot har ingen fjärr-remote. |
