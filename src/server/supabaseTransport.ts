@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { EquipmentSlug } from '../domain/catalog';
 import type { ServerTable } from '../storage/db';
-import { TransportError, type MutationEnvelope, type ProfilePatchResult, type ServerSnapshot, type SyncTransport } from './transport';
+import { TransportError, type MutationEnvelope, type NoteSaveResult, type ProfilePatchResult, type ServerSnapshot, type SyncTransport } from './transport';
 
 type PgError = { message?: string; code?: string; status?: number } | null;
 
@@ -71,6 +71,21 @@ export class SupabaseTransport implements SyncTransport {
     return { status: 'conflict', revision: (existing as { revision: number }).revision, server: existing as Record<string, unknown> };
   }
 
+  /** baseRevision 0 = ny anteckning. Konflikt om servern har en annan revision än den klienten byggde på. */
+  async saveNote(row: Record<string, unknown>, baseRevision: number): Promise<NoteSaveResult> {
+    const { body, updated_at } = row as { body: string; updated_at: string };
+    if (baseRevision > 0) {
+      const updated = await guard(this.sb.from('notebook_notes').update({ body, updated_at, revision: baseRevision + 1 }).eq('id', row.id as string).eq('revision', baseRevision).select('revision'));
+      if (updated && updated.length === 1) return { status: 'applied', revision: (updated[0] as { revision: number }).revision };
+    } else {
+      const inserted = await guard(this.sb.from('notebook_notes').upsert({ ...row, revision: 1 }, { onConflict: 'id', ignoreDuplicates: true }).select('revision'));
+      if (inserted && inserted.length === 1) return { status: 'applied', revision: 1 };
+    }
+    const existing = (await guard(this.sb.from('notebook_notes').select('*').eq('id', row.id as string).maybeSingle())) as Record<string, unknown> | null;
+    if (!existing) throw new TransportError('VALIDATION_ERROR', 'note_missing');
+    return { status: 'conflict', revision: existing.revision as number, server: existing };
+  }
+
   async replaceEquipment(userId: string, equipment: EquipmentSlug[]): Promise<void> {
     if (equipment.length) {
       await guard(this.sb.from('user_equipment').upsert(equipment.map((e) => ({ user_id: userId, equipment_slug: e })), { onConflict: 'user_id,equipment_slug', ignoreDuplicates: true }));
@@ -124,6 +139,8 @@ export class SupabaseTransport implements SyncTransport {
     };
     const calibrations = await optional('user_exercise_calibrations');
     const substitutionEvents = await optional('session_exercise_substitution_events');
-    return { profile, equipment: equipment.map((e) => e.equipment_slug as string), exerciseProfiles, consents, restrictions, symptoms, programs, sessions, sessionExercises, sets, audits, calibrations, substitutionEvents };
+    const planRevisions = await optional('plan_revisions');
+    const notes = await optional('notebook_notes');
+    return { profile, equipment: equipment.map((e) => e.equipment_slug as string), exerciseProfiles, consents, restrictions, symptoms, programs, sessions, sessionExercises, sets, audits, calibrations, substitutionEvents, planRevisions, notes };
   }
 }

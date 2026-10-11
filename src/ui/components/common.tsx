@@ -26,6 +26,8 @@ export const Icon = {
   Minus: svg(<path d="M5 12h14" />),
   Pause: svg(<path d="M9 5v14M15 5v14" />),
   Swap: svg(<path d="M7 7h12l-3-3M17 17H5l3 3" />),
+  List: svg(<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" />),
+  Print: svg(<><path d="M7 9V3h10v6" /><rect x="3" y="9" width="18" height="8" rx="2" /><path d="M7 14h10v7H7z" /></>),
   Lock: svg(<><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></>),
 };
 

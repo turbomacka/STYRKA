@@ -4,6 +4,44 @@ Miljö: Windows 10, Node 22.13, lokal Supabase (Postgres 17.11, GoTrue 2.197, Po
 
 Senare rättning ovanpå `97ee461`, publicerad på staging 2026-10-11: se [Rättningar efter granskningen](RATTNINGAR_2026-10-11.md) för F1–F6, förenklad mobilinloggning och aktuell verifiering. Stagingresultaten i tabellen nedan gäller den tidigare versionen.
 
+## ÄA-PLAN-001 "Min träningsplan" (2026-10-11)
+
+| Nivå | Kommando | Resultat |
+|---|---|---|
+| Referenssmoke | `npm run test:reference` | **26/26 PASS** |
+| Enhet, komponent, DB | `npm test` | **236/236 PASS**, 22 filer (inkl. 2 100-planers regression mot `3ec01ef` – oförändrad) |
+| E2E | `playwright test` | **82 PASS, 2 SKIP** (samma två WebKit-undantag), 6,4 min |
+| Lint / typecheck | | 0 fel |
+
+| ID | Test | Resultat |
+|---|---|---|
+| PL01 | unit `training_plan` › 36 pass i A/B/C-ordning, inga datum, ca vecka 18 | PASS |
+| PL02 | unit › pass 20 strukturellt utan `kg`; E2E `plan` › "Vikt beräknas närmare passet", ingen kg-siffra | PASS |
+| PL03 | unit › nästa pass = befintlig rekommendation med motor-/regelversion; E2E › "Rekommenderad vikt", öppnas i förhandsvisningen | PASS |
+| PL04 | unit › ingen vikt utan uppskattning, kalibreringsläge i hela planen | PASS |
+| PL05 | unit › verkliga set i Genomförda, revision `SESSION_COMPLETED`, gamla set oförändrade; E2E | PASS |
+| PL06 | unit › delvis pass: bara utförda set; E2E › "Delvis genomfört", "Inte utfört" | PASS |
+| PL07 | unit › spontanpass: revision `EXTRA_SESSION_COMPLETED`, rotation/nummer oförändrade, nästa rekommendation påverkas | PASS |
+| PL08 | unit › "räkna som ordinarie" (befintligt villkor uppfyllt): revision `EXTRA_COUNTED_AS_PLANNED`, nummer +1, andra försök nekas | PASS |
+| PL09–PL10 | unit › 3 pass/vecka och 25 min: ny sekvens, genomförda pass/nummer/snapshots/set identiska | PASS |
+| PL11 | unit › kombinationsregel respekteras i alla 72 framtida pass | PASS |
+| PL12 | unit › knäböj → frontböj framöver: frontböj i planen (kalibrering), knäböjens set orörda | PASS |
+| PL13–PL14 | unit › anteckning på pass 25 följer passplatsen; passanteckning ändras/raderas utan att set påverkas; HTML som ren text; E2E | PASS |
+| PL15 | unit › tre revisioner, äldre öppnas oförändrade med orsak; E2E › "Tidigare planversioner" | PASS |
+| PL16–PL17 | unit › upprepad öppning/expansion skapar ingen revision; två månader utan träning ⇒ inget "missat" | PASS |
+| PL18–PL19 | unit › offline anteckning + set, omstartad synk med tre tappade kvittenser ⇒ en anteckning (revision 1), inga dubbletter; db › villkorad sparning mot Supabase | PASS |
+| PL20 | unit › två enheter ⇒ konflikt (`note`), servern orörd tills användaren väljer | PASS |
+| PL21 | db `training_plan_db` › RLS: B/anon ser/ändrar/raderar inget av A:s; sammansatt FK; revisioner append-only | PASS |
+| PL22 | E2E › utskrift av 36 kommande pass, "Ögonblicksbild – framtida plan kan ändras · Skapad …", skrivrader | PASS |
+| PL23 | E2E › Genomförda skrivs ut utan anteckningar som standard, med efter aktivt val; unit › JSON-export | PASS |
+| PL24 | unit › 72 framtida + 500 historiska: sidindelning 30 åt gången utan dubbletter/luckor, mätt tid under gräns | PASS |
+| PL25 | unit › planändring under pågående pass: passets övningar och set identiska, ny revision för framtiden | PASS |
+| PL26 | unit › revisioner innehåller aldrig vikter; E2E › "Rekommenderad vikt", "Utfört", "Rekommenderat då" åtskilda | PASS |
+| PL27 | unit + db › hälsoradering tar bort anteckningar lokalt och på servern; set bevaras; revisioner saknar anteckningstext | PASS |
+| PL28 | unit › 37 genomförda pass ⇒ planen fortsätter från pass 38 | PASS |
+
+Inte verifierat här: Safari på riktig iPhone och fysisk Android (ljust/mörkt, utan nät). Kvarstår, se RELEASEGRINDAR.
+
 ## Senaste körning: substitutionskatalog 1.2.0 (2026-10-11)
 
 Seed-filen 1.2.0 är enda källan (tre beslutade par införda, undantagskoden borttagen). Algoritm, rekommendationsmotor och historik oförändrade.

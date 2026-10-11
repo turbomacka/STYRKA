@@ -6,7 +6,7 @@
  * - Revisionskonflikt ⇒ explicit konfliktpost, ingen tyst last-write-wins. Andra poster synkas oberoende.
  * - Nätverks-/serverfel ⇒ exponentiell backoff; kön ligger kvar.
  */
-import { applyServerSetValues, consentFromRow, exerciseSettingsFromRow, profileFromRow, programFromRow, restrictionFromRow, sessionExerciseFromRow, sessionFromRow, setFromRow, setFullPatch, symptomFromRow, auditFromRow, profileRow, calibrationFromRow, substitutionEventFromRow } from '../server/mapping';
+import { applyServerSetValues, consentFromRow, exerciseSettingsFromRow, profileFromRow, programFromRow, restrictionFromRow, sessionExerciseFromRow, sessionFromRow, setFromRow, setFullPatch, symptomFromRow, auditFromRow, profileRow, calibrationFromRow, substitutionEventFromRow, noteFromRow, noteRow, planRevisionFromRow } from '../server/mapping';
 import { TransportError } from '../server/transport';
 import type { ConflictEntry, LocalProfile, LocalSet, OutboxEntry, ServerTable, SyncState } from '../storage/db';
 import type { ExerciseId } from '../domain/catalog';
@@ -236,6 +236,37 @@ export class SyncEngine {
         await transport.eraseHealthData();
         await this.ack(entry);
         return 'applied';
+      case 'note': {
+        // Villkorad sparning mot förväntad revision; förlorad kvittens ⇒ samma text på servern ⇒ tillämpat.
+        let base = op.baseRevision;
+        if (base === undefined) {
+          base = (await db.notes.get(op.noteId))?.revision ?? 0;
+          await db.outbox.update(entry.seq!, { op: { ...op, baseRevision: base } });
+        }
+        let r = await transport.saveNote(op.row, base);
+        if (r.status === 'conflict' && r.server.body === op.row.body) r = { status: 'applied', revision: r.revision };
+        if (r.status === 'applied') {
+          const rev = r.revision;
+          await db.transaction('rw', [db.outbox, db.notes], async () => {
+            await db.outbox.delete(entry.seq!);
+            for (const later of await db.outbox.where('recordId').equals(op.noteId).toArray()) {
+              if (later.op.type === 'note' && later.op.baseRevision !== undefined && later.op.baseRevision === base) await db.outbox.update(later.seq!, { op: { ...later.op, baseRevision: rev } });
+            }
+            const remaining = await db.outbox.where('recordId').equals(op.noteId).count();
+            const n = await db.notes.get(op.noteId);
+            if (n) await db.notes.put({ ...n, revision: Math.max(n.revision, rev), syncState: remaining ? 'queued' : 'synced' });
+          });
+          return 'applied';
+        }
+        const conflict = r;
+        await db.transaction('rw', [db.outbox, db.notes, db.conflicts], async () => {
+          await db.outbox.update(entry.seq!, { status: 'conflict', lastError: 'REVISION_CONFLICT' });
+          const n = await db.notes.get(op.noteId);
+          if (n) await db.notes.put({ ...n, syncState: 'conflict' });
+          await db.conflicts.put({ id: `note:${op.noteId}`, recordType: 'note', recordId: op.noteId, local: { body: op.row.body }, server: conflict.server, serverRevision: conflict.revision, eventId: entry.eventId, detectedAt: this.ctx.clock.now() });
+        });
+        return 'conflict';
+      }
       case 'profile': {
         let base = op.baseRevision;
         if (base === undefined) {
@@ -280,6 +311,7 @@ export class SyncEngine {
       restriction_rules: 'restrictions', programs: 'programs', training_sessions: 'sessions',
       session_exercises: 'sessionExercises', symptom_reports: 'symptoms', recommendation_audits: 'audits',
       user_exercise_calibrations: 'calibrations', session_exercise_substitution_events: 'substitutionEvents',
+      plan_revisions: 'planRevisions', notebook_notes: 'notes',
     };
     const table = db.table<{ syncState: SyncState }, string>(localTables[entry.op.table]);
     const id = (entry.op.row.id ?? entry.op.row.user_id) as string;
@@ -295,7 +327,7 @@ export class SyncEngine {
    */
   async resolveConflict(conflictId: string, choice: 'mine' | 'server'): Promise<void> {
     const db = this.ctx.db;
-    await db.transaction('rw', [db.conflicts, db.outbox, db.sets, db.profile], async () => {
+    await db.transaction('rw', [db.conflicts, db.outbox, db.sets, db.profile, db.notes], async () => {
       const c = await db.conflicts.get(conflictId);
       if (!c) return;
       const pending = await db.outbox.where('recordId').equals(c.recordId).toArray();
@@ -309,6 +341,17 @@ export class SyncEngine {
             const updated: LocalSet = { ...s, serverRevision: c.serverRevision, syncState: 'queued' };
             await db.sets.put(updated);
             await db.outbox.add({ ...outbox(this.ctx, s.id, { type: 'set', setId: s.id, create: false, payload: setFullPatch(updated), baseRevision: c.serverRevision }) });
+          }
+        }
+      } else if (c.recordType === 'note') {
+        const n = await db.notes.get(c.recordId);
+        if (n) {
+          if (choice === 'server') {
+            await db.notes.put({ ...noteFromRow(c.server), syncState: 'synced' });
+          } else {
+            const upd = { ...n, revision: c.serverRevision, syncState: 'queued' as const };
+            await db.notes.put(upd);
+            await db.outbox.add(outbox(this.ctx, n.id, { type: 'note', noteId: n.id, row: noteRow(this.ctx.userId, upd), baseRevision: c.serverRevision }));
           }
         }
       } else {
@@ -355,7 +398,7 @@ export class SyncEngine {
     const { db, transport, userId } = this.ctx;
     // Bara poster som var synkade före hämtningen får avstämmas som raderade.
     // En lokal ändring/ny synk under nätanropet får inte försvinna på grund av en äldre serverbild.
-    const [beforeRestrictions, beforeSymptoms, beforeQueue] = await Promise.all([db.restrictions.toArray(), db.symptoms.toArray(), db.outbox.toArray()]);
+    const [beforeRestrictions, beforeSymptoms, beforeQueue, beforeNotes] = await Promise.all([db.restrictions.toArray(), db.symptoms.toArray(), db.outbox.toArray(), db.notes.toArray()]);
     const beforePending = new Set(beforeQueue.map((e) => e.recordId));
     // Äldre versioner tog bort kvitterade köposter men lämnade raderna märkta 'queued'.
     const wasSynced = (r: { id: string; syncState: SyncState }) => r.syncState === 'synced' || (r.syncState === 'queued' && !beforePending.has(r.id));
@@ -381,7 +424,7 @@ export class SyncEngine {
       }
     }
     const seIndex = new Map(snap.sessionExercises.map((se) => [se.id as string, { sessionId: se.session_id as string, exerciseId: se.exercise_slug as ExerciseId }]));
-    await db.transaction('rw', [db.profile, db.exerciseSettings, db.restrictions, db.symptoms, db.consents, db.programs, db.sessions, db.sessionExercises, db.sets, db.audits, db.meta, db.calibrations, db.substitutionEvents, db.outbox], async () => {
+    await db.transaction('rw', [db.profile, db.exerciseSettings, db.restrictions, db.symptoms, db.consents, db.programs, db.sessions, db.sessionExercises, db.sets, db.audits, db.meta, db.calibrations, db.substitutionEvents, db.outbox, db.planRevisions, db.notes], async () => {
       const queued = await db.outbox.toArray();
       const pendingIds = new Set(queued.map((e) => e.recordId));
       const keep = <T extends { syncState: string; id?: string; userId?: string }>(local: T | undefined) => {
@@ -426,6 +469,13 @@ export class SyncEngine {
       for (const r of snap.audits) if (!keep(await db.audits.get(r.id as string))) await db.audits.put(auditFromRow(r));
       for (const r of snap.calibrations ?? []) if (!keep(await db.calibrations.get(r.id as string))) await db.calibrations.put(calibrationFromRow(r));
       for (const r of snap.substitutionEvents ?? []) if (!keep(await db.substitutionEvents.get(r.id as string))) await db.substitutionEvents.put(substitutionEventFromRow(r));
+      // ÄA-PLAN-001: planrevisioner (oföränderliga) och anteckningar; anteckningar raderade på servern (t.ex. hälsoradering) tas bort lokalt.
+      for (const r of snap.planRevisions ?? []) if (!(await db.planRevisions.get(r.id as string))) await db.planRevisions.put(planRevisionFromRow(r));
+      const noteIds = new Set((snap.notes ?? []).map((r) => r.id));
+      for (const old of beforeNotes) {
+        if (wasSynced(old) && !noteIds.has(old.id) && sameValue(old, await db.notes.get(old.id))) await db.notes.delete(old.id);
+      }
+      for (const r of snap.notes ?? []) if (!pendingErase && !keep(await db.notes.get(r.id as string))) await db.notes.put(noteFromRow(r));
       await db.meta.put({ key: 'lastPullAt', value: this.ctx.clock.now() });
     });
     this.emit();

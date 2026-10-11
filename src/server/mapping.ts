@@ -4,7 +4,7 @@ import type { ExerciseId } from '../domain/catalog';
 import { exercise, type Area, type EquipmentSlug } from '../domain/catalog';
 import type { ChoiceScope, Familiarity, LoadEstimationKind, PerceivedEffort, PlanSnapshot, PlannedExercise, Readiness, RuleKind, SessionKind, SessionStatus, SetKind, SetStatus, Side, SymptomReaction, Technique } from '../domain/model';
 import { decimalStringToGrams, gramsToDecimalString } from '../domain/units';
-import type { LocalAudit, LocalCalibration, LocalConsent, LocalExerciseSettings, LocalProfile, LocalProgram, LocalRestriction, LocalSession, LocalSessionExercise, LocalSet, LocalSubstitutionEvent, LocalSymptom } from '../storage/db';
+import type { LocalAudit, LocalCalibration, LocalConsent, LocalExerciseSettings, LocalNote, LocalPlanRevision, LocalProfile, LocalProgram, LocalRestriction, LocalSession, LocalSessionExercise, LocalSet, LocalSubstitutionEvent, LocalSymptom } from '../storage/db';
 
 const dec = (g: number | null): string | null => (g === null ? null : gramsToDecimalString(g));
 const grams = (v: unknown): number | null => (v === null || v === undefined ? null : decimalStringToGrams(String(v)));
@@ -217,6 +217,72 @@ export function sessionExerciseFromRow(r: Record<string, unknown>, replacedById:
     replacedById,
     replacesId: (r.recommendation_snapshot as PlannedExercise)?.substitution?.replacesSessionExerciseId ?? null,
     createdAt: r.created_at as string,
+    syncState: 'synced',
+  };
+}
+
+// ---- ÄA-PLAN-001 ----
+export function planRevisionRow(userId: string, r: LocalPlanRevision): Record<string, unknown> {
+  return {
+    id: r.id,
+    user_id: userId,
+    program_id: r.programId,
+    previous_revision_id: r.previousRevisionId,
+    base_sequence: r.baseSequence,
+    horizon: r.horizon,
+    change_type: r.changeType,
+    reason_codes: r.reasonCodes,
+    summary: r.summary,
+    inputs_hash: r.inputsHash,
+    input_parts: r.inputParts,
+    content_hash: r.contentHash,
+    engine_version: r.engineVersion,
+    planner_version: r.plannerVersion,
+    ruleset_version: r.rulesetVersion,
+    catalog_version: r.catalogVersion,
+    substitution_catalog_version: r.substitutionCatalogVersion,
+    slots: r.slots,
+    created_at: r.createdAt,
+  };
+}
+
+export function planRevisionFromRow(r: Record<string, unknown>): LocalPlanRevision {
+  return {
+    id: r.id as string,
+    programId: (r.program_id as string | null) ?? null,
+    previousRevisionId: (r.previous_revision_id as string | null) ?? null,
+    baseSequence: r.base_sequence as number,
+    horizon: r.horizon as number,
+    changeType: r.change_type as string,
+    reasonCodes: (r.reason_codes as string[]) ?? [],
+    summary: (r.summary as string) ?? '',
+    inputsHash: r.inputs_hash as string,
+    inputParts: (r.input_parts as Record<string, string>) ?? {},
+    contentHash: r.content_hash as string,
+    engineVersion: r.engine_version as string,
+    plannerVersion: r.planner_version as string,
+    rulesetVersion: r.ruleset_version as string,
+    catalogVersion: r.catalog_version as string,
+    substitutionCatalogVersion: r.substitution_catalog_version as string,
+    slots: (r.slots as unknown[]) ?? [],
+    createdAt: new Date(r.created_at as string).toISOString(),
+    syncState: 'synced',
+  };
+}
+
+export function noteRow(userId: string, n: LocalNote): Record<string, unknown> {
+  return { id: n.id, user_id: userId, target_type: n.targetType, slot_sequence: n.slotSequence, session_id: n.sessionId, body: n.body, updated_at: n.updatedAt };
+}
+
+export function noteFromRow(r: Record<string, unknown>): LocalNote {
+  return {
+    id: r.id as string,
+    targetType: r.target_type as 'slot' | 'session',
+    slotSequence: (r.slot_sequence as number | null) ?? null,
+    sessionId: (r.session_id as string | null) ?? null,
+    body: (r.body as string) ?? '',
+    revision: (r.revision as number) ?? 1,
+    updatedAt: new Date(r.updated_at as string).toISOString(),
     syncState: 'synced',
   };
 }

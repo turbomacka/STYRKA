@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { canonicalJson } from '../../src/domain/hash';
 import type { EquipmentSlug } from '../../src/domain/catalog';
 import { openUserDb, type ServerTable, type StyrkaDB } from '../../src/storage/db';
-import { TransportError, type MutationEnvelope, type ProfilePatchResult, type ServerSnapshot, type SyncTransport } from '../../src/server/transport';
+import { TransportError, type MutationEnvelope, type NoteSaveResult, type ProfilePatchResult, type ServerSnapshot, type SyncTransport } from '../../src/server/transport';
 import type { AppContext, Clock } from '../../src/application/context';
 import { SyncEngine } from '../../src/application/sync';
 import { completeOnboarding, GYM_STANDARD, type OnboardingInput } from '../../src/application/profile';
@@ -89,6 +89,23 @@ export class FakeServer implements SyncTransport {
     this.maybeDrop();
     return { status: 'applied', revision: base + 1 };
   }
+  async saveNote(row: Record<string, unknown>, base: number): Promise<NoteSaveResult> {
+    this.check();
+    const t = this.table('notebook_notes');
+    const cur = t.get(row.id as string) as (Record<string, unknown> & { revision: number }) | undefined;
+    if (base > 0 && cur && cur.revision === base) {
+      t.set(row.id as string, { ...cur, body: row.body, updated_at: row.updated_at, revision: base + 1 });
+      this.maybeDrop();
+      return { status: 'applied', revision: base + 1 };
+    }
+    if (base === 0 && !cur) {
+      t.set(row.id as string, { ...row, revision: 1 });
+      this.maybeDrop();
+      return { status: 'applied', revision: 1 };
+    }
+    if (!cur) throw new TransportError('VALIDATION_ERROR', 'note_missing');
+    return { status: 'conflict', revision: cur.revision, server: { ...cur } };
+  }
   async replaceEquipment(userId: string, equipment: EquipmentSlug[]): Promise<void> {
     this.check();
     this.equipment.set(userId, [...equipment]);
@@ -97,6 +114,7 @@ export class FakeServer implements SyncTransport {
     this.check();
     this.table('symptom_reports').clear();
     this.table('restriction_rules').clear();
+    this.table('notebook_notes').clear();
   }
   async deleteAccount(): Promise<void> {
     this.check();
@@ -141,6 +159,8 @@ export class FakeServer implements SyncTransport {
       audits: rows('recommendation_audits'),
       calibrations: rows('user_exercise_calibrations'),
       substitutionEvents: rows('session_exercise_substitution_events'),
+      planRevisions: rows('plan_revisions'),
+      notes: rows('notebook_notes'),
     };
   }
 }

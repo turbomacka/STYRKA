@@ -113,6 +113,7 @@ export function ConflictResolver({ conflict, onResolve }: { conflict: ConflictEn
   const [busy, setBusy] = useState(false);
   const fmt = (v: Record<string, unknown>) => {
     if (conflict.recordType === 'profile') return `${v.planned_sessions_per_week ?? '?'} pass/vecka, ${v.minutes_per_session ?? '?'} min`;
+    if (conflict.recordType === 'note') return String(v.body ?? '') || '(tom anteckning)';
     const kg = v.actualKg === null || v.actualKg === undefined ? '–' : `${String(v.actualKg).replace(/\.?0+$/, '').replace('.', ',')} kg`;
     const reps = v.actualReps ?? v.actualSeconds ?? '–';
     return `${kg} × ${reps}${v.deleted ? ' (borttaget)' : ''}${v.status && v.status !== 'done' ? ` (${v.status === 'planned' ? 'ångrat' : 'överhoppat'})` : ''}`;
@@ -127,7 +128,7 @@ export function ConflictResolver({ conflict, onResolve }: { conflict: ConflictEn
   };
   return (
     <div className="card stack">
-      <p>{conflict.recordType === 'profile' ? 'Dina inställningar har ändrats på en annan enhet. Välj vilken version du vill behålla.' : T.WARN_CONFLICT}</p>
+      <p>{conflict.recordType === 'profile' ? 'Dina inställningar har ändrats på en annan enhet. Välj vilken version du vill behålla.' : conflict.recordType === 'note' ? 'Din anteckning har ändrats på en annan enhet. Välj vilken version du vill behålla.' : T.WARN_CONFLICT}</p>
       <div className="row wrap">
         <div className="grow card">
           <div className="label">Den här enheten</div>

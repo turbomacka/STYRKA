@@ -15,6 +15,7 @@ import { Spontaneous } from './screens/Spontaneous';
 import { Train } from './screens/Train';
 import { Finish } from './screens/Finish';
 import { Progress } from './screens/Progress';
+import { Plan } from './screens/Plan';
 import { ExerciseSettingsScreen, Profile } from './screens/Profile';
 import { DataAccount, Restrictions, SyncScreen } from './screens/Account';
 import { Privacy } from './screens/Privacy';
@@ -107,6 +108,7 @@ function BottomTabs() {
     <nav className="tabs" aria-label="Huvudmeny">
       <ul>
         {tab('/', 'Idag', Icon.Today)}
+        {tab('/plan', 'Plan', Icon.List)}
         {tab('/utveckling', 'Utveckling', Icon.Chart)}
         {tab('/profil', 'Profil', Icon.Person)}
       </ul>
@@ -161,6 +163,7 @@ function Authed({ onSignedOut }: { onSignedOut: () => Promise<void> }) {
         <Route path="/spontan" element={<Spontaneous />} />
         <Route path="/pass/:id" element={<Train />} />
         <Route path="/pass/:id/avsluta" element={<Finish />} />
+        <Route path="/plan" element={<Plan />} />
         <Route path="/utveckling" element={<Progress />} />
         <Route path="/profil" element={<Profile />} />
         <Route path="/profil/ovningar" element={<ExerciseSettingsScreen />} />

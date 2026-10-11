@@ -95,6 +95,9 @@ export function Today() {
           {T.CTA_EXTRA}
         </button>
       )}
+      <Link to="/plan?flik=kommande" className="small">
+        Visa hela planen
+      </Link>
       <p className="small muted">{T.DISCLAIMER}</p>
     </div>
   );

@@ -116,6 +116,20 @@ describe('staging', () => {
     expect(await rpc(A, randomUUID(), s2, 1, { perceivedEffort: 'max' })).toMatchObject({ status: 'rejected', code: 'VALIDATION_ERROR' });
   });
 
+  it('migration 006: planrevisioner (append-only) och anteckningar med ägar-RLS; hälsoradering tar anteckningar', async () => {
+    const rev = { id: randomUUID(), user_id: A.id, base_sequence: 1, horizon: 72, change_type: 'INITIAL', reason_codes: ['INITIAL'], summary: 'x', inputs_hash: 'a'.repeat(64), content_hash: 'b'.repeat(64), engine_version: '1.0.0', planner_version: 'p', ruleset_version: 'r', catalog_version: 'c', substitution_catalog_version: 's', slots: [] };
+    expect((await A.c.from('plan_revisions').insert(rev)).error).toBeNull();
+    expect((await A.c.from('plan_revisions').update({ summary: 'y' }).eq('id', rev.id)).error).not.toBeNull();
+    const note = randomUUID();
+    expect((await A.c.from('notebook_notes').insert({ id: note, user_id: A.id, target_type: 'session', session_id: sess, body: 'Test' })).error).toBeNull();
+    for (const t of ['plan_revisions', 'notebook_notes']) {
+      expect((await B.c.from(t).select('id').eq('user_id', A.id)).data ?? [], t).toEqual([]);
+      expect((await client().from(t).select('id')).data ?? [], t).toEqual([]);
+    }
+    expect((await A.c.rpc('erase_health_data')).data).toMatchObject({ status: 'applied', notebookNotes: 1 });
+    expect((await A.c.from('notebook_notes').select('id')).data).toEqual([]);
+  });
+
   it('kontoradering tar bort kontot (körs även som städning)', async () => {
     const C = await user('c');
     await C.c.from('profiles').insert({ user_id: C.id, adult_confirmed: true });

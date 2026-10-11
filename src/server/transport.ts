@@ -27,6 +27,9 @@ export class TransportError extends Error {
   }
 }
 
+/** Anteckning sparas villkorat mot förväntad revision (ingen tyst sista-skrivning-vinner). */
+export type NoteSaveResult = { status: 'applied'; revision: number } | { status: 'conflict'; revision: number; server: Record<string, unknown> };
+
 export type ProfilePatchResult = { status: 'applied'; revision: number } | { status: 'conflict'; revision: number; server: Record<string, unknown> };
 
 /** Rådata från servern (snake_case-rader) för hydrering av ny enhet. */
@@ -45,6 +48,9 @@ export type ServerSnapshot = {
   /** Tillägg CR 2026-10-10-01 (tomma listor mot äldre server). */
   calibrations: Record<string, unknown>[];
   substitutionEvents: Record<string, unknown>[];
+  /** Tillägg ÄA-PLAN-001 (tomma listor mot äldre server). */
+  planRevisions: Record<string, unknown>[];
+  notes: Record<string, unknown>[];
 };
 
 export interface SyncTransport {
@@ -52,6 +58,7 @@ export interface SyncTransport {
   upsert(table: ServerTable, row: Record<string, unknown>, opts?: { immutable?: boolean }): Promise<void>;
   remove(table: ServerTable, id: string, idColumn?: string): Promise<void>;
   patchProfile(userId: string, baseRevision: number, patch: Record<string, unknown>): Promise<ProfilePatchResult>;
+  saveNote(row: Record<string, unknown>, baseRevision: number): Promise<NoteSaveResult>;
   replaceEquipment(userId: string, equipment: EquipmentSlug[]): Promise<void>;
   eraseHealthData(): Promise<void>;
   deleteAccount(): Promise<void>;

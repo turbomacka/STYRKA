@@ -4,6 +4,7 @@ import { openUserDb } from '../storage/db';
 import { SupabaseTransport } from '../server/supabaseTransport';
 import { cryptoIds, systemClock, type AppContext } from '../application/context';
 import { SyncEngine, type SyncStatus } from '../application/sync';
+import { refreshFuturePlan } from '../application/trainingPlan';
 import type { SyncTransport } from '../server/transport';
 
 /** Feature flag (04 §4): stoppar viktförslag omedelbart utan att låsa historik eller export. */
@@ -64,7 +65,19 @@ export function ServicesProvider({ userId, email, supabase, transport, children 
       isOnline: () => onlineRef.current,
     };
     const sync = new SyncEngine(ctx);
-    ctx.onQueued = () => sync.request();
+    // ÄA-PLAN-001: framtidsplanen revideras i bakgrunden när indata ändrats (efter lokal ändring eller hämtning).
+    // Ingen revision skapas om indata är oförändrade; fel här påverkar aldrig träningsloggningen.
+    let planTimer: ReturnType<typeof setTimeout> | null = null;
+    const schedulePlan = () => {
+      if (planTimer) clearTimeout(planTimer);
+      planTimer = setTimeout(() => void refreshFuturePlan(ctx).catch(() => undefined), 1500);
+    };
+    ctx.onQueued = () => {
+      sync.request();
+      schedulePlan();
+    };
+    sync.subscribe(schedulePlan);
+    schedulePlan();
     return { ctx, sync };
   }, [userId, supabase, transport]);
 

@@ -59,7 +59,7 @@ Normhierarki enligt paketet: användarspärrar och säkerhetsgränser → numeri
 | evidensregister / metod | `EVIDENS/2.0.0` / `STYRKA-METOD/1.2.0` (`src/science/evidence.json` ur `spec/cr-2026-10-10-01/STYRKA_evidence_register.json`; publik sida `/vetenskap`) |
 | templateVersion | `1.0.0` (`fixtures/planner_templates.json`) |
 | privacyNoticeVersion | `PN-2026-10-v1-UTKAST` (ej juridiskt granskad) |
-| schemaMigration | `20261011000005` (additiva 004: kalibrering, revisionsposter, lastbas, upplevd ansträngning; 005: `barbell_row`, `lunge` inaktiv) |
+| schemaMigration | `20261011000006` (004: kalibrering, revisionsposter, lastbas, upplevd ansträngning; 005: `barbell_row`, `lunge` inaktiv; 006: planrevisioner och anteckningar – "Min träningsplan", `/plan`) |
 
 Feature flags (byggtid): `VITE_FLAG_LOAD_RECOMMENDATIONS=false` stänger av viktförslag utan att påverka historik eller export; `VITE_FLAG_SUBSTITUTION_V2=false` återgår till tidigare bytesvy (S09 v1). Se runbook för snabb rollback.
 

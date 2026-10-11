@@ -25,6 +25,9 @@ export type ExportBundle = {
   /** Tillägg CR 2026-10-10-01: kalibreringsnivå per övning och revisionsposter för övningsbyten. */
   exerciseCalibrations: unknown[];
   substitutionEvents: unknown[];
+  /** Tillägg ÄA-PLAN-001: privata anteckningar och planrevisioner (strukturell plan, inga framtidsvikter). */
+  notebookNotes: unknown[];
+  planRevisions: unknown[];
 };
 
 const strip = <T extends { syncState?: unknown }>(x: T) => {
@@ -35,7 +38,7 @@ const strip = <T extends { syncState?: unknown }>(x: T) => {
 /** Export omfattar källregistreringar, set, pass, planversion, rekommendationsgrunder och aktuell profil (35). */
 export async function exportJson(ctx: AppContext): Promise<ExportBundle> {
   const { db } = ctx;
-  const [profile, settings, consent, restrictions, symptoms, programs, sessions, exs, sets, audits, pending, calibrations, events] = await Promise.all([
+  const [profile, settings, consent, restrictions, symptoms, programs, sessions, exs, sets, audits, pending, calibrations, events, notes, revisions] = await Promise.all([
     db.profile.get(ctx.userId),
     db.exerciseSettings.toArray(),
     db.consents.get(ctx.userId),
@@ -49,6 +52,8 @@ export async function exportJson(ctx: AppContext): Promise<ExportBundle> {
     db.outbox.count(),
     db.calibrations.toArray(),
     db.substitutionEvents.toArray(),
+    db.notes.toArray(),
+    db.planRevisions.toArray(),
   ]);
   return {
     format: 'styrka-export',
@@ -73,6 +78,8 @@ export async function exportJson(ctx: AppContext): Promise<ExportBundle> {
     recommendationAudits: audits.map(strip),
     exerciseCalibrations: calibrations.map(strip),
     substitutionEvents: events.sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(strip),
+    notebookNotes: notes.filter((n) => n.body.length > 0).map(strip),
+    planRevisions: revisions.sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(strip),
   };
 }
 
@@ -101,9 +108,12 @@ export async function exportCsv(ctx: AppContext): Promise<string> {
 /** Radera hälsorelaterade uppgifter (symtom, begränsningar, samtycke) lokalt + på servern atomiskt. */
 export async function eraseHealthData(ctx: AppContext): Promise<void> {
   const { db } = ctx;
-  await db.transaction('rw', [db.symptoms, db.restrictions, db.consents, db.outbox], async () => {
-    // Köade men osända hälsoposter ska aldrig nå servern efter radering.
-    const ids = new Set([...(await db.symptoms.toCollection().primaryKeys()), ...(await db.restrictions.toCollection().primaryKeys()), `consent:${ctx.userId}`]);
+  await db.transaction('rw', [db.symptoms, db.restrictions, db.consents, db.outbox, db.notes, db.conflicts], async () => {
+    // Köade men osända hälsoposter ska aldrig nå servern efter radering. Anteckningar (fri text) räknas hit (ÄA-PLAN-001 PL27).
+    const noteIds = await db.notes.toCollection().primaryKeys();
+    const ids = new Set([...(await db.symptoms.toCollection().primaryKeys()), ...(await db.restrictions.toCollection().primaryKeys()), ...noteIds, `consent:${ctx.userId}`]);
+    for (const id of noteIds) await db.conflicts.delete(`note:${id}`);
+    await db.notes.clear();
     for (const e of await db.outbox.toArray()) if (ids.has(e.recordId)) await db.outbox.delete(e.seq!);
     await db.symptoms.clear();
     await db.restrictions.clear();

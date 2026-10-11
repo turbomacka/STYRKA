@@ -121,6 +121,23 @@ Ingen av relationerna har viktprior i någon riktning; historik och kalibrering 
 | H-S7 | Ensidig ny övning: tidsfaktor 2 för arbetsset (båda sidor). |
 | H-S8 | Ny maskinprofil för maskin-/kabelövning: separat historik och kalibrering; inga kg förs över. |
 
+## 3c. ÄA-PLAN-001 "Min träningsplan" (2026-10-11)
+
+Inga nya träningsregler. Framtidsplanen tas fram genom den befintliga planeraren per kommande rotationsplats; motor, planerare och historik är oförändrade (2 100-planers regression grön).
+
+| # | Fråga | Beslut |
+|---|---|---|
+| P1 | Kontrakt → befintligt schema | `program_id` = `programs.id`; `workout_session_id` = `training_sessions.id`; `planned_slot_id` = deterministiskt id ur löpande ordinarie passnummer (överlever revisioner och programversioner); `plan_revision_id` = ny `plan_revisions` (append-only); `planned_session_snapshot` = `plan_revisions.slots[]`; `user_note` = ny `notebook_notes`. Inga ändringar i befintliga tabeller utöver ett index. |
+| P2 | Passnummer | Härleds ur befintlig historik: ett ordinarie pass räknas när det flyttade rotationen (första avslutade pass med utfört arbetsset per programplats) eller när spontanpass uttryckligen räknats som ordinarie. Spontanpass i övrigt saknar nummer. Inga gamla data behöver migreras. |
+| P3 | Vikter i framtida pass | Lagras aldrig. Nästa pass visar befintlig live-rekommendation; pass 2–3 visar senast utförd vikt som "referens, inte en prognos"; övriga "Vikt beräknas närmare passet". |
+| P4 | Återhämtning i strukturell plan (visningsantagande, inte träningsregel) | Varje framtida plats beräknas som om normal vila (3 dygn efter senaste utförda pass) föregår den. Gör planen deterministisk och oberoende av klockan; nästa pass beräknas alltid vid passtillfället. **Bör bekräftas av produktägaren.** |
+| P5 | När en revision skapas | När planerarens indata ändrats: genomfört pass, spontanpass, räknat spontanpass, profil, övningsval/maskinprofil, begränsningar, symtom eller regelversion ger alltid revision; rättade set ger revision endast om kommande pass ändras. Öppna/expandera/byta flik/skriva ut ger aldrig revision. Kontrollen körs i bakgrunden efter lokala ändringar och synk. |
+| P6 | Horisont | 72 platser lagras per revision; "Visa fler pass" beräknar längre utan nya poster. |
+| P7 | Datum | Appen har ingen veckodagsinställning ⇒ endast passnummer och "ca vecka X"; inget markeras som missat. |
+| P8 | Anteckningar och hälsodata | Anteckningar kräver inte hälsosamtycke men visas som privata, ingår i JSON-exporten, och raderas av "Radera mina hälsorelaterade uppgifter" (migration 006 utökar `erase_health_data`). **Rättslig grund för fri text som kan innehålla hälsouppgifter kräver juridisk bedömning (RD02/RD05).** |
+| P9 | Utskrift | Webbläsarens utskrift med utskrifts-CSS (ingen PDF-infrastruktur). |
+| P10 | Konflikter | Anteckningar sparas villkorat mot revision; konflikter visas i befintlig Synk-vy. |
+
 ## 4. Medvetet ej implementerat
 
 - Anonym telemetri (FR40) – kräver separat godkännande; finns inte.

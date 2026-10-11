@@ -197,6 +197,42 @@ export type LocalSubstitutionEvent = {
   syncState: SyncState;
 };
 
+/** ÄA-PLAN-001: oföränderlig utgåva av den framtida plansekvensen (strukturell, inga framtidsvikter). */
+export type LocalPlanRevision = {
+  id: string;
+  programId: string | null;
+  previousRevisionId: string | null;
+  baseSequence: number;
+  horizon: number;
+  changeType: string;
+  reasonCodes: string[];
+  summary: string;
+  inputsHash: string;
+  inputParts: Record<string, string>;
+  contentHash: string;
+  engineVersion: string;
+  plannerVersion: string;
+  rulesetVersion: string;
+  catalogVersion: string;
+  substitutionCatalogVersion: string;
+  slots: unknown[];
+  createdAt: string;
+  syncState: SyncState;
+};
+
+/** ÄA-PLAN-001: privat anteckning på en planplats (löpande passnummer) eller ett genomfört pass. */
+export type LocalNote = {
+  id: string;
+  targetType: 'slot' | 'session';
+  slotSequence: number | null;
+  sessionId: string | null;
+  body: string;
+  /** Senast kända serverrevision (0 = ännu inte på servern). */
+  revision: number;
+  updatedAt: string;
+  syncState: SyncState;
+};
+
 export type LocalAudit = { id: string; sessionId: string; engineVersion: string; inputsHash: string; reasonCodes: string[]; snapshot: PlanSnapshot; generatedAt: string; syncState: SyncState };
 
 export type OutboxOp =
@@ -205,9 +241,10 @@ export type OutboxOp =
   | { type: 'delete'; table: ServerTable; id: string; idColumn?: string }
   | { type: 'profile'; patch: Record<string, unknown>; baseRevision?: number }
   | { type: 'equipment'; equipment: EquipmentSlug[] }
-  | { type: 'rpc'; name: 'erase_health_data' };
+  | { type: 'rpc'; name: 'erase_health_data' }
+  | { type: 'note'; noteId: string; row: Record<string, unknown>; baseRevision?: number };
 
-export type ServerTable = 'profiles' | 'user_exercise_profiles' | 'health_consents' | 'restriction_rules' | 'programs' | 'training_sessions' | 'session_exercises' | 'symptom_reports' | 'recommendation_audits' | 'user_exercise_calibrations' | 'session_exercise_substitution_events';
+export type ServerTable = 'profiles' | 'user_exercise_profiles' | 'health_consents' | 'restriction_rules' | 'programs' | 'training_sessions' | 'session_exercises' | 'symptom_reports' | 'recommendation_audits' | 'user_exercise_calibrations' | 'session_exercise_substitution_events' | 'plan_revisions' | 'notebook_notes';
 
 export type OutboxEntry = {
   seq?: number;
@@ -222,7 +259,7 @@ export type OutboxEntry = {
 
 export type ConflictEntry = {
   id: string;
-  recordType: 'training_set' | 'profile';
+  recordType: 'training_set' | 'profile' | 'note';
   recordId: string;
   local: Record<string, unknown>;
   server: Record<string, unknown>;
@@ -249,6 +286,8 @@ export class StyrkaDB extends Dexie {
   conflicts!: Table<ConflictEntry, string>;
   calibrations!: Table<LocalCalibration, string>;
   substitutionEvents!: Table<LocalSubstitutionEvent, string>;
+  planRevisions!: Table<LocalPlanRevision, string>;
+  notes!: Table<LocalNote, string>;
 
   constructor(name: string) {
     super(name);
@@ -272,6 +311,11 @@ export class StyrkaDB extends Dexie {
     this.version(2).stores({
       calibrations: 'id, exerciseId',
       substitutionEvents: 'id, sessionId',
+    });
+    // Version 3 (ÄA-PLAN-001): planrevisioner och anteckningar; befintliga data bevaras oförändrade.
+    this.version(3).stores({
+      planRevisions: 'id, createdAt',
+      notes: 'id, targetType, slotSequence, sessionId',
     });
   }
 }
