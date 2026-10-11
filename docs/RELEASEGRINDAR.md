@@ -8,7 +8,7 @@
 
 **STYRKA-CR-2026-10-10-01 (vetenskapssida + övningsbyte):** implementerad och testad lokalt (se TESTPROTOKOLL, SUB01–SUB24). Migration `20261011000004_substitution.sql` (additiv). Feature flag `VITE_FLAG_SUBSTITUTION_V2` (standard på efter godkända tester; `false` ⇒ tidigare bytesvy). Staging: migration 004 ska tillämpas **före** ny frontend (`npx supabase db push`, sedan `npm run deploy:staging`). **Staging 2026-10-11:** migration 004 tillämpad (`supabase db push`), därefter frontend publicerad (version `fd37860a`). Röktest API `npm run test:staging` **6/6** (inkl. nya tabeller: RLS, append-only revisionsposter, `perceived_effort` via RPC, katalog = appens 48 övningar). Webbläsarröktest **4/4** (Android/iPhone: inloggning–pass–synk samt `/vetenskap` utan konto, utan CSP-/konsolfel). Inga syntetiska testkonton kvar i staging.
 
-**CR-komplettering 2026-10-11 (produktägarens seed-fil och evidensregister):** substitutionskatalog och vetenskapssida följer nu filerna (se AVVIKELSER K-1–K-8). Migration `20261011000005_substitution_seed.sql` (additiv katalogdata) ska tillämpas före ny frontend. Status för staging: se nedan och rapporten till produktägaren.
+**CR-komplettering 2026-10-11 (produktägarens seed-fil och evidensregister):** substitutionskatalog och vetenskapssida följer nu filerna (se AVVIKELSER K-1–K-8). Migration `20261011000005_substitution_seed.sql` (additiv katalogdata) ska tillämpas före ny frontend. **Staging 2026-10-11:** migration 005 tillämpad före frontend (version `866d5394`, innehåller även rättningarna F1–F6). Röktest API **6/6**, webbläsare **4/4** (inloggning–pass–synk och publik `/vetenskap`); inga syntetiska testkonton kvar.
 
 | Grind | Status | Kommentar |
 |---|---|---|

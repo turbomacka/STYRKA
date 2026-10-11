@@ -15,6 +15,7 @@ Ovanpå rättningarna (`495cf5f`): substitutionskatalogen härleds nu ur produkt
 | E2E | `playwright test` | **79 PASS, 2 SKIP** (samma två WebKit-undantag som tidigare), 5,9 min |
 | Källänkar | `node scripts/check-evidence-links.mjs` | **13/13** registerkällor svarar; alla DOI registrerade (Taylor & Francis svarar 403 på automatiska anrop men DOI är giltiga) |
 | Lint / typecheck | | 0 fel |
+| Staging efter migration 005 | `npm run test:staging`, `playwright -c playwright.staging.config.ts` | **6/6** och **4/4** (version `866d5394`) |
 
 Nya och ändrade kontroller i kompletteringen:
 
