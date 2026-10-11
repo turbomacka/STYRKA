@@ -2,7 +2,9 @@
 
 Miljö: Windows 10, Node 22.13, lokal Supabase (Postgres 17.11, GoTrue 2.197, PostgREST 16.4) i Docker, Playwright 1.64 (Chromium, WebKit 27.2). Alla data syntetiska.
 
-## Sammanfattning av senaste körning
+Senare rättning ovanpå `97ee461`, publicerad på staging 2026-10-11: se [Rättningar efter granskningen](RATTNINGAR_2026-10-11.md) för F1–F6, förenklad mobilinloggning och aktuell verifiering. Stagingresultaten i tabellen nedan gäller den tidigare versionen.
+
+## Tidigare körning före rättningarna (97ee461)
 
 | Nivå | Kommando | Resultat |
 |---|---|---|

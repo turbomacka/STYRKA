@@ -8,6 +8,13 @@ export function uniqueEmail(label: string): string {
   return `${label}-${randomUUID().slice(0, 8)}@e2e.styrka.local`;
 }
 
+/** Reservvägen väljs uttryckligen när det mottagna mejlet innehåller en kod. */
+export async function enterEmailCode(page: Page, code: string): Promise<void> {
+  const field = page.getByLabel('Kod från mejlet');
+  if (!await field.isVisible()) await page.getByText('Jag har en kod från mejlet', { exact: true }).click();
+  await field.fill(code);
+}
+
 // ---- Lokal e-post (Mailpit) ----
 const MAILPIT = 'http://127.0.0.1:54324';
 type Msg = { ID: string; Subject: string; To: Array<{ Address: string }> };
@@ -45,7 +52,7 @@ export async function fillSignup(page: Page, email: string, password = PASSWORD,
   await expect(page.getByRole('heading', { name: 'Skapa konto' })).toBeVisible();
   await page.getByLabel('E-post', { exact: true }).fill(email);
   await page.getByLabel('Lösenord', { exact: true }).fill(password);
-  await page.getByLabel('Upprepa lösenord').fill(repeat);
+  await page.getByLabel('Upprepa lösenord', { exact: true }).fill(repeat);
 }
 
 /** Skapa konto via UI: e-post + lösenord → bekräftelse med kod från mejlet (lokala mallar) → inloggad i introduktionen. */
@@ -55,7 +62,7 @@ export async function signUp(page: Page, email: string, password = PASSWORD): Pr
   await page.getByRole('button', { name: 'Skapa konto', exact: true }).last().click();
   await expect(page.getByRole('heading', { name: 'Bekräfta din e-post' })).toBeVisible();
   const { code } = await nextMail(email, seen);
-  await page.getByLabel('Kod från mejlet').fill(code);
+  await enterEmailCode(page, code);
   await page.getByRole('button', { name: 'Bekräfta med kod' }).click();
   await expect(page.getByText('Intro 1/4')).toBeVisible();
 }

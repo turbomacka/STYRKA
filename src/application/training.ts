@@ -551,6 +551,7 @@ async function applyFutureScope(ctx: AppContext, root: ExerciseId, to: ExerciseI
   else substitutions[root] = to;
   const equipmentProfiles = { ...(p.equipmentProfiles ?? {}) };
   if (variantKey && variantKey !== 'default') equipmentProfiles[to] = variantKey;
+  else delete equipmentProfiles[to];
   const out: LocalProfile = { ...p, substitutions, equipmentProfiles, syncState: 'queued' };
   await ctx.db.profile.put(out);
   await ctx.db.outbox.add(outbox(ctx, ctx.userId, { type: 'profile', patch: profileRow(out) }));

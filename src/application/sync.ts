@@ -8,7 +8,7 @@
  */
 import { applyServerSetValues, consentFromRow, exerciseSettingsFromRow, profileFromRow, programFromRow, restrictionFromRow, sessionExerciseFromRow, sessionFromRow, setFromRow, setFullPatch, symptomFromRow, auditFromRow, profileRow, calibrationFromRow, substitutionEventFromRow } from '../server/mapping';
 import { TransportError } from '../server/transport';
-import type { ConflictEntry, LocalProfile, LocalSet, OutboxEntry } from '../storage/db';
+import type { ConflictEntry, LocalProfile, LocalSet, OutboxEntry, ServerTable, SyncState } from '../storage/db';
 import type { ExerciseId } from '../domain/catalog';
 import type { PlanSnapshot } from '../domain/model';
 import { outbox, type AppContext } from './context';
@@ -37,7 +37,7 @@ export function patchAlreadyApplied(patch: Record<string, unknown>, server: Reco
   return Object.keys(patch).every((k) => sameValue(patch[k], server[k]));
 }
 
-export type SyncStatus = { state: 'idle' | 'syncing' | 'offline' | 'auth_required' | 'error'; pending: number; conflicts: number; failed: number; lastSyncedAt: string | null; nextRetryAt: string | null };
+export type SyncStatus = { state: 'idle' | 'syncing' | 'offline' | 'auth_required' | 'error'; pullState: 'idle' | 'loading' | 'ready' | 'error'; pending: number; conflicts: number; failed: number; lastSyncedAt: string | null; nextRetryAt: string | null };
 
 export type SyncRunResult = { sent: number; applied: number; duplicates: number; conflicts: number; rejected: number; stoppedBy: TransportError['code'] | null };
 
@@ -51,6 +51,9 @@ export class SyncEngine {
   private lastState: SyncStatus['state'] = 'idle';
   private lastSyncedAt: string | null = null;
   private nextRetryAt: string | null = null;
+  private pullState: SyncStatus['pullState'] = 'idle';
+  private pulling: Promise<void> | null = null;
+  private refreshing: Promise<void> | null = null;
 
   constructor(private readonly ctx: AppContext) {}
 
@@ -65,7 +68,7 @@ export class SyncEngine {
   async status(): Promise<SyncStatus> {
     const db = this.ctx.db;
     const [pending, conflicts, failed] = await Promise.all([db.outbox.where('status').equals('pending').count(), db.conflicts.count(), db.outbox.where('status').equals('rejected').count()]);
-    return { state: this.lastState, pending, conflicts, failed, lastSyncedAt: this.lastSyncedAt, nextRetryAt: this.nextRetryAt };
+    return { state: this.lastState, pullState: this.pullState, pending, conflicts, failed, lastSyncedAt: this.lastSyncedAt, nextRetryAt: this.nextRetryAt };
   }
 
   /** Antal lokala ändringar som ännu inte är bekräftade av servern (inkl. konflikter och avvisade). */
@@ -85,7 +88,7 @@ export class SyncEngine {
 
   /** Begär synk snarast (debounce via pågående körning). */
   request(): void {
-    if (this.running) return;
+    if (this.running || this.lastState === 'auth_required') return;
     void this.syncNow().catch(() => undefined);
   }
 
@@ -96,6 +99,16 @@ export class SyncEngine {
       this.emit();
     });
     return this.running;
+  }
+
+  /** Användarstyrt omförsök eller ny session: spela upp kön, hämta sedan en komplett serverbild. */
+  refresh(): Promise<void> {
+    if (this.refreshing) return this.refreshing;
+    this.refreshing = (async () => {
+      const result = await this.syncNow();
+      if (!result.stoppedBy) await this.pull();
+    })().finally(() => { this.refreshing = null; });
+    return this.refreshing;
   }
 
   private schedule(): void {
@@ -144,6 +157,11 @@ export class SyncEngine {
           this.lastState = err.code === 'OFFLINE' ? 'offline' : err.code === 'AUTH_REQUIRED' ? 'auth_required' : 'error';
           res.stoppedBy = err.code;
           if (err.code !== 'AUTH_REQUIRED') this.schedule();
+          else {
+            if (this.timer) clearTimeout(this.timer);
+            this.timer = null;
+            this.nextRetryAt = null;
+          }
           return res;
         }
         await this.markRejected(next, err.code);
@@ -253,7 +271,22 @@ export class SyncEngine {
 
   private async ack(entry: OutboxEntry): Promise<void> {
     const db = this.ctx.db;
-    await db.outbox.delete(entry.seq!);
+    if (entry.op.type !== 'upsert') {
+      await db.outbox.delete(entry.seq!);
+      return;
+    }
+    const localTables: Record<ServerTable, string> = {
+      profiles: 'profile', user_exercise_profiles: 'exerciseSettings', health_consents: 'consents',
+      restriction_rules: 'restrictions', programs: 'programs', training_sessions: 'sessions',
+      session_exercises: 'sessionExercises', symptom_reports: 'symptoms', recommendation_audits: 'audits',
+      user_exercise_calibrations: 'calibrations', session_exercise_substitution_events: 'substitutionEvents',
+    };
+    const table = db.table<{ syncState: SyncState }, string>(localTables[entry.op.table]);
+    const id = (entry.op.row.id ?? entry.op.row.user_id) as string;
+    await db.transaction('rw', [db.outbox, table], async () => {
+      await db.outbox.delete(entry.seq!);
+      if (await db.outbox.where('recordId').equals(entry.recordId).count() === 0) await table.update(id, { syncState: 'synced' });
+    });
   }
 
   /**
@@ -300,8 +333,32 @@ export class SyncEngine {
    * Hämtar serverns data och slår ihop: poster med lokala osynkade ändringar skrivs aldrig över.
    * Används vid inloggning på ny enhet och för flera enheter.
    */
-  async pull(): Promise<void> {
+  pull(): Promise<void> {
+    if (this.pulling) return this.pulling;
+    this.pullState = 'loading';
+    this.emit();
+    this.pulling = this.pullSnapshot().then(() => {
+      this.pullState = 'ready';
+      // En lyckad läsning får inte dölja ett skrivfel som inträffade medan hämtningen pågick.
+    }).catch((e: unknown) => {
+      this.pullState = 'error';
+      this.lastState = e instanceof TransportError && e.code === 'AUTH_REQUIRED' ? 'auth_required' : e instanceof TransportError && e.code === 'OFFLINE' ? 'offline' : 'error';
+      throw e;
+    }).finally(() => {
+      this.pulling = null;
+      this.emit();
+    });
+    return this.pulling;
+  }
+
+  private async pullSnapshot(): Promise<void> {
     const { db, transport, userId } = this.ctx;
+    // Bara poster som var synkade före hämtningen får avstämmas som raderade.
+    // En lokal ändring/ny synk under nätanropet får inte försvinna på grund av en äldre serverbild.
+    const [beforeRestrictions, beforeSymptoms, beforeQueue] = await Promise.all([db.restrictions.toArray(), db.symptoms.toArray(), db.outbox.toArray()]);
+    const beforePending = new Set(beforeQueue.map((e) => e.recordId));
+    // Äldre versioner tog bort kvitterade köposter men lämnade raderna märkta 'queued'.
+    const wasSynced = (r: { id: string; syncState: SyncState }) => r.syncState === 'synced' || (r.syncState === 'queued' && !beforePending.has(r.id));
     const snap = await transport.pullAll(userId);
     const auditsBySession = new Map(snap.audits.map((a) => [a.session_id as string, a]));
     const replacedBy = new Map<string, string>();
@@ -324,8 +381,24 @@ export class SyncEngine {
       }
     }
     const seIndex = new Map(snap.sessionExercises.map((se) => [se.id as string, { sessionId: se.session_id as string, exerciseId: se.exercise_slug as ExerciseId }]));
-    await db.transaction('rw', [db.profile, db.exerciseSettings, db.restrictions, db.symptoms, db.consents, db.programs, db.sessions, db.sessionExercises, db.sets, db.audits, db.meta, db.calibrations, db.substitutionEvents], async () => {
-      const keep = <T extends { syncState: string }>(local: T | undefined) => !!local && local.syncState !== 'synced';
+    await db.transaction('rw', [db.profile, db.exerciseSettings, db.restrictions, db.symptoms, db.consents, db.programs, db.sessions, db.sessionExercises, db.sets, db.audits, db.meta, db.calibrations, db.substitutionEvents, db.outbox], async () => {
+      const queued = await db.outbox.toArray();
+      const pendingIds = new Set(queued.map((e) => e.recordId));
+      const keep = <T extends { syncState: string; id?: string; userId?: string }>(local: T | undefined) => {
+        if (!local || local.syncState === 'synced') return false;
+        const id = local.id ?? local.userId ?? '';
+        return local.syncState !== 'queued' || pendingIds.has(id) || pendingIds.has(`consent:${id}`);
+      };
+      const pendingErase = queued.some((e) => e.op.type === 'rpc' && e.op.name === 'erase_health_data');
+      const pendingDeletes = new Set(queued.filter((e) => e.op.type === 'delete').map((e) => e.recordId));
+      const restrictionIds = new Set(snap.restrictions.map((r) => r.id));
+      const symptomIds = new Set(snap.symptoms.map((r) => r.id));
+      for (const old of beforeRestrictions) {
+        if (wasSynced(old) && !restrictionIds.has(old.id) && sameValue(old, await db.restrictions.get(old.id))) await db.restrictions.delete(old.id);
+      }
+      for (const old of beforeSymptoms) {
+        if (wasSynced(old) && !symptomIds.has(old.id) && sameValue(old, await db.symptoms.get(old.id))) await db.symptoms.delete(old.id);
+      }
       if (snap.profile && !keep(await db.profile.get(userId))) await db.profile.put(profileFromRow(snap.profile, snap.equipment));
       for (const r of snap.exerciseProfiles) {
         const m = exerciseSettingsFromRow(r);
@@ -334,9 +407,9 @@ export class SyncEngine {
         if (local && local.id !== m.id) await db.exerciseSettings.delete(local.id);
         await db.exerciseSettings.put(m);
       }
-      for (const r of snap.restrictions) if (!keep(await db.restrictions.get(r.id as string))) await db.restrictions.put(restrictionFromRow(r));
-      for (const r of snap.symptoms) if (!keep(await db.symptoms.get(r.id as string))) await db.symptoms.put(symptomFromRow(r));
-      for (const r of snap.consents) if (!keep(await db.consents.get(r.user_id as string))) await db.consents.put(consentFromRow(r));
+      for (const r of snap.restrictions) if (!pendingErase && !pendingDeletes.has(r.id as string) && !keep(await db.restrictions.get(r.id as string))) await db.restrictions.put(restrictionFromRow(r));
+      for (const r of snap.symptoms) if (!pendingErase && !pendingDeletes.has(r.id as string) && !keep(await db.symptoms.get(r.id as string))) await db.symptoms.put(symptomFromRow(r));
+      for (const r of snap.consents) if (!pendingErase && !keep(await db.consents.get(r.user_id as string))) await db.consents.put(consentFromRow(r));
       for (const r of snap.programs) if (!keep(await db.programs.get(r.id as string))) await db.programs.put(programFromRow(r));
       for (const r of snap.sessions) {
         if (keep(await db.sessions.get(r.id as string))) continue;

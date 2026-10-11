@@ -6,6 +6,7 @@ import type { LocalRestriction } from '../../storage/db';
 import { deleteRestriction, saveRestriction, setHealthConsent } from '../../application/profile';
 import { resolveSymptom } from '../../application/training';
 import { eraseAccount, eraseHealthData, exportCsv, exportJson, signOutLocal } from '../../application/privacy';
+import { Reauthenticate } from '../components/Reauthenticate';
 import { Banner, ConfirmTwice, EmptyState, PageHeader } from '../components/common';
 import { ConflictResolver, ConsentPanel, RestrictionPicker } from '../components/widgets';
 import { useServices } from '../services';
@@ -201,6 +202,7 @@ export function SyncScreen() {
   return (
     <div className="page stack">
       <PageHeader title="Synk" back={() => nav(-1)} />
+      {syncStatus?.state === 'auth_required' && <Reauthenticate />}
       <div className="card stack">
         <p>
           <strong>{online ? 'Uppkopplad' : 'Offline'}</strong>
@@ -208,7 +210,7 @@ export function SyncScreen() {
         </p>
         <p className="num">{syncStatus?.pending ?? 0} ändring(ar) väntar på att synkas.</p>
         <p className="small muted">Data som bara finns på enheten kan raderas av webbläsaren om lagringsutrymmet tar slut. Synk till servern är din säkerhetskopia.</p>
-        <button type="button" className="btn primary block" disabled={!online || busy} onClick={async () => { setBusy(true); try { await sync.syncNow(); } finally { setBusy(false); } }}>
+        <button type="button" className="btn primary block" disabled={!online || busy || syncStatus?.state === 'auth_required'} onClick={async () => { setBusy(true); try { await sync.refresh(); } catch { /* synkmotorn visar felet */ } finally { setBusy(false); } }}>
           Synka nu
         </button>
       </div>

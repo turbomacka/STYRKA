@@ -82,22 +82,29 @@ export function ServicesProvider({ userId, email, supabase, transport, children 
   // Vid start och när nätet kommer tillbaka: hämta serverns data och spela upp kön (opportunistiskt, ingen garanti på iOS).
   useEffect(() => {
     if (!online) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        await core.sync.syncNow();
-        if (!cancelled) await core.sync.pull();
-      } catch {
-        /* nätfel hanteras av synkstatus */
-      }
-    })();
-    const vis = () => document.visibilityState === 'visible' && core.sync.request();
+    const refresh = () => void core.sync.refresh().catch(() => undefined);
+    refresh();
+    const vis = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
     document.addEventListener('visibilitychange', vis);
     return () => {
-      cancelled = true;
       document.removeEventListener('visibilitychange', vis);
     };
   }, [online, core]);
+
+  // Auth-callbacken måste vara synkron. Serveranrop körs efter att Auth släppt sessionslåset.
+  useEffect(() => {
+    if (!supabase) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user.id === userId && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        clearTimeout(timer);
+        timer = setTimeout(() => { void core.sync.refresh().catch(() => undefined); }, 0);
+      }
+    });
+    return () => { clearTimeout(timer); data.subscription.unsubscribe(); };
+  }, [core, supabase, userId]);
 
   useEffect(() => () => core.sync.dispose(), [core]);
 

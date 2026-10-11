@@ -1,5 +1,7 @@
 # Releasegrindar G0–G5 (status 2026-10-11)
 
+**Senaste rättning, publicerad 2026-10-11:** F1–F6 och mobilinloggningen har reviderats ovanpå `97ee461` och publicerats på staging, Cloudflare-version `ebc500b9-c515-48b7-8086-ab0f177c4693`. Se [rättningsrapporten](RATTNINGAR_2026-10-11.md) för aktuell verifiering. Nedanstående äldre stagingresultat är historik. Inga nya databasändringar krävdes för rättningen.
+
 **Staging-databas:** Supabase-projekt `styrka-staging` (ref `zjjlttbwofohyqmklvkf`, eu-north-1 Stockholm). Migrationer 001–003 tillämpade 2026-10-10; röktest mot staging `npm run test:staging` 5/5 godkända (anon, idempotens, revisionskonflikt, A/B-isolering, direktskrivning nekad, samtycke, kontoradering). Testkonton raderade efteråt.
 
 **Staging-app:** https://styrka-staging.homeboard-mh.workers.dev (Cloudflare Workers Static Assets, endast statiska filer, `noindex`). Säkerhetsheaders verifierade (CSP med connect-src endast staging-Supabase, HSTS, nosniff, frame-ancestors/X-Frame-Options, Referrer-Policy, Permissions-Policy). Webbläsarröktest `npx playwright test -c playwright.staging.config.ts` 2/2 (Android/iPhone-emulering): inloggning, intro, pass, synk verifierad i staging-databasen, service worker registrerad, inga CSP-fel.

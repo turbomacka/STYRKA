@@ -8,7 +8,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { createClient } from '@supabase/supabase-js';
 import { expect, test, type Page } from '@playwright/test';
 import { execSync } from 'node:child_process';
-import { clearAuth, fillSignup, mailIds, nextMail, onboard, PASSWORD, shooter, signIn, signUp, uniqueEmail } from './helpers';
+import { clearAuth, enterEmailCode, fillSignup, mailIds, nextMail, onboard, PASSWORD, shooter, signIn, signUp, uniqueEmail } from './helpers';
 
 const NEW_PASSWORD = 'Nytt-losen-456!';
 
@@ -60,7 +60,7 @@ test('skapa konto med e-post och lösenord → bekräftelsekod → logga in igen
   await axe(page, 'bekräfta');
   const mail = await nextMail(email, seen);
   expect(mail.subject).toBe('Bekräfta din e-post för STYRKA');
-  await page.getByLabel('Kod från mejlet').fill(mail.code);
+  await enterEmailCode(page, mail.code);
   await page.getByRole('button', { name: 'Bekräfta med kod' }).click();
   await expect(page.getByText('Intro 1/4')).toBeVisible();
 
@@ -94,11 +94,11 @@ test('fel lösenord och ogiltiga uppgifter ger tydliga fel', async ({ page }) =>
   await page.getByRole('button', { name: 'Skapa konto', exact: true }).last().click();
   await expect(page.getByRole('alert')).toHaveText('Lösenordet måste ha minst 8 tecken.');
   await page.getByLabel('Lösenord', { exact: true }).fill('Langtlosen-1');
-  await page.getByLabel('Upprepa lösenord').fill('Langtlosen-2');
+  await page.getByLabel('Upprepa lösenord', { exact: true }).fill('Langtlosen-2');
   await page.getByRole('button', { name: 'Skapa konto', exact: true }).last().click();
   await expect(page.getByRole('alert')).toHaveText('Lösenorden matchar inte.');
   // Visa lösenord
-  await page.getByLabel('Visa lösenord').check();
+  await page.getByRole('button', { name: 'Visa lösenord', exact: true }).click();
   await expect(page.getByLabel('Lösenord', { exact: true })).toHaveAttribute('type', 'text');
 });
 
@@ -110,7 +110,7 @@ test('glömt lösenordet med kod → nytt lösenord; gamla slutar fungera', asyn
   const mail = await requestReset(page, email);
   expect(mail.subject).toBe('Återställ ditt lösenord till STYRKA');
   await shot('S01-aterstallningskod');
-  await page.getByLabel('Kod från mejlet').fill(mail.code);
+  await enterEmailCode(page, mail.code);
   await page.getByRole('button', { name: 'Fortsätt med kod' }).click();
   await shot('S01-nytt-losenord');
   await axe(page, 'nytt lösenord');
@@ -145,7 +145,7 @@ test('konto utan lösenord (skapat med kod) får hjälp och kan skapa lösenord 
   await signIn(page, email, 'gissat-losen');
   await expect(page.getByRole('alert')).toContainText('saknar kontot lösenord');
   const mail = await requestReset(page, email);
-  await page.getByLabel('Kod från mejlet').fill(mail.code);
+  await enterEmailCode(page, mail.code);
   await page.getByRole('button', { name: 'Fortsätt med kod' }).click();
   await chooseNewPassword(page);
   await clearAuth(page);
@@ -166,7 +166,7 @@ test('inloggning innan e-posten bekräftats ger besked och ny kod', async ({ pag
   await page.getByRole('button', { name: 'Logga in', exact: true }).click();
   await expect(page.getByText(/inte bekräftad ännu\. Vi har skickat ett nytt bekräftelsemejl/)).toBeVisible();
   const { code } = await nextMail(email, seen);
-  await page.getByLabel('Kod från mejlet').fill(code);
+  await enterEmailCode(page, code);
   await page.getByRole('button', { name: 'Bekräfta med kod' }).click();
   await expect(page.getByText('Intro 1/4')).toBeVisible();
 });
@@ -191,6 +191,7 @@ test('inloggning via e-post utan lösenord (kod) för befintligt konto; fel kod 
   await signUp(page, email);
   await clearAuth(page);
   await page.waitForTimeout(1500);
+  await page.getByText('Andra sätt att logga in', { exact: true }).click();
   await page.getByRole('button', { name: 'Logga in via e-post utan lösenord' }).click();
   await page.getByLabel('E-post', { exact: true }).fill(email);
   const seen = await mailIds(email);
@@ -198,14 +199,15 @@ test('inloggning via e-post utan lösenord (kod) för befintligt konto; fel kod 
   await expect(page.getByRole('heading', { name: 'Kolla din e-post' })).toBeVisible();
   const mail = await nextMail(email, seen);
   expect(mail.subject).toBe('Din inloggningskod till STYRKA');
-  await page.getByLabel('Kod från mejlet').fill('000000');
+  await enterEmailCode(page, '000000');
   await page.getByRole('button', { name: 'Logga in med koden' }).click();
   await expect(page.getByRole('alert')).toContainText('Koden stämmer inte');
-  await page.getByLabel('Kod från mejlet').fill(mail.code);
+  await enterEmailCode(page, mail.code);
   await page.getByRole('button', { name: 'Logga in med koden' }).click();
   await expect(page.getByText('Intro 1/4')).toBeVisible();
 
   await clearAuth(page);
+  await page.getByText('Andra sätt att logga in', { exact: true }).click();
   await page.getByRole('button', { name: 'Logga in via e-post utan lösenord' }).click();
   await page.getByLabel('E-post', { exact: true }).fill(uniqueEmail('finnsinte'));
   await page.getByRole('button', { name: 'Skicka inloggningsmejl' }).click();

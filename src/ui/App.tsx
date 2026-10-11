@@ -21,6 +21,7 @@ import { Privacy } from './screens/Privacy';
 import { UpdatePrompt } from './UpdatePrompt';
 import { NewPasswordScreen } from './screens/NewPassword';
 import { initialAuthCallback } from './authCallback';
+import { Reauthenticate } from './components/Reauthenticate';
 
 const RECOVERY_KEY = 'styrka_password_recovery';
 function readFlag(): boolean {
@@ -126,23 +127,30 @@ function SciencePage({ backTo, backLabel }: { backTo: string; backLabel: string 
 const FULLSCREEN = [/^\/pass\//, /^\/forhandsvisning/, /^\/spontan/];
 
 function Authed({ onSignedOut }: { onSignedOut: () => Promise<void> }) {
-  const { ctx, online } = useServices();
+  const { ctx, online, sync, syncStatus } = useServices();
   const loc = useLocation();
   const nav = useNavigate();
   const profile = useLiveQuery(async () => (await ctx.db.profile.get(ctx.userId)) ?? null, [ctx]);
   const pulled = useLiveQuery(async () => !!(await ctx.db.meta.get('lastPullAt')), [ctx]);
-  const [waited, setWaited] = useState(false);
   useEffect(() => {
     void purgeOtherUsers(ctx.userId);
-    const t = setTimeout(() => setWaited(true), 6000);
-    return () => clearTimeout(t);
   }, [ctx.userId]);
 
   if (profile === undefined || pulled === undefined) return <p className="page" aria-busy="true">Laddar…</p>;
-  // Ny enhet: vänta på första hämtningen från servern innan introduktionen visas.
-  if (!profile && online && !pulled && !waited) return <p className="page" aria-busy="true">Hämtar dina uppgifter…</p>;
   // Publika informationssidor nås även före introduktionen.
   if (loc.pathname === '/vetenskap') return <SciencePage backTo={profile?.onboardingCompletedAt ? '/profil' : '/'} backLabel={profile?.onboardingCompletedAt ? 'Till Profil' : 'Tillbaka'} />;
+  // Bara ett lyckat serversvar får fastställa att kontot är nytt. Tid eller nätfel är inget sådant besked.
+  if (!profile && !pulled) {
+    if (syncStatus?.state === 'auth_required') return <main className="shell"><div className="page"><Reauthenticate /></div></main>;
+    if (!online || syncStatus?.pullState === 'error' || syncStatus?.state === 'error' || syncStatus?.state === 'offline') return (
+      <main className="shell"><div className="page stack">
+        <h1>Vi kunde inte hämta dina uppgifter</h1>
+        <p>{online ? 'Försök igen för att fortsätta med ditt konto.' : 'Anslut till internet för att hämta ditt konto till den här enheten.'}</p>
+        <button type="button" className="btn primary block" disabled={!online || syncStatus?.pullState === 'loading'} onClick={() => { void sync.refresh().catch(() => undefined); }}>Försök igen</button>
+      </div></main>
+    );
+    return <p className="page" role="status" aria-busy="true">Hämtar dina uppgifter…</p>;
+  }
   if (!profile || !profile.onboardingCompletedAt) return <Onboarding onDone={() => nav('/', { replace: true })} />;
   const full = FULLSCREEN.some((r) => r.test(loc.pathname));
   return (

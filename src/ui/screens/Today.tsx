@@ -13,9 +13,10 @@ export function SyncLink() {
   const { syncStatus, online } = useServices();
   if (!syncStatus) return null;
   const { pending, conflicts, failed } = syncStatus;
-  const label = conflicts ? `${conflicts} konflikt${conflicts > 1 ? 'er' : ''}` : failed ? 'Synkfel' : pending ? (online ? `Synkar ${pending}` : `${pending} sparade lokalt`) : 'Synkat';
-  const cls = conflicts || failed ? 'warn' : pending ? '' : 'ok';
-  const I = conflicts || failed ? Icon.Alert : pending ? (online ? Icon.Sync : Icon.CloudOff) : Icon.Check;
+  const needsLogin = syncStatus.state === 'auth_required';
+  const label = needsLogin ? 'Logga in igen för att synka' : conflicts ? `${conflicts} konflikt${conflicts > 1 ? 'er' : ''}` : failed ? 'Synkfel' : pending ? (online ? `Synkar ${pending}` : `${pending} sparade lokalt`) : 'Synkat';
+  const cls = needsLogin || conflicts || failed ? 'warn' : pending ? '' : 'ok';
+  const I = needsLogin || conflicts || failed ? Icon.Alert : pending ? (online ? Icon.Sync : Icon.CloudOff) : Icon.Check;
   return (
     <Link to="/synk" className={`chip ${cls}`} aria-label={`Synkstatus: ${label}. Visa detaljer`} style={{ textDecoration: 'none' }}>
       <I /> {label}

@@ -152,6 +152,16 @@ textarea { padding: var(--s2) var(--s3); min-height: 96px; }
 .error-text { color: var(--danger); font-size: 14px; font-weight: 600; }
 .check { display: flex; align-items: flex-start; gap: var(--s3); min-height: var(--tap); padding: var(--s2) 0; cursor: pointer; }
 .check input { width: 24px; height: 24px; margin: 2px 0 0; flex: none; accent-color: var(--accent); }
+.password-field { display: flex; align-items: stretch; gap: var(--s1); }
+.password-field input { min-width: 0; flex: 1; }
+.password-field .btn { padding-inline: var(--s3); flex: none; }
+.auth-page { padding-top: var(--s5); }
+.auth-page h1 { margin-bottom: 0; }
+.auth-page .auth-intro { margin-bottom: var(--s4); }
+.auth-options summary { cursor: pointer; min-height: var(--tap); display: flex; align-items: center; justify-content: space-between; gap: var(--s3); color: var(--accent); font-weight: 600; }
+.auth-options summary::after { content: ''; width: 8px; height: 8px; flex: none; margin-right: var(--s2); border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); }
+.auth-options[open] summary::after { transform: rotate(225deg); }
+.auth-options[open] summary { margin-bottom: var(--s2); }
 
 .segmented { display: flex; gap: var(--s1); background: var(--surface-2); padding: var(--s1); border-radius: 12px; flex-wrap: wrap; }
 .segmented button {
