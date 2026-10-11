@@ -1,9 +1,10 @@
 /** Översättning mellan lokala poster (gram, camelCase) och serverrader (numeric-sträng, snake_case). */
-import type { ExerciseId, Experience, Mode } from '../domain/decision_engine';
+import type { Experience, Mode } from '../domain/decision_engine';
+import type { ExerciseId } from '../domain/catalog';
 import { exercise, type Area, type EquipmentSlug } from '../domain/catalog';
-import type { PlanSnapshot, PlannedExercise, Readiness, RuleKind, SessionKind, SessionStatus, SetKind, SetStatus, Side, SymptomReaction, Technique } from '../domain/model';
+import type { ChoiceScope, Familiarity, LoadEstimationKind, PerceivedEffort, PlanSnapshot, PlannedExercise, Readiness, RuleKind, SessionKind, SessionStatus, SetKind, SetStatus, Side, SymptomReaction, Technique } from '../domain/model';
 import { decimalStringToGrams, gramsToDecimalString } from '../domain/units';
-import type { LocalAudit, LocalConsent, LocalExerciseSettings, LocalProfile, LocalProgram, LocalRestriction, LocalSession, LocalSessionExercise, LocalSet, LocalSymptom } from '../storage/db';
+import type { LocalAudit, LocalCalibration, LocalConsent, LocalExerciseSettings, LocalProfile, LocalProgram, LocalRestriction, LocalSession, LocalSessionExercise, LocalSet, LocalSubstitutionEvent, LocalSymptom } from '../storage/db';
 
 const dec = (g: number | null): string | null => (g === null ? null : gramsToDecimalString(g));
 const grams = (v: unknown): number | null => (v === null || v === undefined ? null : decimalStringToGrams(String(v)));
@@ -21,6 +22,7 @@ export function profileRow(p: LocalProfile): Record<string, unknown> {
     favorites: p.favorites,
     bodyweight_kg: dec(p.bodyweightGrams),
     privacy_notice_version: p.privacyNoticeVersion,
+    equipment_profiles: p.equipmentProfiles ?? {},
     onboarding_completed_at: p.onboardingCompletedAt,
   };
 }
@@ -42,6 +44,7 @@ export function profileFromRow(r: Record<string, unknown>, equipment: string[]):
     revision: r.revision as number,
     onboardingCompletedAt: (r.onboarding_completed_at as string | null) ?? null,
     privacyNoticeVersion: (r.privacy_notice_version as string | null) ?? null,
+    equipmentProfiles: (r.equipment_profiles ?? {}) as LocalProfile['equipmentProfiles'],
     syncState: 'synced',
   };
 }
@@ -194,6 +197,7 @@ export function sessionExerciseRow(userId: string, e: LocalSessionExercise): Rec
     band_max: e.bandMax,
     target_sets: e.targetSets,
     recommendation_snapshot: { ...e.snapshot, replacedById: undefined },
+    load_basis: e.snapshot.loadBasis ?? null,
     created_at: e.createdAt,
   };
 }
@@ -211,6 +215,7 @@ export function sessionExerciseFromRow(r: Record<string, unknown>, replacedById:
     targetSets: r.target_sets as number,
     snapshot: r.recommendation_snapshot as PlannedExercise,
     replacedById,
+    replacesId: (r.recommendation_snapshot as PlannedExercise)?.substitution?.replacesSessionExerciseId ?? null,
     createdAt: r.created_at as string,
     syncState: 'synced',
   };
@@ -233,6 +238,8 @@ export function setCreatePayload(s: LocalSet): Record<string, unknown> {
     technique: s.technique,
     occurredAt: s.occurredAt,
     deleted: s.deleted,
+    // Skickas bara när det finns (bakåtkompatibelt mot server utan migration 004).
+    ...(s.perceivedEffort ? { perceivedEffort: s.perceivedEffort } : {}),
   };
 }
 
@@ -250,12 +257,14 @@ const SET_FIELD_MAP: Array<[keyof LocalSet, string, (v: unknown) => unknown]> = 
   ['deleted', 'deleted', (v) => v],
   ['ordinal', 'ordinal', (v) => v],
   ['kind', 'kind', (v) => v],
+  ['perceivedEffort', 'perceivedEffort', (v) => v ?? null],
 ];
 
 /** Ändrade fält (changedFields) mellan två versioner av ett lokalt set. */
 export function setPatchPayload(before: LocalSet, after: LocalSet): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  for (const [k, wire, conv] of SET_FIELD_MAP) if (before[k] !== after[k]) out[wire] = conv(after[k]);
+  // null och odefinierat räknas lika (nya valfria fält skickas inte i onödan).
+  for (const [k, wire, conv] of SET_FIELD_MAP) if ((before[k] ?? null) !== (after[k] ?? null)) out[wire] = conv(after[k]);
   return out;
 }
 
@@ -288,6 +297,7 @@ export function setFromRow(r: Record<string, unknown>, se: { sessionId: string; 
     serverRevision: r.revision as number,
     createQueued: true,
     manualOverride: false,
+    perceivedEffort: (r.perceived_effort as PerceivedEffort | null) ?? null,
     syncState: 'synced',
     updatedAt: (r.server_received_at as string) ?? '',
   };
@@ -303,6 +313,7 @@ export function applyServerSetValues(s: LocalSet, server: Record<string, unknown
     actualSeconds: (server.actualSeconds as number | null) ?? null,
     rir: (server.rir as number | null) ?? null,
     technique: (server.technique as Technique | null) ?? null,
+    perceivedEffort: (server.perceivedEffort as PerceivedEffort | null | undefined) ?? s.perceivedEffort ?? null,
     occurredAt: (server.occurredAt as string | null) ?? null,
     deleted: !!server.deleted,
     targetGrams: server.targetKg !== undefined ? grams(server.targetKg) : s.targetGrams,
@@ -318,4 +329,65 @@ export function auditRow(userId: string, a: LocalAudit): Record<string, unknown>
 
 export function auditFromRow(r: Record<string, unknown>): LocalAudit {
   return { id: r.id as string, sessionId: r.session_id as string, engineVersion: r.engine_version as string, inputsHash: r.inputs_hash as string, reasonCodes: (r.reason_codes as string[]) ?? [], snapshot: r.plan_snapshot as PlanSnapshot, generatedAt: r.generated_at as string, syncState: 'synced' };
+}
+
+export function calibrationRow(userId: string, k: LocalCalibration): Record<string, unknown> {
+  return { id: k.id, user_id: userId, exercise_slug: k.exerciseId, variant_key: k.variantKey, familiarity: k.familiarity, quality: k.quality, observations: k.observations, calibrated_at: k.calibratedAt, updated_at: k.updatedAt };
+}
+
+export function calibrationFromRow(r: Record<string, unknown>): LocalCalibration {
+  return {
+    id: r.id as string,
+    exerciseId: r.exercise_slug as ExerciseId,
+    variantKey: (r.variant_key as string) ?? 'default',
+    familiarity: (r.familiarity as Familiarity) ?? 'unknown',
+    quality: (r.quality as LocalCalibration['quality']) ?? 'none',
+    observations: (r.observations as string[]) ?? [],
+    calibratedAt: (r.calibrated_at as string | null) ?? null,
+    updatedAt: r.updated_at as string,
+    syncState: 'synced',
+  };
+}
+
+export function substitutionEventRow(userId: string, e: LocalSubstitutionEvent): Record<string, unknown> {
+  return {
+    id: e.id,
+    event_id: e.id,
+    user_id: userId,
+    session_id: e.sessionId,
+    original_exercise_slug: e.originalExerciseId,
+    replacement_exercise_slug: e.replacementExerciseId,
+    original_session_exercise_id: e.originalSessionExerciseId,
+    replacement_session_exercise_id: e.replacementSessionExerciseId,
+    choice_scope: e.choiceScope,
+    engine_version: e.engineVersion,
+    substitution_catalog_version: e.substitutionCatalogVersion,
+    algorithm_rule_version: e.algorithmRuleVersion,
+    source_evidence_ids: e.sourceEvidenceIds,
+    load_estimation_kind: e.loadEstimationKind,
+    reason_codes: e.reasonCodes,
+    user_override: e.userOverride,
+    created_at: e.createdAt,
+  };
+}
+
+export function substitutionEventFromRow(r: Record<string, unknown>): LocalSubstitutionEvent {
+  return {
+    id: r.id as string,
+    sessionId: r.session_id as string,
+    originalExerciseId: r.original_exercise_slug as ExerciseId,
+    replacementExerciseId: r.replacement_exercise_slug as ExerciseId,
+    originalSessionExerciseId: (r.original_session_exercise_id as string | null) ?? null,
+    replacementSessionExerciseId: (r.replacement_session_exercise_id as string | null) ?? null,
+    choiceScope: r.choice_scope as ChoiceScope,
+    engineVersion: r.engine_version as string,
+    substitutionCatalogVersion: r.substitution_catalog_version as string,
+    algorithmRuleVersion: r.algorithm_rule_version as string,
+    sourceEvidenceIds: (r.source_evidence_ids as string[]) ?? [],
+    loadEstimationKind: r.load_estimation_kind as LoadEstimationKind,
+    reasonCodes: (r.reason_codes as string[]) ?? [],
+    userOverride: !!r.user_override,
+    createdAt: r.created_at as string,
+    syncState: 'synced',
+  };
 }

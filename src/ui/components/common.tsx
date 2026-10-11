@@ -1,4 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { ruleAnchor, ruleForReason } from '../../science/registry';
 import type { SyncState } from '../../storage/db';
 import type { Confidence, WarningCode } from '../../domain/model';
 import { CONFIDENCE_SV, EV_SV, T, reasonText } from '../strings';
@@ -128,7 +130,12 @@ export function ReasonPopover({ reasons, title = T.INFO_REASONS }: { reasons: st
       <ul className="list small">
         {items.map(({ code, info }) => (
           <li key={code}>
-            {info!.text} <span className="muted">({EV_SV[info!.ev]})</span>
+            {info!.text} <span className="muted">({EV_SV[info!.ev]})</span>{' '}
+            {ruleForReason(code) && (
+              <Link to={`/vetenskap#${ruleAnchor(ruleForReason(code)!.rule_id)}`} className="small">
+                Om regeln<span className="visually-hidden">: {ruleForReason(code)!.title_sv}</span>
+              </Link>
+            )}
           </li>
         ))}
       </ul>

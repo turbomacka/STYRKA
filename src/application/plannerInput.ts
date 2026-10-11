@@ -1,5 +1,5 @@
 /** Bygger planerarens indata från lokal, konsistent snapshot av användarens data (02 §10: offline-motor). */
-import type { ExerciseId } from '../domain/decision_engine';
+import type { ExerciseId } from '../domain/catalog';
 import type { HistorySet, PerformedExercise, PlannerInput, RestrictionRule, SymptomReport, UserExerciseSettings } from '../domain/model';
 import { gramsToKg } from '../domain/units';
 import type { LocalExerciseSettings, LocalProfile, StyrkaDB } from '../storage/db';
@@ -49,6 +49,8 @@ export async function buildHistory(db: StyrkaDB): Promise<PerformedExercise[]> {
       rir: s.rir,
       technique: s.technique,
       occurredAt: s.occurredAt,
+      // Endast när svar finns, så att indata (och inputsHash) är oförändrade för befintlig historik.
+      ...(s.perceivedEffort ? { perceivedEffort: s.perceivedEffort } : {}),
     }));
     const doneTimes = own.filter((s) => s.kind === 'work' && s.status === 'done' && s.occurredAt).map((s) => s.occurredAt as string);
     if (!doneTimes.length) continue;
@@ -93,5 +95,6 @@ export function plannerProfile(p: LocalProfile): PlannerInput['profile'] {
     substitutions: p.substitutions,
     favorites: [...p.favorites].sort() as ExerciseId[],
     bodyweightKg: kg(p.bodyweightGrams),
+    ...(p.equipmentProfiles && Object.keys(p.equipmentProfiles).length ? { equipmentProfiles: p.equipmentProfiles } : {}),
   };
 }

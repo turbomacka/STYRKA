@@ -1,25 +1,25 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import type { LoadKind } from '../../domain/catalog';
-import type { Technique } from '../../domain/model';
+import type { LoadDisplayBasis, LoadKind } from '../../domain/catalog';
+import type { PerceivedEffort, Technique } from '../../domain/model';
 import { formatKg, parseIntInRange, parseKg } from '../../domain/units';
 import type { LocalSet, SyncState } from '../../storage/db';
 import type { SetValues } from '../../application/training';
-import { T } from '../strings';
+import { SUB, T } from '../strings';
 import { Icon, SaveStateChip } from './common';
 
-export function kgLabel(grams: number | null, lk: LoadKind): string {
+export function kgLabel(grams: number | null, lk: LoadKind, basis?: LoadDisplayBasis): string {
   if (lk === 'duration_sec' || lk === 'reps_only') return '';
   if (grams === null) return 'Välj vikt';
   if (lk === 'bodyweight_plus_kg') return grams === 0 ? 'Kroppsvikt' : `+${formatKg(grams)} kg`;
-  return `${formatKg(grams)} kg`;
+  return `${formatKg(grams)} kg${basis === 'per_hand_kg' ? '/hantel' : ''}`;
 }
 
-export function kgSpoken(grams: number | null, lk: LoadKind): string {
+export function kgSpoken(grams: number | null, lk: LoadKind, basis?: LoadDisplayBasis): string {
   if (grams === null) return 'vikt ej vald';
   const v = formatKg(grams).replace(',', ' komma ');
   if (lk === 'assistance_kg') return `${v} kilo assistans`;
   if (lk === 'bodyweight_plus_kg') return grams === 0 ? 'kroppsvikt' : `plus ${v} kilo`;
-  return `${v} kilo`;
+  return `${v} kilo${basis === 'per_hand_kg' ? ' per hantel' : ''}`;
 }
 
 /** Viktfält: inputMode=decimal, accepterar 102,5 och 102.5, synlig kommaknapp, ± utrustningssteg (10 §1). */
@@ -100,6 +100,11 @@ export type SetRowProps = {
   onLog: (v: SetValues) => Promise<void>;
   onEdit: (v: SetValues) => Promise<void>;
   onUndo: () => Promise<void>;
+  /** Lastbas (t.ex. per hantel) – visas endast när den är definierad (katalog 2.0.0). */
+  loadBasis?: LoadDisplayBasis;
+  /** Kalibrering för nybörjare: fråga "Hur kändes setet?" (lätt/lagom/för tungt) efter utfört set. */
+  effortPrompt?: boolean;
+  onRate?: (e: PerceivedEffort) => Promise<void>;
 };
 
 type Draft = { kg: string; reps: string; secs: string; rir: string; technique: Technique };
@@ -115,7 +120,7 @@ function draftFrom(s: LocalSet, done: boolean): Draft {
  * S08 setrad: `Set 2 | 80 kg | 5 reps | [Klart]`. Förifyllt set sparas med ETT tryck.
  * Vikt och reps är individuellt tryckbara och öppnar numeriskt tangentbord.
  */
-export function SetRow({ set, displayNo, loadKind, stepGrams, online, showRir, failed, onLog, onEdit, onUndo }: SetRowProps) {
+export function SetRow({ set, displayNo, loadKind, stepGrams, online, showRir, failed, onLog, onEdit, onUndo, loadBasis, effortPrompt, onRate }: SetRowProps) {
   const done = set.status === 'done';
   const [editing, setEditing] = useState<null | 'kg' | 'reps' | 'edit'>(null);
   const [draft, setDraft] = useState<Draft>(() => draftFrom(set, done));
@@ -176,18 +181,26 @@ export function SetRow({ set, displayNo, loadKind, stepGrams, online, showRir, f
     }
   }
 
-  const kgText = kgLabel(done ? set.actualGrams : set.targetGrams, loadKind);
+  const shownGrams = done ? set.actualGrams : set.targetGrams;
+  const kgText = kgLabel(shownGrams, loadKind);
   const repsText = isDuration ? `${(done ? set.actualSeconds : set.targetSeconds) ?? '–'}` : `${(done ? set.actualReps : set.targetReps) ?? '–'}`;
   const unit = isDuration ? 's' : 'reps';
   const spokenReps = isDuration ? `${repsText} sekunder` : `${repsText} repetitioner`;
   const statusSpoken = done ? 'utfört' : set.status === 'skipped' ? 'överhoppat' : 'planerat';
 
   return (
-    <li className={`set-row ${done ? 'done' : ''}`} aria-label={`Set ${displayNo}, ${hasKg ? kgSpoken(done ? set.actualGrams : set.targetGrams, loadKind) + ', ' : ''}${spokenReps}, ${statusSpoken}`}>
+    <li className={`set-row ${done ? 'done' : ''}`} aria-label={`Set ${displayNo}, ${hasKg ? kgSpoken(done ? set.actualGrams : set.targetGrams, loadKind, loadBasis) + ', ' : ''}${spokenReps}, ${statusSpoken}`}>
       <span className="set-no num">Set {displayNo}</span>
       {hasKg ? (
-        <button type="button" className="val num" aria-label={`Vikt set ${displayNo}: ${kgSpoken(done ? set.actualGrams : set.targetGrams, loadKind)}. Ändra`} onClick={() => setEditing(done ? 'edit' : 'kg')}>
-          {kgText}
+        <button type="button" className="val num" aria-label={`Vikt set ${displayNo}: ${kgSpoken(done ? set.actualGrams : set.targetGrams, loadKind, loadBasis)}. Ändra`} onClick={() => setEditing(done ? 'edit' : 'kg')}>
+          {loadBasis === 'per_hand_kg' && loadKind === 'external_kg' && shownGrams !== null ? (
+            <>
+              {formatKg(shownGrams)}
+              <span className="unit">kg/hantel</span>
+            </>
+          ) : (
+            kgText
+          )}
           {loadKind === 'assistance_kg' && set.targetGrams !== null && <span className="unit">assist.</span>}
         </button>
       ) : (
@@ -206,6 +219,18 @@ export function SetRow({ set, displayNo, loadKind, stepGrams, online, showRir, f
           {T.CTA_LOG}
         </button>
       )}
+      {done && effortPrompt && onRate && (
+        <div className="set-effort" role="group" aria-label={`${SUB.EFFORT_Q} Set ${displayNo}`}>
+          <span className="small">{SUB.EFFORT_Q}</span>
+          <div className="segmented">
+            {(['easy', 'ok', 'too_heavy'] as const).map((e) => (
+              <button key={e} type="button" aria-pressed={set.perceivedEffort === e} disabled={busy} onClick={() => void onRate(e).catch(() => setError(T.WARN_UNSAVED))}>
+                {SUB.EFFORT[e]}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="set-status">
         <SaveStateChip state={failed ? 'failed_local' : done || set.createQueued ? (set.syncState as SyncState) : null} online={online} />
         {error && (
@@ -217,7 +242,7 @@ export function SetRow({ set, displayNo, loadKind, stepGrams, online, showRir, f
       </div>
       {editing && (
         <div className="editor stack">
-          {hasKg && <EditableKg id={`${uid}-kg`} label={loadKind === 'assistance_kg' ? 'Assistans (kg) – lägre = tyngre' : loadKind === 'bodyweight_plus_kg' ? 'Extra vikt (kg), tomt = kroppsvikt' : 'Vikt (kg)'} value={draft.kg} stepGrams={stepGrams} onChange={(kg) => setDraft({ ...draft, kg })} autoFocus={editing === 'kg'} />}
+          {hasKg && <EditableKg id={`${uid}-kg`} label={loadKind === 'assistance_kg' ? 'Assistans (kg) – lägre = tyngre' : loadKind === 'bodyweight_plus_kg' ? 'Extra vikt (kg), tomt = kroppsvikt' : loadBasis === 'per_hand_kg' ? 'Vikt (kg per hantel)' : 'Vikt (kg)'} value={draft.kg} stepGrams={stepGrams} onChange={(kg) => setDraft({ ...draft, kg })} autoFocus={editing === 'kg'} />}
           {isDuration ? (
             <EditableReps id={`${uid}-s`} label="Sekunder" max={900} value={draft.secs} onChange={(secs) => setDraft({ ...draft, secs })} autoFocus={editing === 'reps'} />
           ) : (

@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
-import type { ExerciseId, Experience } from '../../domain/decision_engine';
+import type { Experience } from '../../domain/decision_engine';
+import type { ExerciseId } from '../../domain/catalog';
 import { ALL_EQUIPMENT, EQUIPMENT_LABEL_SV, exercise, type EquipmentSlug } from '../../domain/catalog';
 import { formatKg, parseKg } from '../../domain/units';
 import { completeOnboarding, DEFAULT_PROFILE, GYM_STANDARD, type EstimateInput, type NewRestriction } from '../../application/profile';

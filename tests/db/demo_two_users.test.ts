@@ -10,7 +10,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { afterAll, describe, expect, it } from 'vitest';
 import { exercise } from '../../src/domain/catalog';
 import { formatKg } from '../../src/domain/units';
-import { validateHeavyPair } from '../../src/domain/decision_engine';
+import { heavyPairAllowed } from '../../src/domain/heavyPair';
 import type { PlanSnapshot } from '../../src/domain/model';
 import { openUserDb } from '../../src/storage/db';
 import { SupabaseTransport } from '../../src/server/supabaseTransport';
@@ -150,7 +150,7 @@ describe('DEMO: två konton × 36 pass + spontanpass mot lokal Supabase', () => 
       // B: 3 pass/vecka, inga RIR (novis) och offline under pass 5–8.
       B.online = !(i >= 5 && i <= 8);
       const pb = await previewNext(B.ctx);
-      for (const r of [['squat', 'deadlift']] as const) expect(validateHeavyPair(pb.exercises.map((e) => ({ exerciseId: e.exerciseId, mode: e.mode, sets: e.sets, plannedKg: e.kg, estimatedOneRM: e.estimatedOneRM })), r[0], r[1])).toBe(true);
+      for (const r of [['squat', 'deadlift']] as const) expect(heavyPairAllowed(pb.exercises.map((e) => ({ exerciseId: e.exerciseId, mode: e.mode, sets: e.sets, plannedKg: e.kg, estimatedOneRM: e.estimatedOneRM })), r[0], r[1])).toBe(true);
       expect(pb.exercises.map((e) => e.exerciseId)).not.toContain('lat_pulldown');
       const ap = pb.exercises.find((e) => e.exerciseId === 'assisted_pullup');
       if (ap?.kg != null) assistTrail.push(ap.kg);

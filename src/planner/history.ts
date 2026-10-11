@@ -1,4 +1,5 @@
-import type { ExerciseId, Mode, SymptomState } from '../domain/decision_engine';
+import type { Mode, SymptomState } from '../domain/decision_engine';
+import type { ExerciseId } from '../domain/catalog';
 import { exercise, impactsAreas, isRelevantFor, type Area } from '../domain/catalog';
 import type { PerformedExercise, RestrictionRule, SymptomReport } from '../domain/model';
 import { hasWork, type GateInput } from '../domain/prescription';

@@ -42,6 +42,9 @@ export type ServerSnapshot = {
   sessionExercises: Record<string, unknown>[];
   sets: Record<string, unknown>[];
   audits: Record<string, unknown>[];
+  /** Tillägg CR 2026-10-10-01 (tomma listor mot äldre server). */
+  calibrations: Record<string, unknown>[];
+  substitutionEvents: Record<string, unknown>[];
 };
 
 export interface SyncTransport {

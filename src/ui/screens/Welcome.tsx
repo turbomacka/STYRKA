@@ -329,7 +329,10 @@ export function Welcome({ supabase }: { supabase: SupabaseClient }) {
           )}
           {body}
         </section>
-        <p>
+        <p className="small">
+          <Link to="/vetenskap">Vetenskapen bakom STYRKA</Link>
+        </p>
+        <p className="small">
           <Link to="/integritet">Integritet och hälsouppgifter</Link>
         </p>
       </div>

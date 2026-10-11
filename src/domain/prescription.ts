@@ -7,22 +7,8 @@
  *
  * Alla tal märkta H är produktheuristiker (05 §1), inte kliniska trösklar.
  */
-import {
-  ENGINE_VERSION,
-  estimatedOneRepMax,
-  initialPrescription,
-  recommendNext,
-  recoveryGate,
-  roundDownKg,
-  type ExerciseId,
-  type Experience,
-  type Exposure,
-  type LiftEstimate,
-  type Mode,
-  type Recommendation,
-  type SetResult,
-  type SymptomState,
-} from './decision_engine';
+import { ENGINE_VERSION, estimatedOneRepMax, initialPrescription, recommendNext, recoveryGate, roundDownKg, type Experience, type Exposure, type LiftEstimate, type Mode, type Recommendation, type SetResult, type SymptomState } from './decision_engine';
+import type { ExerciseId, RefExerciseId } from './catalog';
 import { exercise } from './catalog';
 import type { Confidence, HistorySet, LiftEstimateInput, PerformedExercise, PlannedExercise, Role, UserExerciseSettings } from './model';
 
@@ -113,7 +99,7 @@ export function toExposure(p: PerformedExercise): Exposure {
     technique: s.technique ?? 'uncertain',
   }));
   return {
-    exerciseId: p.exerciseId,
+    exerciseId: p.exerciseId as RefExerciseId,
     whenUtc: p.whenUtc,
     complete,
     plannedTargetReps: p.plan.reps,
@@ -126,7 +112,7 @@ export function toExposure(p: PerformedExercise): Exposure {
 
 function toRecommendation(plan: PlannedExercise): Recommendation {
   return {
-    exerciseId: plan.exerciseId,
+    exerciseId: plan.exerciseId as RefExerciseId,
     kg: plan.kg,
     reps: plan.reps,
     sets: plan.sets,
@@ -163,6 +149,7 @@ function base(args: PrescribeArgs, rec: Recommendation, extra: Partial<PlannedEx
     substitutionFrom: null,
     substitutionReason: null,
     acceptedByUserAt: null,
+    loadBasis: ex.loadDisplayBasis,
     ...extra,
   };
 }
@@ -207,7 +194,7 @@ function prescribeExternal(args: PrescribeArgs): PlannedExercise {
 
   if (!latest) {
     // Första exponering i detta mode.
-    const init = initialPrescription({ exerciseId: args.exerciseId, estimate: est, experience: args.experience, mode: args.mode, increment: inc, manualSetOverride: Math.max(1, Math.min(4, args.sets)), maxLoadKg: maxLoad });
+    const init = initialPrescription({ exerciseId: args.exerciseId as RefExerciseId, estimate: est, experience: args.experience, mode: args.mode, increment: inc, manualSetOverride: Math.max(1, Math.min(4, args.sets)), maxLoadKg: maxLoad });
     let rec = { ...init, confidence: init.kg === null ? 'unknown' as const : confidence };
     if (rec.kg === null) {
       // H: härled försiktigt från arbetsvikt i ett tyngre mode (aldrig uppåt) om ingen uppskattning finns.
@@ -259,12 +246,17 @@ function deriveFromOtherMode(args: PrescribeArgs, inc: number): { kg: number } |
 
 /** H: efter kalibrering gäller användarens egen valda arbetsvikt (lägsta utförda), reps = bandets min. */
 function fromCalibration(args: PrescribeArgs, latest: PerformedExercise, inc: number, e1rm: number | null): PlannedExercise {
-  const init = initialPrescription({ exerciseId: args.exerciseId, estimate: null, experience: args.experience, mode: args.mode, increment: inc, manualSetOverride: Math.max(1, Math.min(4, args.sets)) });
+  const init = initialPrescription({ exerciseId: args.exerciseId as RefExerciseId, estimate: null, experience: args.experience, mode: args.mode, increment: inc, manualSetOverride: Math.max(1, Math.min(4, args.sets)) });
   const done = workDone(latest.sets).filter((s) => s.actualKg !== null && s.actualKg > 0);
   const gate = recoveryGate(args.gate.hoursSinceRelevant, args.gate.relevantSymptoms, args.gate.impactedRegion);
   if (!done.length) return base(args, { ...init, state: gate.state, sets: applySets(args.sets, false) }, { calibration: true, estimatedOneRM: e1rm });
   let kg = roundDownKg(Math.min(...done.map((s) => s.actualKg as number)), inc);
   const reasons = ['CALIBRATED_FROM_USER_WEIGHT'];
+  // H (CR §3.3): enkelt svar 'för tungt' vid kalibrering ⇒ nästa förslag ett viktsteg lägre (aldrig högre).
+  if (done.some((s) => s.perceivedEffort === 'too_heavy')) {
+    kg = roundDownKg(Math.max(0, kg - inc), inc);
+    reasons.push('CALIBRATION_EFFORT_TOO_HEAVY');
+  }
   if (gate.state === 'restart') {
     kg = roundDownKg(kg * gate.factor, inc);
     reasons.push(gate.reason);
@@ -346,7 +338,7 @@ function prescribeRepsOrAssisted(args: PrescribeArgs): PlannedExercise {
   const ex = exercise(args.exerciseId);
   const inc = incrementFor(args.exerciseId, args.settings);
   const assistance = ex.loadKind === 'assistance_kg';
-  const init = initialPrescription({ exerciseId: args.exerciseId, estimate: null, experience: args.experience, mode: args.mode, increment: inc, manualSetOverride: Math.max(1, Math.min(4, args.sets)) });
+  const init = initialPrescription({ exerciseId: args.exerciseId as RefExerciseId, estimate: null, experience: args.experience, mode: args.mode, increment: inc, manualSetOverride: Math.max(1, Math.min(4, args.sets)) });
   const gate = recoveryGate(args.gate.hoursSinceRelevant, args.gate.relevantSymptoms, args.gate.impactedRegion);
   const restart = gate.state === 'restart';
   const sets = applySets(args.sets, restart);
@@ -364,6 +356,11 @@ function prescribeRepsOrAssisted(args: PrescribeArgs): PlannedExercise {
     const vals = done.map((s) => s.actualKg as number);
     let kg = assistance ? Math.max(...vals) : Math.min(...vals);
     const reasons = ['CALIBRATED_FROM_USER_WEIGHT'];
+    if (done.some((s) => s.perceivedEffort === 'too_heavy')) {
+      // Assistans: mer hjälp = lättare. Extra vikt: mindre vikt.
+      kg = assistance ? Math.min(maxKg, r3(kg + inc)) : Math.max(0, r3(kg - inc));
+      reasons.push('CALIBRATION_EFFORT_TOO_HEAVY');
+    }
     if (restart) {
       kg = assistance ? Math.min(maxKg, r3(kg + inc)) : roundDownKg(kg * gate.factor, inc);
       reasons.push(gate.reason);
@@ -418,7 +415,7 @@ function prescribeDuration(args: PrescribeArgs): PlannedExercise {
   const gate = recoveryGate(args.gate.hoursSinceRelevant, args.gate.relevantSymptoms, args.gate.impactedRegion);
   const restart = gate.state === 'restart';
   const sets = applySets(args.sets, restart);
-  const baseRec: Recommendation = { exerciseId: args.exerciseId, kg: null, reps: 1, sets, bandMin: 1, bandMax: 1, mode: args.mode, state: gate.state, reasons: [], engineVersion: ENGINE_VERSION, confidence: 'unknown' };
+  const baseRec: Recommendation = { exerciseId: args.exerciseId as RefExerciseId, kg: null, reps: 1, sets, bandMin: 1, bandMax: 1, mode: args.mode, state: gate.state, reasons: [], engineVersion: ENGINE_VERSION, confidence: 'unknown' };
   const { latest, sameMode } = latestFor(args.history, args.mode);
   if (!latest) return base(args, { ...baseRec, reasons: ['CALIBRATION_REQUIRED'] }, { calibration: true, targetSeconds: null });
   if (latest.plan.targetSeconds === null) {

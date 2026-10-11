@@ -9,6 +9,8 @@ import type { SyncTransport } from '../server/transport';
 /** Feature flag (04 §4): stoppar viktförslag omedelbart utan att låsa historik eller export. */
 export const FLAGS = {
   loadRecommendationsEnabled: (import.meta.env.VITE_FLAG_LOAD_RECOMMENDATIONS ?? 'true') !== 'false',
+  /** CR 2026-10-10-01: övningsbyte v2 (kalibrering, revisionsposter). 'false' ⇒ tidigare bytesvy S09 v1. */
+  substitutionV2: (import.meta.env.VITE_FLAG_SUBSTITUTION_V2 ?? 'true') !== 'false',
 };
 
 export type Services = {

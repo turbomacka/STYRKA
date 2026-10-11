@@ -18,7 +18,7 @@ export function ProgressChart({ points, unit = 'kg', title }: { points: Strength
   const series = (src: StrengthPoint['source']) => points.filter((p) => p.source === src);
   const path = (pts: StrengthPoint[]) => pts.map((p, i) => `${i ? 'L' : 'M'}${x(Date.parse(p.at)).toFixed(1)},${y(p.kg).toFixed(1)}`).join(' ');
   const perf = series('performance'), est = series('estimated'), meas = series('measured');
-  const fmt = (v: number) => (unit === 'kg' ? formatKg(Math.round(v * 1000)) : String(v));
+  const fmt = (v: number) => (unit === 's' ? String(v) : formatKg(Math.round(v * 1000)));
   const dateSv = (iso: string) => new Date(iso).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
   return (
     <figure style={{ margin: 0 }}>

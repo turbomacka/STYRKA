@@ -4,7 +4,7 @@
  * Acceptanstest 04 §2.1: 21, 26, 27, 28, 29, 30, 31, 32, 35, 36, 37, 42, 43.
  */
 import { describe, expect, it, vi } from 'vitest';
-import { validateHeavyPair } from '../../src/domain/decision_engine';
+import { heavyPairAllowed } from '../../src/domain/heavyPair';
 import { openUserDb, dbNameFor } from '../../src/storage/db';
 import { AppError } from '../../src/application/context';
 import { activeSession, countExtraAsPlanned, finishSession, logSet, previewExtra, previewNext, reportSymptom, startSession, undoSet, editSet, canOfferCountAsPlanned } from '../../src/application/training';
@@ -219,7 +219,7 @@ describe('offline local-first', () => {
     await finishSession(h.ctx, s.id, { status: 'abandoned' });
     for (let i = 0; i < 7; i++) {
       const p = await previewNext(h.ctx);
-      expect(validateHeavyPair(p.exercises.map((e) => ({ exerciseId: e.exerciseId, mode: e.mode, sets: e.sets, plannedKg: e.kg, estimatedOneRM: e.estimatedOneRM })), 'squat', 'deadlift')).toBe(true);
+      expect(heavyPairAllowed(p.exercises.map((e) => ({ exerciseId: e.exerciseId, mode: e.mode, sets: e.sets, plannedKg: e.kg, estimatedOneRM: e.estimatedOneRM })), 'squat', 'deadlift')).toBe(true);
       const ss = await startSession(h.ctx, p);
       const first = (await h.db.sets.where('sessionId').equals(ss.id).first())!;
       await logSet(h.ctx, first.id, { actualGrams: first.targetGrams ?? 20_000 });

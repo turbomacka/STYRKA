@@ -1,5 +1,5 @@
 /** HistoryService (03 §6, S12): passlista och styrkeserier som skiljer mätt från beräknad maxstyrka. */
-import type { ExerciseId } from '../domain/decision_engine';
+import type { ExerciseId } from '../domain/catalog';
 import { exercise } from '../domain/catalog';
 import { e1rmFromEstimate, submaxE1rm } from '../domain/prescription';
 import { gramsToKg } from '../domain/units';
@@ -35,10 +35,12 @@ export type StrengthSeries = { exerciseId: ExerciseId; comparable: boolean; poin
  * - performance: bästa faktiska arbetsset (kg) per pass – faktisk prestation, ingen skattning.
  * Assistans/kroppsvikt/tid räknas aldrig om till skivstångs-1RM (02 §4).
  */
-export async function strengthSeries(ctx: AppContext, exerciseId: ExerciseId, sinceUtc?: string): Promise<StrengthSeries> {
+export async function strengthSeries(ctx: AppContext, exerciseId: ExerciseId, sinceUtc?: string, variantKey = 'default'): Promise<StrengthSeries> {
   const lk = exercise(exerciseId).loadKind;
-  const settings = await ctx.db.exerciseSettings.where('exerciseId').equals(exerciseId).first();
-  const sets = (await ctx.db.sets.where('exerciseId').equals(exerciseId).toArray()).filter((s) => !s.deleted && s.kind === 'work' && s.status === 'done' && s.occurredAt && (!sinceUtc || s.occurredAt >= sinceUtc));
+  // Uppskattningar i inställningar gäller standardvarianten; andra maskinprofiler visas som egna serier (§2.3).
+  const settings = variantKey === 'default' ? await ctx.db.exerciseSettings.where('exerciseId').equals(exerciseId).first() : undefined;
+  const ofVariant = new Set((await ctx.db.sessionExercises.where('exerciseId').equals(exerciseId).toArray()).filter((e) => e.variantKey === variantKey).map((e) => e.id));
+  const sets = (await ctx.db.sets.where('exerciseId').equals(exerciseId).toArray()).filter((s) => ofVariant.has(s.sessionExerciseId) && !s.deleted && s.kind === 'work' && s.status === 'done' && s.occurredAt && (!sinceUtc || s.occurredAt >= sinceUtc));
   if (lk !== 'external_kg') {
     const bySession = new Map<string, (typeof sets)[number]>();
     for (const s of sets) {
@@ -78,4 +80,16 @@ export async function strengthSeries(ctx: AppContext, exerciseId: ExerciseId, si
   }
   points.sort((a, b) => a.at.localeCompare(b.at) || a.source.localeCompare(b.source));
   return { exerciseId, comparable: true, points, note: null };
+}
+
+/** Maskinprofiler med utförda set för en övning ('default' först). Serierna skarvas aldrig ihop. */
+export async function performedVariants(ctx: AppContext, exerciseId: ExerciseId): Promise<string[]> {
+  const exs = await ctx.db.sessionExercises.where('exerciseId').equals(exerciseId).toArray();
+  const out = new Set<string>();
+  for (const e of exs) {
+    if (out.has(e.variantKey)) continue;
+    const done = await ctx.db.sets.where('sessionExerciseId').equals(e.id).filter((s) => s.status === 'done' && !s.deleted).count();
+    if (done) out.add(e.variantKey);
+  }
+  return [...out].sort((a, b) => (a === 'default' ? -1 : b === 'default' ? 1 : a.localeCompare(b)));
 }

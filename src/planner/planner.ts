@@ -2,11 +2,14 @@
  * Deterministisk schemagenerator enligt 08 §2 och 02 §7–9.
  * Ren funktion: ingen Date.now, ingen slump, ingen I/O. Samma input + version ⇒ samma output.
  */
-import { ENGINE_VERSION, estimateMinutes, isHeavy, urgencyForSpontaneous, validateHeavyPair, type ExerciseId, type Experience, type Mode } from '../domain/decision_engine';
-import { CATALOG, CATALOG_VERSION, exercise, impactsAreas, isAvailable, type Area, type EquipmentSlug } from '../domain/catalog';
+import { ENGINE_VERSION, estimateMinutes, isHeavy, roundDownKg, urgencyForSpontaneous, type Experience, type Mode } from '../domain/decision_engine';
+import { heavyPairAllowed } from '../domain/heavyPair';
+import type { ExerciseId } from '../domain/catalog';
+import { CATALOG, CATALOG_VERSION, V1_SLUGS, exercise, impactsAreas, isAvailable, type Area, type EquipmentSlug } from '../domain/catalog';
 import { hashOf } from '../domain/hash';
-import { PLANNER_VERSION, RULESET_VERSION, type PlanSnapshot, type PlanStatus, type PlannedExercise, type PlannerInput, type Readiness, type Role, type WarningCode } from '../domain/model';
-import { prescribe } from '../domain/prescription';
+import { relationBetween, relationsFrom, SUBSTITUTION_CATALOG_VERSION, type SubstitutionRelation } from '../domain/substitutionCatalog';
+import { PLANNER_VERSION, RULESET_VERSION, type Familiarity, type LoadEstimationKind, type PlanSnapshot, type PlanStatus, type PlannedExercise, type PlannerInput, type Readiness, type RelationClass, type Role, type SubstitutionMeta, type WarningCode } from '../domain/model';
+import { e1rmFromEstimate, prescribe, START_PCT } from '../domain/prescription';
 import { activeSymptoms, capMode, gateFor, hoursSinceExercise, hoursSinceGroup, isBlocked, isLowerSensitive, modeRank, pastWork, ruleTargets } from './history';
 import templatesJson from './planner_templates.json';
 
@@ -93,7 +96,8 @@ function applySubstitutions(ctx: Ctx, items: Item[]): void {
     const it = items[i];
     const family = (fams[it.slug] ?? []) as ExerciseId[];
     const chosen = ctx.input.profile.substitutions[it.slug];
-    if (chosen && family.includes(chosen) && isAvailable(chosen, ctx.equipment)) {
+    // Användarens aktiva val: mallens ersättningsfamilj ELLER en relation i substitutionskatalogen (CR §2.1 p.6).
+    if (chosen && (family.includes(chosen) || !!relationBetween(it.slug, chosen)) && isAvailable(chosen, ctx.equipment)) {
       it.substitutionFrom = it.slug;
       it.slug = chosen;
       it.substitutionReason = 'USER_CHOSEN_VARIANT';
@@ -194,8 +198,9 @@ function pairRules(ctx: Ctx): PairRule[] {
 /** 08 §2 steg 6 på mode-nivå: håll högst prioriterad tung, gör den andra lätt. Monoton ⇒ terminerar. */
 function applyPairRulesByMode(ctx: Ctx, items: Item[]): void {
   for (const pr of pairRules(ctx)) {
-    const a = items.find((x) => x.slug === pr.a);
-    const b = items.find((x) => x.slug === pr.b);
+    const a = items.find((x) => x.slug === pr.a || x.substitutionFrom === pr.a);
+    const b = items.find((x) => x.slug === pr.b || x.substitutionFrom === pr.b);
+    if (a && a === b) continue;
     if (!a || !b || a.mode !== 'heavy' || b.mode !== 'heavy') continue;
     const [, lower] = [a, b].sort((x, y) => priorityScore(ctx, y) - priorityScore(ctx, x) || x.order - y.order);
     lower.mode = 'light';
@@ -207,20 +212,45 @@ function toSessionExercise(p: PlannedExercise) {
   return { exerciseId: p.exerciseId, mode: p.mode, sets: p.sets, plannedKg: p.kg, estimatedOneRM: p.estimatedOneRM, isMarkedHeavy: p.mode === 'heavy' };
 }
 
-function prescribeItem(ctx: Ctx, it: Item): PlannedExercise {
+/**
+ * Parregler gäller även ersättare: en övning som ersätter t.ex. knäböj räknas också som knäböj i parkontrollen
+ * (CR §4.1 – ett byte får inte skapa ett förbjudet tungt par). Utan byten är listan oförändrad.
+ */
+function heavyList(ps: PlannedExercise[]) {
+  return ps.flatMap((p) => (p.substitutionFrom && p.substitutionFrom !== p.exerciseId ? [toSessionExercise(p), { ...toSessionExercise(p), exerciseId: p.substitutionFrom }] : [toSessionExercise(p)]));
+}
+
+/** Aktiv maskinprofil för en övning (CR §2.3). Endast maskin-/kabelövningar kan ha annan än 'default'. */
+export function activeVariant(profile: PlannerInput['profile'], slug: ExerciseId): string {
+  return (exercise(slug).requiresEquipmentProfile ? profile.equipmentProfiles?.[slug] : undefined) ?? 'default';
+}
+
+const variantOf = (p: PlannedExercise) => p.variantKey ?? 'default';
+
+/** Historik och inställningar för en övning och redskapsvariant. Uppskattning gäller bara standardvarianten. */
+function variantData(ctx: Ctx, slug: ExerciseId, variantKey: string) {
+  const history = ctx.history.filter((h) => h.exerciseId === slug && variantOf(h.plan) === variantKey);
+  const s = settingsFor(ctx, slug);
+  const settings = s && variantKey !== 'default' ? { ...s, estimate: null } : s;
+  return { history, settings };
+}
+
+function prescribeItem(ctx: Ctx, it: Item, variantKey = activeVariant(ctx.input.profile, it.slug)): PlannedExercise {
   const gate = gateFor(it.slug, ctx.history, ctx.active, ctx.input.nowUtc);
+  const { history, settings } = variantData(ctx, it.slug, variantKey);
   const p = prescribe({
     exerciseId: it.slug,
     mode: it.mode,
     sets: it.sets,
     role: it.role,
     experience: experienceFor(ctx, it.slug),
-    settings: settingsFor(ctx, it.slug),
-    history: ctx.history.filter((h) => h.exerciseId === it.slug),
+    settings,
+    history,
     gate,
     bodyweightKg: ctx.input.profile.bodyweightKg,
   });
-  return { ...p, reasons: [...it.reasons, ...p.reasons], substitutionFrom: it.substitutionFrom, substitutionReason: it.substitutionReason, acceptedByUserAt: it.acceptedByUserAt };
+  const withVariant = exercise(it.slug).requiresEquipmentProfile && variantKey !== 'default' ? { variantKey } : {};
+  return { ...p, ...withVariant, reasons: [...it.reasons, ...p.reasons], substitutionFrom: it.substitutionFrom, substitutionReason: it.substitutionReason, acceptedByUserAt: it.acceptedByUserAt };
 }
 
 /** 08 §2 steg 6–7: efter viktberäkning kan relativ last ≥75 % e1RM göra en övning tung (02 §2). */
@@ -228,10 +258,10 @@ function prescribeWithPairCheck(ctx: Ctx, items: Item[]): PlannedExercise[] {
   let planned = items.map((it) => prescribeItem(ctx, it));
   const rules = pairRules(ctx);
   for (let guard = 0; guard <= items.length * 2 + 2; guard++) {
-    const violation = rules.find((r) => !validateHeavyPair(planned.map(toSessionExercise), r.a, r.b));
+    const violation = rules.find((r) => !heavyPairAllowed(heavyList(planned), r.a, r.b));
     if (!violation) return planned;
-    const ia = planned.findIndex((p) => p.exerciseId === violation.a);
-    const ib = planned.findIndex((p) => p.exerciseId === violation.b);
+    const ia = planned.findIndex((p) => p.exerciseId === violation.a || p.substitutionFrom === violation.a);
+    const ib = planned.findIndex((p) => p.exerciseId === violation.b || p.substitutionFrom === violation.b);
     const [, lowerIdx] = [ia, ib].sort((x, y) => priorityScore(ctx, items[y]) - priorityScore(ctx, items[x]) || items[x].order - items[y].order);
     const it = items[lowerIdx];
     if (it.mode !== 'light') {
@@ -255,7 +285,9 @@ function minutesFor(exs: PlannedExercise[]): number {
       const kind = exercise(p.exerciseId).timeKind;
       const firstBarbell = kind === 'barbell_compound' && !firstBarbellSeen;
       if (kind === 'barbell_compound') firstBarbellSeen = true;
-      return { mode: p.mode, sets: p.sets, kind, firstBarbell };
+      // H: ensidiga övningar i katalog 2.0.0 räknas för båda sidor (tidsfaktor 2); version 1 har faktor 1.
+      const sets = Math.min(6, p.sets * exercise(p.exerciseId).timeMultiplier);
+      return { mode: p.mode, sets, kind, firstBarbell };
     }),
   );
 }
@@ -334,7 +366,7 @@ export function verifyInvariants(snapshot: PlanSnapshot, input: PlannerInput): v
     if (e.loadKind === 'external_kg' && e.kg !== null && (e.kg < 0 || e.kg > 500)) throw new Error('INVARIANT_KG_RANGE');
   }
   for (const r of input.restrictions) {
-    if (r.active && r.kind === 'block_pair_heavy' && r.exerciseA && r.exerciseB && !validateHeavyPair(snapshot.exercises.map(toSessionExercise), r.exerciseA, r.exerciseB)) {
+    if (r.active && r.kind === 'block_pair_heavy' && r.exerciseA && r.exerciseB && !heavyPairAllowed(heavyList(snapshot.exercises), r.exerciseA, r.exerciseB)) {
       throw new Error('INVARIANT_PAIR_HEAVY');
     }
   }
@@ -460,7 +492,9 @@ export function planExtra(input: PlannerInput, opts: ExtraOptions): PlanSnapshot
 
   type Cand = { slug: ExerciseId; recent48: boolean; recentHeavy48: boolean; exposure7d: number; score: number; order: number };
   const cands: Cand[] = [];
-  CATALOG.forEach((ex, order) => {
+  // Urval: version 1-katalogen (oförändrat beteende) plus övningar som användaren permanent valt som ersättare.
+  const chosenTargets = new Set(Object.values(input.profile.substitutions).filter((x): x is ExerciseId => !!x));
+  CATALOG.filter((ex) => V1_SLUGS.has(ex.slug) || chosenTargets.has(ex.slug)).forEach((ex, order) => {
     const slug = ex.slug;
     if (!isAvailable(slug, ctx.equipment)) return;
     if (isBlocked(slug, input.restrictions)) {
@@ -558,6 +592,219 @@ export function canCountAsPlanned(nextPlanned: PlanSnapshot, extraDone: Array<{ 
   if (!main) return false;
   const done = extraDone.find((e) => e.exerciseId === main.exerciseId);
   return !!done && done.doneWorkSets >= main.sets;
+}
+
+// ---------------------------------------------------------------------------
+// Övningsbyte (STYRKA-CR-2026-10-10-01 §2–§3). Återanvänder motorn; ingen andra progressionsalgoritm.
+// ---------------------------------------------------------------------------
+
+export type ReplacementStatus = 'ok' | 'NOT_IN_CATALOG' | 'EQUIPMENT_UNAVAILABLE' | 'USER_BLOCK_EXERCISE' | 'SYMPTOM_REVIEW_REQUIRED' | 'PAIR_RULE' | 'ALREADY_IN_SESSION';
+
+export type ReplacementResult = {
+  status: ReplacementStatus;
+  planned: PlannedExercise | null;
+  relation: SubstitutionRelation | null;
+  /** Hjälpskattning möjlig men vana i målövningen okänd – fråga "Har du gjort övningen tidigare?". */
+  needsFamiliarity: boolean;
+  /** Hjälpskattning används: användaren måste bekräfta eller justera vikten. */
+  requiresConfirmation: boolean;
+};
+
+export type ReplacementArgs = {
+  from: PlannedExercise;
+  to: ExerciseId;
+  /** Övriga aktiva övningar i passet (parregler och dubbletter). */
+  others: PlannedExercise[];
+  familiarity?: Familiarity;
+  variantKey?: string;
+  replacesSessionExerciseId?: string;
+};
+
+/** H (CR §3.2): högsta andel av preliminär e1RM vid första exponering från hjälpskattning. */
+export const FIRST_EXPOSURE_MAX_PCT = 0.6;
+
+const RELATION_CODE: Record<RelationClass, string> = { close_variant: 'SUB_RELATION_CLOSE', same_family: 'SUB_RELATION_FAMILY', complementary: 'SUB_RELATION_COMPLEMENTARY' };
+const KIND_CODE: Record<LoadEstimationKind, string> = {
+  target_observed: 'SUB_TARGET_OBSERVED',
+  target_estimated: 'SUB_TARGET_ESTIMATED',
+  calibration: 'SUB_CALIBRATION',
+  population_prior_low_confidence: 'SUB_POPULATION_PRIOR_LOW_CONFIDENCE',
+  none: 'SUB_NO_ESTIMATE',
+};
+
+/** Giltig e1RM i källövningen: egen uppskattning, annars senaste föreskrifts e1RM (standardvariant). */
+function sourceE1rm(ctx: Ctx, from: ExerciseId): number | null {
+  const s = settingsFor(ctx, from);
+  if (s?.estimate) {
+    const e = e1rmFromEstimate(s.estimate);
+    if (e && e.kg > 0) return e.kg;
+  }
+  const hist = ctx.history.filter((h) => h.exerciseId === from && variantOf(h.plan) === 'default' && h.plan.estimatedOneRM !== null && h.plan.estimatedOneRM > 0);
+  return hist.length ? (hist[hist.length - 1].plan.estimatedOneRM as number) : null;
+}
+
+/**
+ * Föreskrift för ersättare enligt auktoritetsordningen (CR §3.1). Tillämpar blockeringar, symtomspärr,
+ * återhämtning, användarens gränser och parregler innan något visas. Den ursprungliga övningens kilo används aldrig.
+ */
+export function planReplacement(input: PlannerInput, args: ReplacementArgs): ReplacementResult {
+  const ctx = makeCtx(input);
+  const { from, to } = args;
+  const fail = (status: ReplacementStatus, relation: SubstitutionRelation | null = null): ReplacementResult => ({ status, planned: null, relation, needsFamiliarity: false, requiresConfirmation: false });
+  const sameExercise = to === from.exerciseId;
+  const revert = !sameExercise && from.substitutionFrom === to;
+  const relation = sameExercise ? null : (relationBetween(from.exerciseId, to) ?? null);
+  if (!sameExercise && !relation && !revert) return fail('NOT_IN_CATALOG');
+  if (!isAvailable(to, ctx.equipment)) return fail('EQUIPMENT_UNAVAILABLE', relation);
+  if (isBlocked(to, input.restrictions)) return fail('USER_BLOCK_EXERCISE', relation);
+  const gate = gateFor(to, ctx.history, ctx.active, input.nowUtc);
+  if (gate.impactedRegion && ['persistent', 'limping', 'swelling'].includes(gate.relevantSymptoms)) return fail('SYMPTOM_REVIEW_REQUIRED', relation);
+  const variantKey = args.variantKey ?? activeVariant(input.profile, to);
+  if (args.others.some((o) => o.exerciseId === to && variantOf(o) === variantKey)) return fail('ALREADY_IN_SESSION', relation);
+
+  // Behåll träningssyfte och belastningsroll; användarens gränser och återhämtning gäller som i planeringen.
+  const it: Item = { slug: to, templateSlug: from.exerciseId, mode: from.mode, sets: from.sets, role: from.role, order: 0, reasons: [], substitutionFrom: from.exerciseId, substitutionReason: 'USER_SWAP', acceptedByUserAt: input.nowUtc };
+  const items = [it];
+  applyUserRules(ctx, items);
+  if (!items.length) return fail('USER_BLOCK_EXERCISE', relation);
+  if (it.mode === 'heavy' && gate.groupHours !== null && gate.groupHours < 48) {
+    it.mode = 'light';
+    it.reasons.push(exercise(to).recoveryGroup === 'lower' ? 'RECENT_LOWER_HEAVY' : 'RECENT_PATTERN_WORK', 'HEAVY_DOWNGRADED_TO_LIGHT');
+  }
+  const pairs = pairRules(ctx);
+  const othersHeavy = heavyList(args.others);
+  const root = from.substitutionFrom ?? from.exerciseId;
+  const modeOk = pairs.every((r) => heavyPairAllowed([...othersHeavy, { exerciseId: to, mode: it.mode, sets: it.sets, isMarkedHeavy: it.mode === 'heavy' }, { exerciseId: root, mode: it.mode, sets: it.sets, isMarkedHeavy: it.mode === 'heavy' }], r.a, r.b));
+  if (!modeOk && it.mode !== 'light') {
+    it.mode = 'light';
+    it.reasons.push('PAIR_RULE_DOWNGRADED');
+  }
+
+  // Auktoritetsordning för startvikt (§3.1).
+  const { history, settings } = variantData(ctx, to, variantKey);
+  const experience = experienceFor(ctx, to);
+  const hasHistory = history.some((h) => h.sets.some((s) => s.kind === 'work' && s.status === 'done'));
+  let p = prescribe({ exerciseId: to, mode: it.mode, sets: it.sets, role: it.role, experience, settings, history, gate, bodyweightKg: input.profile.bodyweightKg });
+  let kind: LoadEstimationKind;
+  let needsFamiliarity = false;
+  let requiresConfirmation = false;
+  let prior: SubstitutionMeta['prior'];
+  let suggestion: number | null = null;
+  if (hasHistory) {
+    kind = p.reasons.some((r) => r.startsWith('CALIBRATED_FROM_USER')) ? 'calibration' : p.kg !== null || p.targetSeconds !== null ? 'target_observed' : 'none';
+  } else if (settings?.estimate && p.kg !== null) {
+    kind = 'target_estimated';
+  } else {
+    kind = 'none';
+    const lp = relation?.load_prior;
+    const srcE1rm = lp?.kind === 'population_ratio' ? sourceE1rm(ctx, from.exerciseId) : null;
+    if (lp?.kind === 'population_ratio' && srcE1rm !== null && !gate.impactedRegion && exercise(to).loadKind === 'external_kg') {
+      if (args.familiarity === 'familiar') {
+        const inc = p.incrementKg;
+        const tentative = +(lp.ratio * srcE1rm).toFixed(3);
+        const pct = Math.min(START_PCT[experience][it.mode], FIRST_EXPOSURE_MAX_PCT);
+        const perHand = lp.basis === 'per_hand_total';
+        let kg = roundDownKg((tentative * pct) / (perHand ? 2 : 1), inc);
+        const maxLoad = settings?.maxLoadKg ?? null;
+        if (maxLoad !== null && kg > maxLoad) kg = roundDownKg(maxLoad, inc);
+        if (kg > 0) {
+          kind = 'population_prior_low_confidence';
+          requiresConfirmation = true;
+          suggestion = kg;
+          prior = { ratio: lp.ratio, sourceExerciseId: from.exerciseId, sourceE1rm: srcE1rm, tentativeE1rm: tentative, pct, perHand };
+        }
+      } else if (args.familiarity === undefined || args.familiarity === 'unknown') {
+        needsFamiliarity = true;
+      }
+    }
+    // Ingen giltig skattning: kontrollerad kalibrering, aldrig en påhittad siffra (§3.1 p.5).
+    p = { ...p, kg: null, calibration: true };
+  }
+  const evidenceIds = [...new Set([...(relation?.evidence_ids ?? []), ...(prior && relation?.load_prior.kind === 'population_ratio' ? relation.load_prior.reference_ids : [])])];
+  const reasons = [
+    ...(relation ? [RELATION_CODE[relation.relation]] : sameExercise ? ['SUB_NEW_MACHINE_PROFILE'] : ['SUB_REVERT_TO_ORIGINAL']),
+    KIND_CODE[kind],
+    ...it.reasons,
+    ...p.reasons,
+    'USER_SWAP',
+  ];
+  const planned: PlannedExercise = {
+    ...p,
+    reasons: [...new Set(reasons)],
+    confidence: kind === 'population_prior_low_confidence' ? 'low' : p.confidence,
+    // Kedjade byten pekar på den ursprungligen planerade övningen (parregler, "återställ", "Använd framöver").
+    substitutionFrom: to === root ? null : root,
+    substitutionReason: 'USER_SWAP',
+    acceptedByUserAt: input.nowUtc,
+    loadEstimationKind: kind,
+    calibrationSuggestionKg: suggestion,
+    ...(exercise(to).requiresEquipmentProfile && variantKey !== 'default' ? { variantKey } : {}),
+    substitution: {
+      catalogVersion: SUBSTITUTION_CATALOG_VERSION,
+      ruleSetVersion: RULESET_VERSION,
+      relation: relation?.relation ?? 'same_exercise_new_profile',
+      evidenceIds,
+      ...(prior ? { prior } : {}),
+      ...(args.replacesSessionExerciseId ? { replacesSessionExerciseId: args.replacesSessionExerciseId } : {}),
+    },
+  };
+  // Slutkontroll efter föreskrift: relativ last kan göra övningen tung (02 §2) – stoppa hellre än att visa.
+  if (!pairs.every((r) => heavyPairAllowed([...othersHeavy, toSessionExercise(planned), { ...toSessionExercise(planned), exerciseId: root }], r.a, r.b))) return fail('PAIR_RULE', relation);
+  verifySubstitutionInvariants(planned);
+  return { status: 'ok', planned, relation, needsFamiliarity, requiresConfirmation };
+}
+
+/**
+ * SUB19: en hjälpskattning får aldrig presenteras utan markerad osäkerhet. Kastar vid brott.
+ * Ingen vikt utan underlag: 'none' får varken kg eller förslag.
+ */
+export function verifySubstitutionInvariants(p: PlannedExercise): void {
+  if (p.loadEstimationKind === 'population_prior_low_confidence') {
+    if (p.confidence !== 'low' || !p.calibration || p.kg !== null || p.calibrationSuggestionKg == null || !p.reasons.includes('SUB_POPULATION_PRIOR_LOW_CONFIDENCE') || !p.substitution?.prior) {
+      throw new Error('INVARIANT_PRIOR_UNMARKED');
+    }
+  } else if (p.calibrationSuggestionKg != null) {
+    throw new Error('INVARIANT_SUGGESTION_WITHOUT_PRIOR');
+  }
+  if (p.loadEstimationKind === 'none' && (p.kg !== null || p.calibrationSuggestionKg != null)) throw new Error('INVARIANT_FABRICATED_KG');
+}
+
+export type SubstitutionCandidate = {
+  exerciseId: ExerciseId;
+  relation: SubstitutionRelation | null;
+  result: ReplacementResult;
+};
+
+const RELATION_RANK: Record<RelationClass, number> = { close_variant: 0, same_family: 1, complementary: 2 };
+const SPEC_RANK = { high: 0, moderate: 1, low: 2 } as const;
+
+/**
+ * Kandidater för "Byt övning" (§2.1 p.2–4): högst 3 prioriterade, tillåtna först; därefter övriga tillåtna
+ * och ej tillåtna med skäl. Deterministisk ordning: relation, specificitet, egna data, favorit, katalogordning.
+ */
+export function substitutionCandidates(input: PlannerInput, from: PlannedExercise, others: PlannedExercise[], familiarity: Partial<Record<ExerciseId, Familiarity>> = {}): { suggested: SubstitutionCandidate[]; more: SubstitutionCandidate[] } {
+  const rels = relationsFrom(from.exerciseId);
+  const targets: Array<{ to: ExerciseId; relation: SubstitutionRelation | null; order: number }> = rels.map((r, i) => ({ to: r.to, relation: r, order: i }));
+  if (from.substitutionFrom && !targets.some((t) => t.to === from.substitutionFrom)) targets.unshift({ to: from.substitutionFrom, relation: null, order: -1 });
+  const ctx = makeCtx(input);
+  const ownData = (to: ExerciseId) => ctx.history.some((h) => h.exerciseId === to) || !!settingsFor(ctx, to)?.estimate;
+  const all = targets.map((t) => ({ ...t, result: planReplacement(input, { from, to: t.to, others, familiarity: familiarity[t.to] }) }));
+  const score = (x: (typeof all)[number]) => [x.relation ? RELATION_RANK[x.relation.relation] : -1, x.relation ? SPEC_RANK[x.relation.strength_specificity] : -1, ownData(x.to) ? 0 : 1, input.profile.favorites.includes(x.to) ? 0 : 1, x.order];
+  const cmp = (a: (typeof all)[number], b: (typeof all)[number]) => {
+    const sa = score(a);
+    const sb = score(b);
+    for (let i = 0; i < sa.length; i++) if (sa[i] !== sb[i]) return sa[i] - sb[i];
+    return 0;
+  };
+  const allowed = all.filter((x) => x.result.status === 'ok').sort(cmp);
+  const blocked = all.filter((x) => x.result.status !== 'ok').sort(cmp);
+  const toCand = (x: (typeof all)[number]): SubstitutionCandidate => ({ exerciseId: x.to, relation: x.relation, result: x.result });
+  return { suggested: allowed.slice(0, 3).map(toCand), more: [...allowed.slice(3), ...blocked].map(toCand) };
+}
+
+/** Beräknad tid för en lista föreskrifter (t.ex. återstående set efter byte). */
+export function estimatedMinutesFor(exs: PlannedExercise[]): number {
+  return minutesFor(exs.filter((e) => e.sets > 0));
 }
 
 export { isHeavy };

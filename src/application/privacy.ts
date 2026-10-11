@@ -22,6 +22,9 @@ export type ExportBundle = {
   programs: unknown[];
   sessions: unknown[];
   recommendationAudits: unknown[];
+  /** Tillägg CR 2026-10-10-01: kalibreringsnivå per övning och revisionsposter för övningsbyten. */
+  exerciseCalibrations: unknown[];
+  substitutionEvents: unknown[];
 };
 
 const strip = <T extends { syncState?: unknown }>(x: T) => {
@@ -32,7 +35,7 @@ const strip = <T extends { syncState?: unknown }>(x: T) => {
 /** Export omfattar källregistreringar, set, pass, planversion, rekommendationsgrunder och aktuell profil (35). */
 export async function exportJson(ctx: AppContext): Promise<ExportBundle> {
   const { db } = ctx;
-  const [profile, settings, consent, restrictions, symptoms, programs, sessions, exs, sets, audits, pending] = await Promise.all([
+  const [profile, settings, consent, restrictions, symptoms, programs, sessions, exs, sets, audits, pending, calibrations, events] = await Promise.all([
     db.profile.get(ctx.userId),
     db.exerciseSettings.toArray(),
     db.consents.get(ctx.userId),
@@ -44,6 +47,8 @@ export async function exportJson(ctx: AppContext): Promise<ExportBundle> {
     db.sets.toArray(),
     db.audits.toArray(),
     db.outbox.count(),
+    db.calibrations.toArray(),
+    db.substitutionEvents.toArray(),
   ]);
   return {
     format: 'styrka-export',
@@ -66,6 +71,8 @@ export async function exportJson(ctx: AppContext): Promise<ExportBundle> {
         .map((e) => ({ ...strip(e), sets: sets.filter((x) => x.sessionExerciseId === e.id).sort((a, b) => a.ordinal - b.ordinal).map(strip) })),
     })),
     recommendationAudits: audits.map(strip),
+    exerciseCalibrations: calibrations.map(strip),
+    substitutionEvents: events.sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(strip),
   };
 }
 
@@ -80,12 +87,12 @@ export async function exportCsv(ctx: AppContext): Promise<string> {
   const sessions = new Map((await db.sessions.toArray()).map((s) => [s.id, s]));
   const exs = new Map((await db.sessionExercises.toArray()).map((e) => [e.id, e]));
   const sets = (await db.sets.toArray()).filter((s) => s.status !== 'planned' || s.createQueued);
-  const header = ['session_id', 'session_kind', 'session_status', 'started_at', 'exercise', 'exercise_sv', 'mode', 'set_ordinal', 'set_kind', 'set_status', 'target_kg', 'target_reps', 'target_seconds', 'actual_kg', 'actual_reps', 'actual_seconds', 'rir', 'technique', 'occurred_at', 'manual_override', 'deleted', 'engine_version', 'recommendation_reasons'];
+  const header = ['session_id', 'session_kind', 'session_status', 'started_at', 'exercise', 'exercise_sv', 'mode', 'set_ordinal', 'set_kind', 'set_status', 'target_kg', 'target_reps', 'target_seconds', 'actual_kg', 'actual_reps', 'actual_seconds', 'rir', 'technique', 'occurred_at', 'manual_override', 'deleted', 'engine_version', 'recommendation_reasons', 'load_basis', 'perceived_effort', 'substituted_from'];
   const rows = sets
     .map((s) => {
       const se = exs.get(s.sessionExerciseId);
       const sess = sessions.get(s.sessionId);
-      return [s.sessionId, sess?.kind, sess?.status, sess?.startedAt, s.exerciseId, exercise(s.exerciseId).nameSv, se?.mode, s.ordinal, s.kind, s.status, s.targetGrams === null ? '' : gramsToDecimalString(s.targetGrams), s.targetReps, s.targetSeconds, s.actualGrams === null ? '' : gramsToDecimalString(s.actualGrams), s.actualReps, s.actualSeconds, s.rir, s.technique, s.occurredAt, s.manualOverride, s.deleted, se?.snapshot.engineVersion, se?.snapshot.reasons.join('|')];
+      return [s.sessionId, sess?.kind, sess?.status, sess?.startedAt, s.exerciseId, exercise(s.exerciseId).nameSv, se?.mode, s.ordinal, s.kind, s.status, s.targetGrams === null ? '' : gramsToDecimalString(s.targetGrams), s.targetReps, s.targetSeconds, s.actualGrams === null ? '' : gramsToDecimalString(s.actualGrams), s.actualReps, s.actualSeconds, s.rir, s.technique, s.occurredAt, s.manualOverride, s.deleted, se?.snapshot.engineVersion, se?.snapshot.reasons.join('|'), se?.snapshot.loadBasis ?? '', s.perceivedEffort ?? '', se?.snapshot.substitutionFrom ?? ''];
     })
     .sort((a, b) => String(a[3]).localeCompare(String(b[3])) || String(a[4]).localeCompare(String(b[4])) || Number(a[7]) - Number(b[7]));
   return [header, ...rows].map((r) => r.map(csvCell).join(';')).join('\n');

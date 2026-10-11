@@ -1,4 +1,4 @@
-# Testprotokoll STYRKA (2026-10-10)
+# Testprotokoll STYRKA (uppdaterat 2026-10-11, inkl. STYRKA-CR-2026-10-10-01)
 
 Miljö: Windows 10, Node 22.13, lokal Supabase (Postgres 17.11, GoTrue 2.197, PostgREST 16.4) i Docker, Playwright 1.64 (Chromium, WebKit 27.2). Alla data syntetiska.
 
@@ -6,16 +6,52 @@ Miljö: Windows 10, Node 22.13, lokal Supabase (Postgres 17.11, GoTrue 2.197, Po
 
 | Nivå | Kommando | Resultat |
 |---|---|---|
-| Referenssmoke (paketets egen) | `npm run test:reference` | **26/26 PASS**, SHA256 för `decision_engine.ts` = manifest |
-| Enhet + property + offline/synk | `vitest --project unit` | **97/97 PASS** (inkl. 600 + 300 slumpade profiler, 2000 ekvivalensfall) |
+| Referenssmoke (paketets egen) | `npm run test:reference` | **26/26 PASS**, SHA256 för `decision_engine.ts` = manifest (filen oförändrad) |
+| Enhet + property + offline/synk + substitution + evidensregister | `vitest --project unit` | **139/139 PASS** (inkl. 600 + 300 slumpade profiler, 2000 ekvivalensfall, SUB01–SUB24 på domän- och applikationsnivå) |
 | Komponenter (jsdom + axe) | `vitest --project ui` | **8/8 PASS** |
-| DB/RLS/RPC/demo mot riktig Supabase | `vitest --project db` | **28/28 PASS** (se not om intermittent timeout nedan; ytterligare en gång föll filens förberedelse i en körning direkt efter omstart av lokal Supabase – ej reproducerat i tre efterföljande körningar) |
-| E2E | `playwright test` | **58 PASS, 2 SKIP** (WebKit: service worker-offline och Tab-fokus stöds inte av WebKit-emuleringen på Windows) |
+| DB/RLS/RPC/demo mot riktig Supabase | `vitest --project db` | **38/38 PASS** (varav 10 nya för migration 004) |
+| E2E | `playwright test` | **70 PASS, 2 SKIP** (WebKit: service worker-offline och Tab-fokus stöds inte av WebKit-emuleringen på Windows). Se not om e-postfördröjning. |
 | Inloggning (del av E2E, alla 3 profiler) | `e2e/auth.spec.ts` | skapa konto + bekräftelse, befintlig e-post, fel lösenord/validering, glömt lösenord via kod och länk, länk öppnad i **annan webbläsare** (bekräftelse och återställning), konto utan lösenord, obekräftad inloggning, byt lösenord, inloggning via e-post utan lösenord |
-| Staging (manuellt) | `npm run test:staging`, `playwright -c playwright.staging.config.ts` | 5/5 och 2/2 mot styrka-staging |
+| Staging (manuellt) | `npm run test:staging`, `playwright -c playwright.staging.config.ts` | Se RELEASEGRINDAR (körs efter migration 004 i staging) |
 | Lint / typecheck / audit | | 0 fel, 0 sårbarheter (`npm audit`) |
 
 **Not (ärligt redovisat):** I en av tre upprepade körningar av DB-sviten fick testet "10 parallella identiska anrop" en `statement timeout` från Postgres. 60 efterföljande rundor reproducerade det inte. Felet klassas nu som transient (`DB_UNAVAILABLE`) och klientens kö försöker igen med samma eventId, vilket är idempotent – ingen dubblett kan uppstå. Rotorsaken bedöms som I/O-stall i Docker/WSL men är inte bevisad; bör bevakas i staging.
+
+**Not (e-post i E2E):** I en full E2E-körning fick ett inloggningstest (Android) inget mejl inom 15 s från lokal Mailpit efter många kontoskapanden i följd; testet passerade vid omkörning (alla 45 auth-/vetenskapsfall gröna). Klassas som testmiljöns e-postfördröjning/rate limit, inte som appfel.
+
+## STYRKA-CR-2026-10-10-01 (2026-10-11): vetenskapssida och övningsbyte
+
+Ändringen är additiv. Befintliga regressionstester körs oförändrade och är gröna (motor, planerare, offline, RLS, demo 2 × 36 pass, E2E).
+
+| ID | Test (fil › fall) | Resultat |
+|---|---|---|
+| SUB01 | unit `substitution` › målövningens egen historik styr vikten | PASS |
+| SUB02 | unit `substitution` › 1RM 120 ⇒ e1RM 96, 57,5 kg, låg säkerhet, redigerbart; E2E `substitution` (bekräftad startvikt i UI) | PASS |
+| SUB03 | unit `substitution` › okänd vana ⇒ ingen siffra; unit `substitution_app` › SUB03 i appen | PASS |
+| SUB04 | unit `substitution` › 83 kg totalt, 24 kg per hantel; unit `substitution_app` › SUB14 (24 kg i appflödet) | PASS |
+| SUB05 | unit `substitution` › latsdrag → assisterade chins | PASS |
+| SUB06/07 | unit `substitution` › benpress / rumänska marklyft: kompletterande, ingen omräkning | PASS |
+| SUB08 | unit `substitution` › knäområdesblockering och symtom respekteras | PASS |
+| SUB09 | unit `substitution` › förbjudet tungt par justeras eller stoppas | PASS |
+| SUB10 | unit `substitution_app` › "Bara idag" ⇒ samma mall har originalet nästa gång | PASS |
+| SUB11 | unit `substitution_app` › "Använd framöver" ⇒ endast kommande pass, historik och programversion oförändrade, återställning; E2E `substitution` (profil → Återställ) | PASS |
+| SUB12 | unit `substitution_app` › offline byte + set + omstart + tappad kvittens ⇒ exakt en gång | PASS |
+| SUB13 | unit `substitution_app` › samma byte på två enheter ⇒ en serverpost, revisionskonflikt vid olika redigering | PASS |
+| SUB14 | unit `substitution_app` › 24 kg per hand genom lokal data, synk, CSV/JSON, analys; db `substitution_db` › lastbas i DB + appflöde mot riktig server; E2E (`kg/hantel` i UI) | PASS |
+| SUB15 | unit `substitution` › ingen påhittad siffra | PASS |
+| SUB16 | unit `substitution_app` › utförda set behåller exercise_id, nya set knyts till ersättaren | PASS |
+| SUB17 | E2E `science` › utloggad når /vetenskap från välkomstsidan (3 profiler) | PASS |
+| SUB18 | E2E `science` › direktlänk till regel och källa (DOI); `docs/evidence/evidence_links.md` (18/18 länkar svarar) | PASS |
+| SUB19 | unit `substitution` › hjälpskattning utan markerad osäkerhet underkänns (invariant kastar) | PASS |
+| SUB20 | unit `substitution_app` › 36 tidigare pass: inga historiska set, snapshots, audits eller serier ändras; hela befintliga sviten grön | PASS |
+| SUB21 | unit `substitution_app` › spontanpass med byte i samma belastningshistorik, påverkar nästa plan (återhämtning) | PASS |
+| SUB22 | unit `substitution` › målövningens e1RM prioriteras | PASS |
+| SUB23 | unit `substitution` + `substitution_app` › annan maskin ⇒ separat historik, inga kg | PASS |
+| SUB24 | unit `substitution` › ingen invertering av 0,80 | PASS |
+
+Övrigt nytt: kalibreringsfortsättning ("för tungt" ⇒ ett viktsteg lättare, ingen höjning inom passet), kalibreringsnivå efter två kontrollerade pass, revisionspost med alla fält i §4.3, RLS/append-only/sammansatta FK för de nya tabellerna, `perceived_effort` via `apply_set_mutation` (ogiltigt värde avvisas atomiskt), evidensregistrets kartläggning (alla skälkoder har regelankare, alla påståenden har källor, inga persondata), axe på vetenskapssidan och bytesvyn, ≤ 2 tryck från "Byt övning" till bytt övning (E2E). Feature flag av (`VITE_FLAG_SUBSTITUTION_V2=false`) ⇒ tidigare bytesvy (unit › "feature flag av").
+
+Skärmbilder: `docs/evidence/screenshots/<profil>/SUB-1…SUB-4*.png`, `VET-1-vetenskap.png`.
 
 ## Acceptanstest 04 §2.1
 

@@ -52,6 +52,19 @@
 - **Kontouppräkning:** "Skapa konto" med befintlig e-post ger beskedet att kontot finns (efterfrågad tydlig återkoppling). "Glömt lösenordet" svarar neutralt. Begränsas av Supabase rate limits. Produktbeslut att bekräfta.
 - Staging (gratisnivå + Supabase standardmejl): e-postmallar kan inte ändras ⇒ mejlen innehåller bara länkar (ingen kod), och mejl går endast till projektets teammedlemmar. Minsta lösenordslängd i staging-Auth är 6 (klienten kräver 8) eftersom `config push` avvisas när mallarna ingår. Båda löses med egen SMTP.
 
+## 3d. STYRKA-CR-2026-10-10-01 (migration 004, 2026-10-11)
+
+| Del | Åtgärd | Bevis |
+|---|---|---|
+| `user_exercise_calibrations` | RLS, ägarpolicys för SELECT/INSERT/UPDATE/DELETE, en rad per (användare, övning, maskinprofil), observationer är set-id (referenser, inga kopior av hälsodata) | db › `substitution_db` › RLS, unik rad, ogiltiga värden |
+| `session_exercise_substitution_events` | RLS; klienten har endast SELECT/INSERT (append-only), sammansatta FK `(session_id, user_id)` och `(…_session_exercise_id, user_id)` | db › append-only, FK mot annan användares pass/övning nekas |
+| `training_sets.perceived_effort` | Ny vitlistad nyckel `perceivedEffort` i `private.apply_set_mutation` (övrig logik identisk med 003); CHECK-villkor; fel rullar tillbaka allt | db › perceived_effort via RPC |
+| `session_exercises.load_basis`, `profiles.equipment_profiles`, katalogkolumner | Additiva kolumner med CHECK; inga befintliga rader, set eller rekommendationer ändras | db › katalog 2.0.0, lastbas |
+| Kontoradering | Nya tabeller raderas via kaskad | db › appflöde mot riktig server |
+| Vetenskapssidan `/vetenskap` | Publik, statiskt innehåll ur versionsstyrd JSON i bygget; inga API-anrop, inga persondata, inga tredjepartsskript; externa källor öppnas som vanliga länkar (`rel="noopener noreferrer"`) | unit › evidensregister utan persondata; E2E utloggad |
+
+**Kräver manuell säkerhetsgranskning före produktion:** den ersatta `private.apply_set_mutation` (SECURITY DEFINER) i migration 004. **Ordning vid driftsättning:** migration 004 måste tillämpas innan ny frontend publiceras. Annars avvisar en äldre server `perceivedEffort` (VALIDATION_ERROR) och de nya tabellerna saknas; klienten tål tomma svar vid hämtning men köposter avvisas.
+
 ## 4. Kända risker och begränsningar
 
 | Risk | Bedömning / åtgärd |
@@ -62,3 +75,5 @@
 | Andra entiteter än set synkas med upsert (sista skrivning vinner per post) | Pass/program/regler ägs av en användare; set och profil har revisionskontroll. Bör granskas om fler enheter blir vanligt. |
 | Intermittent statement timeout i parallelltest | Retry med samma eventId; se TESTPROTOKOLL. |
 | Rate limits höjda i lokal `config.toml` för tester | Gäller endast lokalt; produktionsgränser sätts i Supabase-projektet. |
+| Olika byten av samma övning i samma pass på två enheter (CR) | Serverns unika ordning avvisar den senare ersättaren, som visas som ej synkad; ingen tyst överskrivning. Se AVVIKELSER S8. |
+| Populationsbaserad hjälpskattning (två par) | Visas endast som lågkonfidensförslag med bekräftelse, aldrig vid symtomflagga eller över maxtak; invariant i kod och test (SUB19). |

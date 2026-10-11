@@ -227,3 +227,38 @@ small svg, .small svg.ico { width: 16px; height: 16px; vertical-align: -3px; }
 /* Toast överst så att den aldrig täcker handlingar i tumzonen */
 .toast { top: calc(12px + env(safe-area-inset-top)); bottom: auto; }
 .list > li.card { padding: var(--s4); border: 1px solid var(--border); }
+
+/* Vetenskapssidan (/vetenskap) */
+.science h2 { margin-top: var(--s5); }
+.science .h-small { font-size: 17px; margin: 0 0 var(--s2); }
+.science-dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px var(--s3); margin: 0; }
+.science-dl dt { font-weight: 600; color: var(--text-2); }
+.science-dl dd { margin: 0; }
+.science-inline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.science-badge { white-space: normal; }
+.science-sources > li { padding: var(--s3) 0; }
+.science a { overflow-wrap: anywhere; }
+@media (max-width: 420px) {
+  .science-dl { grid-template-columns: 1fr; }
+  .science-dl dd { margin-bottom: var(--s2); }
+}
+@media print {
+  .no-print, .tabs, .toast, .bottom-cta { display: none !important; }
+  body { background: #fff; color: #000; font-size: 11pt; }
+  .card { border: 1px solid #999; break-inside: avoid; }
+  .page { padding: 0; }
+  .science a[href^='http']::after { content: ''; }
+  .chip { border: 1px solid #000; background: #fff; color: #000; }
+}
+
+/* Övningsbyte v2 (CR 2026-10-10-01) */
+.sub-list > li { padding: var(--s1) 0; border-bottom: 0; }
+.sub-option {
+  display: flex; flex-direction: column; align-items: stretch; gap: 4px; width: 100%; min-height: var(--tap); text-align: left;
+  padding: var(--s3); border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); cursor: pointer; font: inherit;
+}
+.sub-option:hover:not(:disabled) { border-color: var(--accent); }
+.sub-option:disabled { cursor: not-allowed; background: var(--surface-2); color: var(--text-2); }
+.sub-option .sub-name { font-weight: 700; font-size: 17px; }
+.set-effort { grid-column: 1 / -1; display: flex; flex-direction: column; gap: var(--s1); }
+.block-text { display: block; margin-top: var(--s1); }

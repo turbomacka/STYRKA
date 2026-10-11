@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import type { ExerciseId } from '../../domain/decision_engine';
+import type { ExerciseId } from '../../domain/catalog';
 import { CATALOG, exercise } from '../../domain/catalog';
 import { formatKg } from '../../domain/units';
-import { listSessions, strengthSeries, type SessionSummary, type StrengthSeries } from '../../application/history';
+import { listSessions, performedVariants, strengthSeries, type SessionSummary, type StrengthSeries } from '../../application/history';
 import { Segmented } from '../components/common';
 import { ProgressChart } from '../components/ProgressChart';
 import { useServices } from '../services';
@@ -20,6 +20,8 @@ export function Progress() {
   const [range, setRange] = useState<Range>('12v');
   const [series, setSeries] = useState<StrengthSeries | null>(null);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [variant, setVariant] = useState('default');
+  const variants = useLiveQuery(() => performedVariants(ctx, ex), [ctx, ex, setsVersion]);
 
   useEffect(() => {
     if (performed && performed.length && !performed.includes(ex)) setEx(performed.includes('squat') ? 'squat' : performed[0]);
@@ -27,15 +29,20 @@ export function Progress() {
 
   useEffect(() => {
     const since = range === 'alla' ? undefined : new Date(Date.now() - (range === '4v' ? 28 : 84) * 86_400_000).toISOString();
-    void strengthSeries(ctx, ex, since).then(setSeries);
+    void strengthSeries(ctx, ex, since, variant).then(setSeries);
     void listSessions(ctx, { limit: 10 }).then(setSessions);
-  }, [ctx, ex, range, setsVersion]);
+  }, [ctx, ex, range, setsVersion, variant]);
+
+  useEffect(() => {
+    if (variants && variants.length && !variants.includes(variant)) setVariant(variants[0]);
+  }, [variants, variant]);
 
   const options = CATALOG.filter((c) => performed?.includes(c.slug));
   const perf = series?.points.filter((p) => p.source === 'performance') ?? [];
   const best = perf.length ? Math.max(...perf.map((p) => p.kg)) : null;
   const lk = exercise(ex).loadKind;
-  const unit = lk === 'duration_sec' ? 's' : 'kg';
+  const perHand = exercise(ex).loadDisplayBasis === 'per_hand_kg';
+  const unit = lk === 'duration_sec' ? 's' : perHand ? 'kg/hantel' : 'kg';
   return (
     <div className="page stack">
       <h1>{T.TITLE_PR}</h1>
@@ -47,7 +54,7 @@ export function Progress() {
         <>
           <div className="field">
             <label htmlFor="pr-ex">Övning</label>
-            <select id="pr-ex" value={ex} onChange={(e) => setEx(e.target.value as ExerciseId)}>
+            <select id="pr-ex" value={ex} onChange={(e) => { setEx(e.target.value as ExerciseId); setVariant('default'); }}>
               {options.map((c) => (
                 <option key={c.slug} value={c.slug}>
                   {c.nameSv}
@@ -55,6 +62,9 @@ export function Progress() {
               ))}
             </select>
           </div>
+          {variants && variants.length > 1 && (
+            <Segmented label="Maskin (egna serier)" value={variant} onChange={setVariant} options={variants.map((v) => ({ value: v, label: v === 'default' ? 'Standard' : v }))} />
+          )}
           <Segmented label="Period" value={range} onChange={setRange} options={[{ value: '4v', label: '4 veckor' }, { value: '12v', label: '12 veckor' }, { value: 'alla', label: 'Allt' }]} />
           <div className="card stack">
             <h2>{exercise(ex).nameSv}</h2>
@@ -63,7 +73,7 @@ export function Progress() {
             {series?.comparable && <p className="small muted">{T.INFO_1RM} är en uppskattning, inte ett testat maxvärde. {T.INFO_ESTIMATE}</p>}
             {best !== null && lk !== 'assistance_kg' && (
               <p>
-                <span className="label">Bästa {lk === 'duration_sec' ? 'tid' : 'arbetsset'} i perioden:</span> <span className="num">{lk === 'duration_sec' ? `${best} s` : `${formatKg(Math.round(best * 1000))} kg`}</span>
+                <span className="label">Bästa {lk === 'duration_sec' ? 'tid' : 'arbetsset'} i perioden:</span> <span className="num">{lk === 'duration_sec' ? `${best} s` : `${formatKg(Math.round(best * 1000))} ${unit}`}</span>
               </p>
             )}
           </div>

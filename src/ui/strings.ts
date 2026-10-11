@@ -98,7 +98,7 @@ export const REASONS: Record<string, { text: string; ev: Ev }> = {
   USER_LIMIT_MODE: { text: 'Begränsad belastningsnivå enligt din regel.', ev: 'U' },
   USER_RESTRICTION: { text: 'Utesluten av din begränsning.', ev: 'U' },
   USER_CHOSEN_VARIANT: { text: 'Din valda variant av rörelsen.', ev: 'U' },
-  USER_SWAP: { text: 'Du bytte övning under passet.', ev: 'U' },
+  USER_SWAP: { text: 'Du valde att byta övning.', ev: 'U' },
   USER_MAX_LOAD_CAP: { text: 'Begränsad av ditt angivna maxlasttak.', ev: 'U' },
   EQUIPMENT_SUBSTITUTION: { text: 'Ersatt med likvärdig rörelse eftersom utrustning saknas.', ev: 'E2' },
   PAIR_RULE_DOWNGRADED: { text: 'Din regel tillåter inte två tunga övningar tillsammans – den här blir lätt.', ev: 'U' },
@@ -124,6 +124,88 @@ export const REASONS: Record<string, { text: string; ev: Ev }> = {
   TIME_PRUNED_SUPPLEMENTARY: { text: 'Kompletterande övning borttagen för att rymmas i tiden.', ev: 'H' },
   READINESS_PAIN_AREA: { text: 'Belastar området där du angav att du har ont i dag.', ev: 'U' },
   NO_RECENT_HEAVY_FLAG: { text: 'Ingen tung träning i mönstret senaste två dygnen.', ev: 'H' },
+  // Övningsbyte (STYRKA-CR-2026-10-10-01). Relationerna är ett redaktionellt urval (H), inte bevis för likvärdig effekt.
+  SUB_RELATION_CLOSE: { text: 'Nära variant av den planerade övningen.', ev: 'H' },
+  SUB_RELATION_FAMILY: { text: 'Samma rörelsefamilj som den planerade övningen.', ev: 'H' },
+  SUB_RELATION_COMPLEMENTARY: { text: 'Kompletterande övning – svagare överföring till det ursprungliga styrkemålet.', ev: 'H' },
+  SUB_TARGET_OBSERVED: { text: 'Vikten bygger på din egen historik i den här övningen.', ev: 'U' },
+  SUB_TARGET_ESTIMATED: { text: 'Vikten bygger på din egen uppskattning av maxstyrkan i den här övningen.', ev: 'U' },
+  SUB_CALIBRATION: { text: 'Vikten bygger på din kalibrering i den här övningen.', ev: 'U' },
+  SUB_POPULATION_PRIOR_LOW_CONFIDENCE: { text: 'Uppskattning med låg säkerhet från en genomsnittlig skillnad i en liten studie – inte från dig. Bekräfta vikten med ett kontrollerat första set.', ev: 'H' },
+  SUB_NO_ESTIMATE: { text: 'Ingen tillförlitlig vikt ännu. Du väljer en lätt, kontrollerad vikt.', ev: 'U' },
+  SUB_NEW_MACHINE_PROFILE: { text: 'Annan maskin – egen historik, inga kilo förs över.', ev: 'U' },
+  SUB_REVERT_TO_ORIGINAL: { text: 'Tillbaka till den ursprungligen planerade övningen.', ev: 'U' },
+  CALIBRATION_EFFORT_TOO_HEAVY: { text: 'Du angav att setet var för tungt – ett viktsteg lättare.', ev: 'H' },
+  CALIBRATION_CONTINUE_SAME_WEIGHT: { text: 'Samma vikt som ditt senaste set – ingen automatisk ökning inom passet.', ev: 'H' },
+  CALIBRATED_TWO_EXPOSURES: { text: 'Övningen räknas som kalibrerad efter två kontrollerade pass.', ev: 'H' },
+};
+
+/** Texter för övningsbyte (CR §2.1, §3.3). */
+export const SUB = {
+  TITLE: 'Byt övning',
+  INTRO: 'Utförda set påverkas inte. Ett byte garanterar inte att övningen passar vid besvär.',
+  SHOW_MORE: 'Visa fler',
+  SHOW_LESS: 'Visa färre',
+  KEEP: (name: string) => `Behåll ${name}`,
+  OTHER_MACHINE: 'Annan maskin?',
+  MACHINE_LABEL: 'Vilken maskin? (t.ex. gymmets namn)',
+  MACHINE_HELP: 'Olika maskiner har olika utväxling. Ny maskin får egen historik – inga kilo förs över.',
+  STANDARD_MACHINE: 'Standard',
+  FAMILIARITY_Q: 'Har du gjort övningen tidigare?',
+  FAMILIARITY_YES: 'Ja',
+  FAMILIARITY_NO: 'Nej',
+  FAMILIARITY_HELP: 'Svaret sparas för övningen och avgör om ett första, osäkert viktförslag kan visas.',
+  PRIOR_NOTE: 'Uppskattning – bekräfta vikten med ett kontrollerat första set',
+  PRIOR_DETAIL: (from: string, pct: number) => `Bygger på en genomsnittlig skillnad mot ${from} i en liten studie, inte på dig, och använder högst ${Math.round(pct * 100)} % av den preliminära maxstyrkan. Ändra gärna.`,
+  NO_WEIGHT: 'Ingen tillförlitlig vikt ännu',
+  NO_WEIGHT_HELP: 'Välj en lätt vikt för ett kontrollerat första set. Fältet kan lämnas tomt – du anger då vikten vid setet.',
+  CAL_INSTRUCTIONS: 'Kontrollerat första set: välj en vikt du säkert klarar med god teknik. Testa inte maximal vikt. Avbryt om besvären ökar.',
+  START_WEIGHT: 'Startvikt (kg)',
+  START_WEIGHT_PER_HAND: 'Startvikt (kg per hantel)',
+  START_ASSIST: 'Assistans (kg) – lägre = tyngre',
+  SCOPE_LEGEND: 'Gäller',
+  SCOPE_TODAY: 'Bara idag',
+  SCOPE_FUTURE: 'Använd framöver',
+  SCOPE_FUTURE_HELP: 'Påverkar bara kommande planering. Tidigare pass ändras inte.',
+  GOAL_NOTE: (root: string) => `Ditt mål för ${root} ligger kvar. Byter du under längre tid tränar du ${root.toLowerCase()} mindre direkt.`,
+  WEAK_TRANSFER: (root: string) => `Svagare överföring till styrkan i ${root.toLowerCase()}.`,
+  CONFIRM: (name: string) => `Byt till ${name}`,
+  BACK: 'Tillbaka',
+  SWAPPED: (from: string, to: string) => `Bytt från ${from.toLowerCase()} till ${to.toLowerCase()}.`,
+  SWAPPED_PRIOR: 'Vikten är ett första, osäkert förslag och kalibreras med din prestation.',
+  SWAPPED_NONE: 'Ingen tillförlitlig vikt ännu – välj en lätt, kontrollerad vikt.',
+  ORIGINAL: 'Ursprunglig övning',
+  EFFORT_Q: 'Hur kändes setet?',
+  EFFORT: { easy: 'Lätt', ok: 'Lagom', too_heavy: 'För tungt' },
+  PER_HAND: 'Vikt anges per hantel.',
+  PER_SIDE: 'Repetitioner anges per sida.',
+  FAILED: 'Bytet kunde inte göras.',
+} as const;
+
+/** Viktstatus för ett bytesalternativ (CR §2.1 p.3: "om nytt viktförslag finns"). */
+export function loadStatusText(kind: string | undefined, needsFamiliarity: boolean): string {
+  switch (kind) {
+    case 'target_observed':
+      return 'Viktförslag från din historik';
+    case 'target_estimated':
+      return 'Viktförslag från din uppskattning';
+    case 'calibration':
+      return 'Viktförslag från din kalibrering';
+    case 'population_prior_low_confidence':
+      return 'Osäker uppskattning – du bekräftar vikten';
+    default:
+      return needsFamiliarity ? 'Uppskattning möjlig om du gjort övningen förut' : 'Ingen tillförlitlig vikt ännu – du väljer';
+  }
+}
+
+/** Varför ett alternativ inte kan väljas (planReplacement-status). */
+export const SUB_BLOCKED_SV: Record<string, string> = {
+  NOT_IN_CATALOG: 'Inte ett godkänt alternativ',
+  EQUIPMENT_UNAVAILABLE: 'Utrustning saknas',
+  USER_BLOCK_EXERCISE: 'Blockerad av din regel',
+  SYMPTOM_REVIEW_REQUIRED: 'Belastar ett område med rapporterade besvär',
+  PAIR_RULE: 'Bryter din kombinationsregel',
+  ALREADY_IN_SESSION: 'Finns redan i passet',
 };
 
 export function reasonText(code: string): { text: string; ev: Ev } | null {

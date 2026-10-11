@@ -1,0 +1,84 @@
+{
+  "catalogVersion": "SUBST/1.0.0",
+  "basedOn": "STYRKA-CR-2026-10-10-01 §2.2. Den levererade filen replacement_seed.json saknades i leveransen; urvalet är återskapat från anmodans tabell och mappat till appens övningssluggar (katalog 2.0.0).",
+  "disclaimer_sv": "Redaktionellt urval av kandidatrelationer. Inte ett bevis för likvärdiga styrkeeffekter och får inte användas för generella omräkningsfaktorer. Kvantitativa hjälpskattningar finns endast för två uttryckligen dokumenterade par.",
+  "relationLabels_sv": {
+    "close_variant": "Nära variant",
+    "same_family": "Samma rörelsefamilj",
+    "complementary": "Kompletterande alternativ"
+  },
+  "relations": [
+    { "from": "squat", "to": "front_squat", "relation": "close_variant", "strength_specificity": "high", "rationale_sv": "Samma knäböjsrörelse med stången framtill. Stort tekniköverlapp, men lägre maxvikt och egen styrkehistorik.", "evidence_ids": ["davis2020", "gullett2009"], "load_prior": { "kind": "population_ratio", "ratio": 0.8, "reference_ids": ["davis2020", "gullett2009"], "basis": "total" }, "enabled": true },
+    { "from": "squat", "to": "safety_bar_squat", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Knäböj med annan stång och greppställning. Liknande muskelarbete men annan balans och belastning.", "evidence_ids": ["saeterbakken2025"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "squat", "to": "smith_squat", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Styrd stång i smithmaskin. Mindre balanskrav; maskinens kilo är inte jämförbara med fri stång.", "evidence_ids": ["haugen2023"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "squat", "to": "hack_squat", "relation": "same_family", "strength_specificity": "low", "rationale_sv": "Maskinövning med liknande benarbete men styrd rörelsebana och annan belastningssemantik.", "evidence_ids": ["haugen2023"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "squat", "to": "goblet_squat", "relation": "complementary", "strength_specificity": "low", "rationale_sv": "Knäböj med en hantel framför bröstet. Bra för teknik och lättare dagar, men mycket lägre belastning än knäböj.", "evidence_ids": ["saeterbakken2025"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "squat", "to": "leg_press", "relation": "complementary", "strength_specificity": "low", "rationale_sv": "Tränar benen men ersätter inte knäböjens specifika träning. Kilon i benpress är inte jämförbara med knäböj.", "evidence_ids": ["haugen2023", "saeterbakken2025"], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "front_squat", "to": "squat", "relation": "close_variant", "strength_specificity": "high", "rationale_sv": "Samma knäböjsrörelse med stången på ryggen. Egen historik – ingen automatisk omräkning från frontböj.", "evidence_ids": ["davis2020"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "front_squat", "to": "safety_bar_squat", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Knäböjsvariant med annan stång och belastning.", "evidence_ids": ["saeterbakken2025"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "front_squat", "to": "goblet_squat", "relation": "complementary", "strength_specificity": "low", "rationale_sv": "Liknande upprätt position men betydligt lägre belastning.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "deadlift", "to": "sumo_deadlift", "relation": "close_variant", "strength_specificity": "high", "rationale_sv": "Marklyft med bred fotställning. Stort överlapp men annan teknik och egen historik.", "evidence_ids": ["saeterbakken2025"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "deadlift", "to": "trap_bar_deadlift", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Lyft inne i en hexagonal stång. Annan biomekanik; maxvikten kan bli både högre och lägre än i vanligt marklyft.", "evidence_ids": ["swinton2011"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "deadlift", "to": "romanian_deadlift", "relation": "complementary", "strength_specificity": "low", "rationale_sv": "Höftfällning med mer fokus på baksida lår. Kompletterar men ersätter inte vanligt marklyft.", "evidence_ids": ["lee2018"], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "romanian_deadlift", "to": "dumbbell_romanian_deadlift", "relation": "close_variant", "strength_specificity": "moderate", "rationale_sv": "Samma rörelse med hantlar. Vikten anges per hantel.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "romanian_deadlift", "to": "stiff_leg_deadlift", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Höftfällning med rakare ben och annan dosering.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "romanian_deadlift", "to": "trap_bar_deadlift", "relation": "complementary", "strength_specificity": "low", "rationale_sv": "Annat rörelsemönster med mer knäarbete.", "evidence_ids": ["swinton2011"], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "bench_press", "to": "dumbbell_bench_press", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Liggande press med två hantlar. Större stabilitetskrav; vikten anges per hantel.", "evidence_ids": ["saeterbakken2011"], "load_prior": { "kind": "population_ratio", "ratio": 0.83, "reference_ids": ["saeterbakken2011"], "basis": "per_hand_total" }, "enabled": true },
+    { "from": "bench_press", "to": "smith_bench_press", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Bänkpress i styrd stång. Maskinens kilo är inte jämförbara med fri stång.", "evidence_ids": ["saeterbakken2011"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "bench_press", "to": "chest_press_machine", "relation": "same_family", "strength_specificity": "low", "rationale_sv": "Pressrörelse i maskin. Utväxlingen skiljer sig mellan maskiner.", "evidence_ids": ["haugen2023"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "bench_press", "to": "incline_bench_press", "relation": "same_family", "strength_specificity": "low", "rationale_sv": "Press i lutande bänk med mer axelarbete och annan maxvikt.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "overhead_press", "to": "seated_barbell_press", "relation": "close_variant", "strength_specificity": "high", "rationale_sv": "Samma press sittande. Mindre bålarbete, egen historik.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "overhead_press", "to": "dumbbell_shoulder_press", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Press över huvudet med hantlar. Vikten anges per hantel.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "overhead_press", "to": "shoulder_press_machine", "relation": "same_family", "strength_specificity": "low", "rationale_sv": "Pressrörelse i maskin med styrd bana.", "evidence_ids": ["haugen2023"], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "lat_pulldown", "to": "neutral_grip_lat_pulldown", "relation": "close_variant", "strength_specificity": "high", "rationale_sv": "Samma drag med neutralt grepp. Egen historik eftersom greppet påverkar belastningen.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "lat_pulldown", "to": "assisted_pullup", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Vertikalt drag med kroppen som last och maskinens assistans. Lägre assistans är progression; ingen kiloomräkning från latsdrag.", "evidence_ids": ["doma2013"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "lat_pulldown", "to": "pullup", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Vertikalt drag med kroppsvikt. Kräver mer styrka och bålstabilitet; ingen kiloomräkning.", "evidence_ids": ["doma2013"], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "assisted_pullup", "to": "lat_pulldown", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Vertikalt drag i kabel. Ingen omräkning från assistans till kilo.", "evidence_ids": ["doma2013"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "assisted_pullup", "to": "neutral_grip_lat_pulldown", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Vertikalt drag i kabel med neutralt grepp. Ingen omräkning från assistans till kilo.", "evidence_ids": ["doma2013"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "assisted_pullup", "to": "pullup", "relation": "close_variant", "strength_specificity": "high", "rationale_sv": "Samma rörelse utan assistans. Kräver att du klarar hela kroppsvikten.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "pullup", "to": "assisted_pullup", "relation": "close_variant", "strength_specificity": "high", "rationale_sv": "Samma rörelse med assistans. (Redaktionellt tillägg: chins saknades som ursprung i anmodans tabell.)", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "pullup", "to": "lat_pulldown", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Vertikalt drag i kabel. Ingen kiloomräkning.", "evidence_ids": ["doma2013"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "pullup", "to": "neutral_grip_lat_pulldown", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Vertikalt drag i kabel med neutralt grepp. Ingen kiloomräkning.", "evidence_ids": ["doma2013"], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "cable_row", "to": "chest_supported_row", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Horisontellt drag med bröststöd och mindre belastning på ländryggen.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "cable_row", "to": "seated_machine_row", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Horisontellt drag i maskin. Utväxlingen skiljer sig mellan maskiner.", "evidence_ids": ["haugen2023"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "cable_row", "to": "one_arm_dumbbell_row", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Ensidigt drag med hantel. Vikten anges per hantel och sida.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "chest_supported_row", "to": "cable_row", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Horisontellt drag i kabel med mer bålarbete. (Redaktionellt tillägg.)", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "chest_supported_row", "to": "seated_machine_row", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Horisontellt drag i maskin. (Redaktionellt tillägg.)", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "chest_supported_row", "to": "one_arm_dumbbell_row", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Ensidigt drag med hantel. (Redaktionellt tillägg.)", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "cable_lateral_raise", "to": "dumbbell_lateral_raise", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Sidolyft med hantlar. Annan motståndskurva; vikten anges per hantel.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "cable_lateral_raise", "to": "lateral_raise_machine", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Sidolyft i maskin med egen motståndskurva.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "biceps_curl", "to": "dumbbell_curl", "relation": "close_variant", "strength_specificity": "high", "rationale_sv": "Curl med hantlar och uttrycklig vikt per hantel.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "biceps_curl", "to": "cable_curl", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Curl i kabel med jämnare motstånd.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "biceps_curl", "to": "incline_dumbbell_curl", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Curl i lutande bänk med annan armvinkel.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "triceps_pushdown", "to": "rope_pushdown", "relation": "close_variant", "strength_specificity": "high", "rationale_sv": "Samma rörelse med rep i stället för stång.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "triceps_pushdown", "to": "overhead_triceps_extension", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Tricepsövning med armen över huvudet och annan ledvinkel.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "cable_crunch", "to": "machine_crunch", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Bålböjning i maskin.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "cable_crunch", "to": "weighted_crunch", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Bålböjning med viktskiva.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "cable_crunch", "to": "plank", "relation": "complementary", "strength_specificity": "low", "rationale_sv": "Statisk bålövning i sekunder. Kompletterar men ersätter inte bålböjning.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "bulgarian_split_squat", "to": "split_squat", "relation": "close_variant", "strength_specificity": "high", "rationale_sv": "Utfallsrörelse med bakre foten i golvet.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "bulgarian_split_squat", "to": "lunge", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Ensidigt benarbete med steg.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "bulgarian_split_squat", "to": "step_up", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Ensidigt benarbete upp på en låda eller bänk.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "split_squat", "to": "bulgarian_split_squat", "relation": "close_variant", "strength_specificity": "high", "rationale_sv": "Utfallsrörelse med bakre foten på bänk. (Appens split squat motsvarar anmodans familj.)", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "split_squat", "to": "lunge", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Ensidigt benarbete med steg.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "split_squat", "to": "step_up", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Ensidigt benarbete upp på en låda eller bänk.", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true },
+
+    { "from": "leg_press", "to": "hack_squat", "relation": "same_family", "strength_specificity": "moderate", "rationale_sv": "Benövning i maskin. Utväxlingen skiljer sig mellan maskiner. (Redaktionellt tillägg.)", "evidence_ids": ["haugen2023"], "load_prior": { "kind": "none" }, "enabled": true },
+    { "from": "leg_press", "to": "goblet_squat", "relation": "complementary", "strength_specificity": "low", "rationale_sv": "Fri knäböj med hantel och lägre belastning. (Redaktionellt tillägg.)", "evidence_ids": [], "load_prior": { "kind": "none" }, "enabled": true }
+  ]
+}

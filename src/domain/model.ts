@@ -1,8 +1,9 @@
-import type { ExerciseId, Experience, Mode, Recovery, SymptomState } from './decision_engine';
-import type { Area, EquipmentSlug, LoadKind } from './catalog';
+import type { Experience, Mode, Recovery, SymptomState } from './decision_engine';
+import type { ExerciseId } from './catalog';
+import type { Area, EquipmentSlug, LoadDisplayBasis, LoadKind } from './catalog';
 
 /** Versionsnummer som sparas i varje plansnapshot (04 §4). */
-export const RULESET_VERSION = 'STYRKA-RULES/1.0.0-app.1' as const;
+export const RULESET_VERSION = 'STYRKA-RULES/1.1.0' as const;
 export const PLANNER_VERSION = 'STYRKA-PLANNER/1.0.0' as const;
 
 export type Readiness = 'good' | 'normal' | 'tired' | 'pain';
@@ -73,6 +74,8 @@ export type PlannerProfile = {
   substitutions: Partial<Record<ExerciseId, ExerciseId>>;
   favorites: ExerciseId[];
   bodyweightKg: number | null;
+  /** Aktiv maskinprofil per övning (§2.3). Saknas ⇒ 'default'. */
+  equipmentProfiles?: Partial<Record<ExerciseId, string>>;
 };
 
 /** Föreskrift för en övning i ett plansnapshot. Immutabel efter skapande. */
@@ -98,6 +101,47 @@ export type PlannedExercise = {
   substitutionFrom: ExerciseId | null;
   substitutionReason: string | null;
   acceptedByUserAt: string | null;
+  // ---- Tillägg STYRKA-CR-2026-10-10-01 (valfria; äldre snapshots saknar dem) ----
+  /** Hur kg-värdet ska förstås (t.ex. per hantel). */
+  loadBasis?: LoadDisplayBasis;
+  /** Maskinprofil/redskapsvariant; historik matchas per variant för maskinövningar. */
+  variantKey?: string;
+  /** Underlag för vikten (§4.3). */
+  loadEstimationKind?: LoadEstimationKind;
+  /** Osäkert kalibreringsförslag (hjälpskattning) när kg är null; ska bekräftas av användaren. */
+  calibrationSuggestionKg?: number | null;
+  /** Substitutionens revisionsuppgifter. */
+  substitution?: SubstitutionMeta;
+};
+
+export type LoadEstimationKind = 'target_observed' | 'target_estimated' | 'calibration' | 'population_prior_low_confidence' | 'none';
+export type RelationClass = 'close_variant' | 'same_family' | 'complementary';
+export type Familiarity = 'familiar' | 'unfamiliar' | 'unknown';
+export type ChoiceScope = 'today' | 'future';
+export type PerceivedEffort = 'easy' | 'ok' | 'too_heavy';
+
+export type SubstitutionMeta = {
+  catalogVersion: string;
+  ruleSetVersion: string;
+  relation: RelationClass | 'same_exercise_new_profile';
+  evidenceIds: string[];
+  /** Endast hjälpskattning: kvot, källans e1RM och använd andel. */
+  prior?: { ratio: number; sourceExerciseId: ExerciseId; sourceE1rm: number; tentativeE1rm: number; pct: number; perHand: boolean };
+  /** Ursprunglig planerad övning (sessionens snapshot-id). */
+  replacesSessionExerciseId?: string;
+};
+
+/** Byte som gjorts i förhandsvisningen innan passet startat; skrivs som händelse vid start. */
+export type PendingSubstitution = {
+  original: PlannedExercise;
+  replacementExerciseId: ExerciseId;
+  scope: ChoiceScope;
+  userOverride: boolean;
+  createdAt: string;
+  /** Ersättarens maskinprofil (matchning mot övningen i snapshotet). */
+  variantKey?: string;
+  /** Användarens bekräftade/ändrade startvikt i gram (förifylld målvikt); null = väljer själv. */
+  startGrams?: number | null;
 };
 
 export type PlanStatus = 'ok' | 'time_reduced' | 'time_insufficient' | 'no_full_schedule' | 'empty';
@@ -124,6 +168,8 @@ export type PlanSnapshot = {
   removed: Array<{ exerciseId: ExerciseId; reason: string }>;
   reasons: string[];
   warnings: WarningCode[];
+  /** Byten i förhandsvisningen (original bevaras). */
+  substitutions?: PendingSubstitution[];
 };
 
 /** Ett utfört set i historiken (från lokal databas), kg som tal. */
@@ -139,6 +185,8 @@ export type HistorySet = {
   rir: number | null;
   technique: Technique | null;
   occurredAt: string | null;
+  /** Frivilligt enkelt svar vid kalibrering (lätt/lagom/för tungt). */
+  perceivedEffort?: PerceivedEffort | null;
 };
 
 /** En övning i ett genomfört (completed/partial/abandoned) pass. */

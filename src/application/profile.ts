@@ -1,5 +1,6 @@
 /** ProfileService, ExerciseService-inställningar, begränsningar och samtycke (01 §2, S02–S05, S13–S14). */
-import type { ExerciseId, Experience, Mode } from '../domain/decision_engine';
+import type { Experience, Mode } from '../domain/decision_engine';
+import type { ExerciseId } from '../domain/catalog';
 import { ALL_EQUIPMENT, isExerciseId, type Area, type EquipmentSlug } from '../domain/catalog';
 import type { RuleKind, Side } from '../domain/model';
 import { TEMPLATE_VERSION, TEMPLATES } from '../planner/planner';
@@ -94,13 +95,20 @@ export async function completeOnboarding(ctx: AppContext, input: OnboardingInput
   return profile;
 }
 
-export type ProfileChanges = Partial<Pick<LocalProfile, 'plannedSessionsPerWeek' | 'minutesPerSession' | 'experience' | 'goals' | 'substitutions' | 'favorites' | 'bodyweightGrams' | 'ageYears' | 'timezone'>> & { equipment?: EquipmentSlug[] };
+export type ProfileChanges = Partial<Pick<LocalProfile, 'plannedSessionsPerWeek' | 'minutesPerSession' | 'experience' | 'goals' | 'substitutions' | 'favorites' | 'bodyweightGrams' | 'ageYears' | 'timezone' | 'equipmentProfiles'>> & { equipment?: EquipmentSlug[] };
+
+/** Maskinprofil: kort etikett som användaren själv anger (t.ex. "gym-b"). */
+export function validateVariantKey(key: string): void {
+  if (!/^[\p{L}\p{N} ._-]{1,64}$/u.test(key)) throw new AppError('VALIDATION_ERROR', 'variantKey');
+}
 
 /**
  * S13: ändringar gäller endast prospektivt. Frekvensändring ⇒ ny programversion med ny sekvens från idag (08 §4).
  */
 export async function patchProfile(ctx: AppContext, changes: ProfileChanges): Promise<LocalProfile> {
   validateProfileFields(changes);
+  if (changes.equipmentProfiles) for (const [k, v] of Object.entries(changes.equipmentProfiles)) if (!isExerciseId(k) || typeof v !== 'string') throw new AppError('VALIDATION_ERROR', 'equipmentProfiles');
+  if (changes.equipmentProfiles) for (const v of Object.values(changes.equipmentProfiles)) validateVariantKey(v as string);
   if (changes.equipment && (!changes.equipment.length || changes.equipment.some((e) => !ALL_EQUIPMENT.includes(e)))) throw new AppError('VALIDATION_ERROR', 'equipment');
   let out!: LocalProfile;
   await txAll(ctx, async () => {
@@ -227,3 +235,27 @@ export async function setHealthConsent(ctx: AppContext, granted: boolean): Promi
 }
 
 export { hasConsent as hasHealthConsent };
+
+/**
+ * "Återställ originalövning" för ett permanent byte (CR §2.1 p.6): påverkar endast kommande planering;
+ * historiska pass och tidigare snapshots ändras inte.
+ */
+export async function removePermanentSubstitution(ctx: AppContext, original: ExerciseId): Promise<LocalProfile> {
+  const p = await ctx.db.profile.get(ctx.userId);
+  if (!p) throw new AppError('NOT_FOUND');
+  const substitutions = { ...p.substitutions };
+  delete substitutions[original];
+  return patchProfile(ctx, { substitutions });
+}
+
+/** Aktiv maskinprofil för en maskin-/kabelövning ('default' = ursprunglig). Separat historik per profil (§2.3). */
+export async function setActiveEquipmentProfile(ctx: AppContext, exerciseId: ExerciseId, variantKey: string): Promise<LocalProfile> {
+  if (!isExerciseId(exerciseId)) throw new AppError('VALIDATION_ERROR', 'exerciseId');
+  validateVariantKey(variantKey);
+  const p = await ctx.db.profile.get(ctx.userId);
+  if (!p) throw new AppError('NOT_FOUND');
+  const equipmentProfiles = { ...(p.equipmentProfiles ?? {}) };
+  if (variantKey === 'default') delete equipmentProfiles[exerciseId];
+  else equipmentProfiles[exerciseId] = variantKey;
+  return patchProfile(ctx, { equipmentProfiles });
+}

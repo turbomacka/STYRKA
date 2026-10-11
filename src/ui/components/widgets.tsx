@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
-import type { ExerciseId, Mode } from '../../domain/decision_engine';
-import { ALL_AREAS, AREA_LABEL_SV, CATALOG, exercise, isAvailable, type Area, type EquipmentSlug } from '../../domain/catalog';
+import type { Mode } from '../../domain/decision_engine';
+import type { ExerciseId } from '../../domain/catalog';
+import { ALL_AREAS, AREA_LABEL_SV, CATALOG, V1_SLUGS, exercise, isAvailable, type Area, type EquipmentSlug } from '../../domain/catalog';
 import type { PlannedExercise, RuleKind, Side } from '../../domain/model';
 import { formatKg } from '../../domain/units';
 import type { ConflictEntry } from '../../storage/db';
@@ -10,13 +11,17 @@ import { MODE_SV, SIDE_SV, T } from '../strings';
 import { Icon, LoadConfidence, ReasonPopover, Sheet } from './common';
 
 export function prescriptionText(p: PlannedExercise): string {
-  const reps = p.loadKind === 'duration_sec' ? `${p.targetSeconds ?? '?'} s` : `${p.reps} reps`;
-  const kg = p.loadKind === 'duration_sec' || p.loadKind === 'reps_only' ? '' : p.kg === null ? ' · välj vikt' : p.loadKind === 'assistance_kg' ? ` · ${formatKg(Math.round(p.kg * 1000))} kg assistans` : p.loadKind === 'bodyweight_plus_kg' ? (p.kg === 0 ? ' · kroppsvikt' : ` · +${formatKg(Math.round(p.kg * 1000))} kg`) : ` · ${formatKg(Math.round(p.kg * 1000))} kg`;
+  // Lastbas och "per sida" visas endast för övningar med definierad semantik (katalog 2.0.0); äldre data tolkas inte om.
+  const perSide = exercise(p.exerciseId).unilateral && exercise(p.exerciseId).catalogSince === '2.0.0' ? ' per sida' : '';
+  const perHand = p.loadBasis === 'per_hand_kg' ? ' per hantel' : '';
+  const reps = p.loadKind === 'duration_sec' ? `${p.targetSeconds ?? '?'} s` : `${p.reps} reps${perSide}`;
+  const suggestion = p.calibrationSuggestionKg != null ? ` · osäkert förslag ${formatKg(Math.round(p.calibrationSuggestionKg * 1000))} kg${perHand}` : ' · välj vikt';
+  const kg = p.loadKind === 'duration_sec' || p.loadKind === 'reps_only' ? '' : p.kg === null ? suggestion : p.loadKind === 'assistance_kg' ? ` · ${formatKg(Math.round(p.kg * 1000))} kg assistans` : p.loadKind === 'bodyweight_plus_kg' ? (p.kg === 0 ? ' · kroppsvikt' : ` · +${formatKg(Math.round(p.kg * 1000))} kg`) : ` · ${formatKg(Math.round(p.kg * 1000))} kg${perHand}`;
   return `${p.sets} × ${reps}${kg}`;
 }
 
 /** Övningskort i förhandsvisning (S07). */
-export function LiftCard({ p, showRir }: { p: PlannedExercise; showRir: boolean }) {
+export function LiftCard({ p, showRir, onSwap }: { p: PlannedExercise; showRir: boolean; onSwap?: () => void }) {
   return (
     <li className="card">
       <div className="row spread">
@@ -35,6 +40,11 @@ export function LiftCard({ p, showRir }: { p: PlannedExercise; showRir: boolean 
         {p.substitutionFrom && <span>· ersätter {exercise(p.substitutionFrom).nameSv}</span>}
       </div>
       <ReasonPopover reasons={p.reasons} />
+      {onSwap && (
+        <button type="button" className="btn ghost" onClick={onSwap} aria-label={`Byt övning: ${exercise(p.exerciseId).nameSv}`}>
+          <Icon.Swap /> Byt övning
+        </button>
+      )}
     </li>
   );
 }
@@ -72,7 +82,7 @@ export function restSecondsFor(p: PlannedExercise): number {
 export function ExerciseSwapSheet({ current, equipment, blocked, onPick, onClose }: { current: ExerciseId; equipment: EquipmentSlug[]; blocked: (id: ExerciseId) => string | null; onPick: (id: ExerciseId) => void; onClose: () => void }) {
   const cur = exercise(current);
   const family = new Set<ExerciseId>([...((TEMPLATES.replacementFamilies[current] ?? []) as ExerciseId[]), ...Object.entries(TEMPLATES.replacementFamilies).filter(([, v]) => v.includes(current)).map(([k]) => k as ExerciseId)]);
-  const candidates = CATALOG.filter((c) => c.slug !== current && (c.pattern === cur.pattern || family.has(c.slug) || (cur.recoveryGroup !== 'own' && c.recoveryGroup === cur.recoveryGroup)));
+  const candidates = CATALOG.filter((c) => V1_SLUGS.has(c.slug) && c.slug !== current && (c.pattern === cur.pattern || family.has(c.slug) || (cur.recoveryGroup !== 'own' && c.recoveryGroup === cur.recoveryGroup)));
   const eq = new Set(equipment);
   return (
     <Sheet title="Byt övning" onClose={onClose}>

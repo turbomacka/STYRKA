@@ -113,6 +113,17 @@ export class SupabaseTransport implements SyncTransport {
       this.all('training_sets', userId),
       this.all('recommendation_audits', userId),
     ]);
-    return { profile, equipment: equipment.map((e) => e.equipment_slug as string), exerciseProfiles, consents, restrictions, symptoms, programs, sessions, sessionExercises, sets, audits };
+    // Nya tabeller (migration 004). Saknas de på servern ger det tomma listor i stället för fel.
+    const optional = async (t: string) => {
+      try {
+        return await this.all(t, userId);
+      } catch (e) {
+        if (e instanceof TransportError && e.code === 'VALIDATION_ERROR') return [];
+        throw e;
+      }
+    };
+    const calibrations = await optional('user_exercise_calibrations');
+    const substitutionEvents = await optional('session_exercise_substitution_events');
+    return { profile, equipment: equipment.map((e) => e.equipment_slug as string), exerciseProfiles, consents, restrictions, symptoms, programs, sessions, sessionExercises, sets, audits, calibrations, substitutionEvents };
   }
 }

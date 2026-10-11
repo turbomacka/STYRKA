@@ -5,6 +5,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { anonClient, closeSql, mutate, newUser, sessionWithExercise, setPayload, sql, withProfile, type TestUser } from './dbHelpers';
+import { CATALOG } from '../../src/domain/catalog';
 
 let A: TestUser;
 let B: TestUser;
@@ -105,10 +106,10 @@ describe('33/P10: två konton – B kan aldrig läsa, skapa, ändra eller radera
 });
 
 describe('oautentiserad (anon) användare', () => {
-  it('ser katalogen (17 övningar) men aldrig historik eller restriktioner', async () => {
+  it('ser katalogen (samma övningar som appens katalog) men aldrig historik eller restriktioner', async () => {
     const anon = anonClient();
     const cat = await anon.from('exercise_catalog').select('slug');
-    expect(cat.data?.length).toBe(17);
+    expect(cat.data?.map((r: { slug: string }) => r.slug).sort()).toEqual(CATALOG.map((x) => x.slug).sort());
     for (const t of USER_TABLES) {
       const { data } = await anon.from(t).select('*');
       expect(data ?? [], t).toEqual([]);
@@ -283,6 +284,7 @@ describe('kontoradering end-to-end', () => {
     const { seId } = await sessionWithExercise(D);
     await mutate(D, randomUUID(), randomUUID(), null, setPayload(seId));
     const r = await D.client.rpc('delete_my_account');
+    expect(r.error, JSON.stringify(r.error)).toBeNull();
     expect(r.data).toMatchObject({ status: 'applied' });
     for (const t of USER_TABLES) expect((await sql(`select count(*)::int n from public.${t} where user_id=$1`, [D.id]))[0].n, t).toBe(0);
     expect((await sql(`select count(*)::int n from auth.users where id=$1`, [D.id]))[0].n).toBe(0);

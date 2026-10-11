@@ -57,3 +57,13 @@ export function canonicalJson(value: unknown): string {
 export function hashOf(value: unknown): string {
   return sha256Hex(canonicalJson(value));
 }
+
+/**
+ * Deterministiskt UUID (v5-format) ur ett frö. Används för poster som två enheter kan skapa för samma
+ * logiska händelse (t.ex. samma övningsbyte), så att servern får EN post och redigeringar ger revisionskonflikt.
+ */
+export function uuidFromSeed(seed: string): string {
+  const h = sha256Hex(`styrka:${seed}`);
+  const variant = ((parseInt(h[16], 16) & 0x3) | 0x8).toString(16);
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-${variant}${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}

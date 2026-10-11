@@ -1,6 +1,8 @@
 /** Property-baserade tester: invarianta regler över slumpgenererade men giltiga profiler (04 §2.2). */
 import { describe, expect, it } from 'vitest';
-import { recommendNext, validateHeavyPair, type ExerciseId, type Exposure, type Mode } from '../../src/domain/decision_engine';
+import { recommendNext, type Exposure, type Mode } from '../../src/domain/decision_engine';
+import { heavyPairAllowed } from '../../src/domain/heavyPair';
+import type { ExerciseId } from '../../src/domain/catalog';
 import { ALL_AREAS, ALL_EQUIPMENT, CATALOG, exercise, impactsAreas, isAvailable, type EquipmentSlug } from '../../src/domain/catalog';
 import type { PerformedExercise, PlannerInput, RestrictionRule, SymptomReport } from '../../src/domain/model';
 import { progressionDecision } from '../../src/domain/prescription';
@@ -100,7 +102,7 @@ function checkInvariants(inp: PlannerInput, snap: ReturnType<typeof planRegular>
   }
   for (const r of inp.restrictions) {
     if (r.active && r.kind === 'block_pair_heavy' && r.exerciseA && r.exerciseB) {
-      expect(validateHeavyPair(snap.exercises.map((e) => ({ exerciseId: e.exerciseId, mode: e.mode, sets: e.sets, plannedKg: e.kg, estimatedOneRM: e.estimatedOneRM })), r.exerciseA, r.exerciseB)).toBe(true);
+      expect(heavyPairAllowed(snap.exercises.map((e) => ({ exerciseId: e.exerciseId, mode: e.mode, sets: e.sets, plannedKg: e.kg, estimatedOneRM: e.estimatedOneRM })), r.exerciseA, r.exerciseB)).toBe(true);
     }
   }
   if (snap.status !== 'empty' && snap.status !== 'time_insufficient') expect(snap.estimatedMinutes).toBeLessThanOrEqual(snap.budgetMinutes + 1);

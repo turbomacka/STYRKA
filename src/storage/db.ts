@@ -4,9 +4,10 @@
  * pålitliga långsiktiga backup (03 §5.2, R11).
  */
 import Dexie, { type Table } from 'dexie';
-import type { ExerciseId, Experience, Mode } from '../domain/decision_engine';
+import type { Experience, Mode } from '../domain/decision_engine';
+import type { ExerciseId } from '../domain/catalog';
 import type { Area, EquipmentSlug } from '../domain/catalog';
-import type { PlanSnapshot, PlannedExercise, Readiness, RuleKind, SessionKind, SessionStatus, SetKind, SetStatus, Side, SymptomReaction, Technique } from '../domain/model';
+import type { ChoiceScope, Familiarity, LoadEstimationKind, PerceivedEffort, PlanSnapshot, PlannedExercise, Readiness, RuleKind, SessionKind, SessionStatus, SetKind, SetStatus, Side, SymptomReaction, Technique } from '../domain/model';
 
 export type SyncState = 'local' | 'queued' | 'synced' | 'conflict' | 'failed';
 
@@ -26,6 +27,8 @@ export type LocalProfile = {
   revision: number;
   onboardingCompletedAt: string | null;
   privacyNoticeVersion: string | null;
+  /** Aktiv maskinprofil per övning (CR §2.3); saknas ⇒ standard. */
+  equipmentProfiles?: Partial<Record<ExerciseId, string>>;
   syncState: SyncState;
 };
 
@@ -124,6 +127,8 @@ export type LocalSessionExercise = {
   snapshot: PlannedExercise;
   /** Ersatt av användaren under passet (S09); tidigare logg påverkas inte. */
   replacedById: string | null;
+  /** Den planerade övning som denna ersatte (CR §2.1, original bevaras). */
+  replacesId?: string | null;
   createdAt: string;
   syncState: SyncState;
 };
@@ -152,8 +157,44 @@ export type LocalSet = {
   createQueued: boolean;
   /** Manuell avvikelse från rekommendation (02 §1 p4) – loggas separat. */
   manualOverride: boolean;
+  /** Frivilligt enkelt svar vid kalibrering: lätt / lagom / för tungt. */
+  perceivedEffort?: PerceivedEffort | null;
   syncState: SyncState;
   updatedAt: string;
+};
+
+/** `user_exercise_calibrations` (CR §4.2): vana och kalibreringsnivå per övning och maskinprofil. */
+export type LocalCalibration = {
+  id: string;
+  exerciseId: ExerciseId;
+  variantKey: string;
+  familiarity: Familiarity;
+  quality: 'none' | 'calibrating' | 'calibrated';
+  /** Referenser till utförda set (id), inte kopior av data. */
+  observations: string[];
+  calibratedAt: string | null;
+  updatedAt: string;
+  syncState: SyncState;
+};
+
+/** `session_exercise_substitution_events` (CR §4.2–4.3): append-only revisionspost per byte. */
+export type LocalSubstitutionEvent = {
+  id: string;
+  sessionId: string;
+  originalExerciseId: ExerciseId;
+  replacementExerciseId: ExerciseId;
+  originalSessionExerciseId: string | null;
+  replacementSessionExerciseId: string | null;
+  choiceScope: ChoiceScope;
+  engineVersion: string;
+  substitutionCatalogVersion: string;
+  algorithmRuleVersion: string;
+  sourceEvidenceIds: string[];
+  loadEstimationKind: LoadEstimationKind;
+  reasonCodes: string[];
+  userOverride: boolean;
+  createdAt: string;
+  syncState: SyncState;
 };
 
 export type LocalAudit = { id: string; sessionId: string; engineVersion: string; inputsHash: string; reasonCodes: string[]; snapshot: PlanSnapshot; generatedAt: string; syncState: SyncState };
@@ -166,7 +207,7 @@ export type OutboxOp =
   | { type: 'equipment'; equipment: EquipmentSlug[] }
   | { type: 'rpc'; name: 'erase_health_data' };
 
-export type ServerTable = 'profiles' | 'user_exercise_profiles' | 'health_consents' | 'restriction_rules' | 'programs' | 'training_sessions' | 'session_exercises' | 'symptom_reports' | 'recommendation_audits';
+export type ServerTable = 'profiles' | 'user_exercise_profiles' | 'health_consents' | 'restriction_rules' | 'programs' | 'training_sessions' | 'session_exercises' | 'symptom_reports' | 'recommendation_audits' | 'user_exercise_calibrations' | 'session_exercise_substitution_events';
 
 export type OutboxEntry = {
   seq?: number;
@@ -206,6 +247,8 @@ export class StyrkaDB extends Dexie {
   audits!: Table<LocalAudit, string>;
   outbox!: Table<OutboxEntry, number>;
   conflicts!: Table<ConflictEntry, string>;
+  calibrations!: Table<LocalCalibration, string>;
+  substitutionEvents!: Table<LocalSubstitutionEvent, string>;
 
   constructor(name: string) {
     super(name);
@@ -224,6 +267,11 @@ export class StyrkaDB extends Dexie {
       audits: 'id, sessionId',
       outbox: '++seq, &eventId, recordId, status',
       conflicts: 'id, recordId',
+    });
+    // Version 2 (CR 2026-10-10-01): additiva tabeller; befintliga data och index bevaras oförändrade.
+    this.version(2).stores({
+      calibrations: 'id, exerciseId',
+      substitutionEvents: 'id, sessionId',
     });
   }
 }

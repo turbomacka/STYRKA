@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import type { ExerciseId, Experience } from '../../domain/decision_engine';
+import type { Experience } from '../../domain/decision_engine';
+import type { ExerciseId } from '../../domain/catalog';
 import { ALL_EQUIPMENT, CATALOG, EQUIPMENT_LABEL_SV, exercise, type EquipmentSlug } from '../../domain/catalog';
 import { formatKg, parseKg } from '../../domain/units';
-import { patchProfile, setEstimate, updateExerciseSettings } from '../../application/profile';
+import { patchProfile, removePermanentSubstitution, setActiveEquipmentProfile, setEstimate, updateExerciseSettings } from '../../application/profile';
 import { Banner, PageHeader, Segmented, Stepper } from '../components/common';
-import { useServices } from '../services';
+import { FLAGS, useServices } from '../services';
 import { EXPERIENCE_SV } from '../strings';
 
 /** S13 Profil: frekvens, minuter, nivå, utrustning, variant. Ändringar gäller endast kommande pass. */
@@ -24,6 +25,17 @@ export function Profile() {
     }
   };
   const pull = (p.substitutions.lat_pulldown ?? 'lat_pulldown') as 'lat_pulldown' | 'assisted_pullup' | 'pullup';
+  // Permanenta byten ("Använd framöver"); vertikalt drag har egen kontroll ovan.
+  const permanent = (Object.entries(p.substitutions) as Array<[ExerciseId, ExerciseId | undefined]>).filter(([from, to]) => to && from !== 'lat_pulldown') as Array<[ExerciseId, ExerciseId]>;
+  const machines = Object.entries(p.equipmentProfiles ?? {}) as Array<[ExerciseId, string]>;
+  const act = async (fn: () => Promise<unknown>, ok: string) => {
+    try {
+      await fn();
+      setMsg(ok);
+    } catch {
+      setMsg('Kunde inte spara ändringen.');
+    }
+  };
   return (
     <div className="page stack">
       <h1>Profil</h1>
@@ -36,6 +48,40 @@ export function Profile() {
         <Segmented label="Erfarenhet" value={p.experience} onChange={(v: Experience) => save({ experience: v })} options={(Object.keys(EXPERIENCE_SV) as Experience[]).map((v) => ({ value: v, label: EXPERIENCE_SV[v] }))} />
         <Segmented label="Vertikalt drag" value={pull} onChange={(v) => save({ substitutions: { ...p.substitutions, lat_pulldown: v === 'lat_pulldown' ? undefined : v } })} options={[{ value: 'lat_pulldown', label: 'Latsdrag' }, { value: 'assisted_pullup', label: 'Assisterade chins' }, { value: 'pullup', label: 'Chins' }]} />
       </div>
+      {FLAGS.substitutionV2 && (permanent.length > 0 || machines.length > 0) && (
+        <section className="card stack" aria-labelledby="bytta-ovningar">
+          <h2 id="bytta-ovningar">Bytta övningar</h2>
+          <p className="small muted">Gäller kommande pass. Tidigare pass och din historik ändras inte.</p>
+          {permanent.length > 0 && (
+            <ul className="list">
+              {permanent.map(([from, to]) => (
+                <li key={from} className="row spread wrap">
+                  <span>
+                    {exercise(from).nameSv} → <strong>{exercise(to).nameSv}</strong>
+                  </span>
+                  <button type="button" className="btn" onClick={() => act(() => removePermanentSubstitution(ctx, from), `${exercise(from).nameSv} är återställd från nästa pass.`)}>
+                    Återställ {exercise(from).nameSv.toLowerCase()}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {machines.length > 0 && (
+            <ul className="list" aria-label="Maskinprofiler">
+              {machines.map(([ex, key]) => (
+                <li key={ex} className="row spread wrap">
+                  <span>
+                    {exercise(ex).nameSv}: maskin <strong>{key}</strong>
+                  </span>
+                  <button type="button" className="btn" onClick={() => act(() => setActiveEquipmentProfile(ctx, ex, 'default'), 'Standardmaskinen används från nästa pass.')}>
+                    Använd standardmaskin
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
       <fieldset className="card">
         <legend className="label">Utrustning</legend>
         {ALL_EQUIPMENT.map((e) => (
@@ -57,6 +103,12 @@ export function Profile() {
           <li><Link to="/integritet">Integritet</Link></li>
         </ul>
       </nav>
+      <section className="card" aria-labelledby="om-styrka">
+        <h2 id="om-styrka">Om STYRKA</h2>
+        <ul className="list">
+          <li><Link to="/vetenskap">Vetenskap och metoder</Link></li>
+        </ul>
+      </section>
     </div>
   );
 }
@@ -70,6 +122,7 @@ export function ExerciseSettingsScreen() {
   const [msg, setMsg] = useState<string | null>(null);
   const s = settings?.find((x) => x.exerciseId === ex);
   const lk = exercise(ex).loadKind;
+  const unit = exercise(ex).loadDisplayBasis === 'per_hand_kg' ? 'kg per hantel' : 'kg';
   const [inc, setInc] = useState('');
   const [max, setMax] = useState('');
   const [est, setEst] = useState('');
@@ -106,7 +159,7 @@ export function ExerciseSettingsScreen() {
             </div>
             {lk === 'external_kg' && (
               <div className="field">
-                <label htmlFor="es-max">Högsta vikt jag vill få föreslagen (kg, valfritt) – nu {g(s?.maxLoadGrams) || 'ingen'}</label>
+                <label htmlFor="es-max">Högsta vikt jag vill få föreslagen ({unit}, valfritt) – nu {g(s?.maxLoadGrams) || 'ingen'}</label>
                 <input id="es-max" type="text" inputMode="decimal" value={max} onChange={(e) => setMax(e.target.value)} />
               </div>
             )}
@@ -127,7 +180,7 @@ export function ExerciseSettingsScreen() {
           <p className="small muted">Nu: {s?.estimateGrams != null ? `${formatKg(s.estimateGrams)} kg (${s.estimateKind?.toUpperCase()})` : 'ingen – kalibrering används'}.</p>
           <Segmented label="Typ" value={estKind} onChange={setEstKind} options={[{ value: '1rm', label: '1RM' }, { value: '3rm', label: '3RM' }]} />
           <div className="field">
-            <label htmlFor="es-est">Kg</label>
+            <label htmlFor="es-est">{unit === 'kg' ? 'Kg' : 'Kg per hantel'}</label>
             <input id="es-est" type="text" inputMode="decimal" value={est} onChange={(e) => setEst(e.target.value)} />
           </div>
           <button type="submit" className="btn">Spara uppskattning</button>

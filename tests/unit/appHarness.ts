@@ -125,6 +125,7 @@ export class FakeServer implements SyncTransport {
       occurred_at: s.occurredAt,
       deleted_at: s.deleted ? 'x' : null,
       revision: s.revision,
+      perceived_effort: s.perceivedEffort ?? null,
     }));
     return {
       profile: this.profiles.get(userId) ?? null,
@@ -138,6 +139,8 @@ export class FakeServer implements SyncTransport {
       sessionExercises: rows('session_exercises'),
       sets: setRows,
       audits: rows('recommendation_audits'),
+      calibrations: rows('user_exercise_calibrations'),
+      substitutionEvents: rows('session_exercise_substitution_events'),
     };
   }
 }

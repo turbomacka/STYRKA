@@ -1,4 +1,5 @@
-import type { ExerciseId, Mode } from '../../src/domain/decision_engine';
+import type { Mode } from '../../src/domain/decision_engine';
+import type { ExerciseId } from '../../src/domain/catalog';
 import { ALL_EQUIPMENT } from '../../src/domain/catalog';
 import type { HistorySet, PerformedExercise, PlannedExercise, PlannerInput, RestrictionRule, SessionStatus, SymptomReport, UserExerciseSettings } from '../../src/domain/model';
 

@@ -1,8 +1,10 @@
-# Releasegrindar G0–G5 (status 2026-10-10)
+# Releasegrindar G0–G5 (status 2026-10-11)
 
 **Staging-databas:** Supabase-projekt `styrka-staging` (ref `zjjlttbwofohyqmklvkf`, eu-north-1 Stockholm). Migrationer 001–003 tillämpade 2026-10-10; röktest mot staging `npm run test:staging` 5/5 godkända (anon, idempotens, revisionskonflikt, A/B-isolering, direktskrivning nekad, samtycke, kontoradering). Testkonton raderade efteråt.
 
 **Staging-app:** https://styrka-staging.homeboard-mh.workers.dev (Cloudflare Workers Static Assets, endast statiska filer, `noindex`). Säkerhetsheaders verifierade (CSP med connect-src endast staging-Supabase, HSTS, nosniff, frame-ancestors/X-Frame-Options, Referrer-Policy, Permissions-Policy). Webbläsarröktest `npx playwright test -c playwright.staging.config.ts` 2/2 (Android/iPhone-emulering): inloggning, intro, pass, synk verifierad i staging-databasen, service worker registrerad, inga CSP-fel.
+
+**STYRKA-CR-2026-10-10-01 (vetenskapssida + övningsbyte):** implementerad och testad lokalt (se TESTPROTOKOLL, SUB01–SUB24). Migration `20261011000004_substitution.sql` (additiv). Feature flag `VITE_FLAG_SUBSTITUTION_V2` (standard på efter godkända tester; `false` ⇒ tidigare bytesvy). Staging: migration 004 ska tillämpas **före** ny frontend (`npx supabase db push`, sedan `npm run deploy:staging`). Status för staging redovisas i rapporten till produktägaren.
 
 | Grind | Status | Kommentar |
 |---|---|---|
@@ -24,6 +26,8 @@
 | RD05 | Samtyckesflöde och separat radering (text i appen är märkt utkast) | Jurist |
 | RD06 | Extern säkerhetsgranskning (SECURITY DEFINER-funktioner, Supabase-konfiguration) och incidentrutin | Säkerhetsgranskare |
 | RD07 | Fackgranskning av algoritmens säkerhetsgränser och alla H-värden (se AVVIKELSER) | Idrottsmedicinsk/legitimerad fackperson |
+| RD08 | Källgranskning av vetenskapssidan (påståenden, sammanfattningar, evidensklasser) och substitutionskatalogens relationer; godkännande av H-S1–H-S8. Automatiskt kontrollerat är endast att DOI/länkar svarar (`docs/evidence/evidence_links.md`) | Fackperson med metodkunskap |
+| RD09 | Om vetenskapssidans text om medicinteknisk gräns (MDCG 2019-11) får publiceras – texten är ingen juridisk bedömning | Jurist (del av RD01) |
 | – | Användartest ≥ 2 personer × 12 pass, staging-pilot, genomförd rollback | Produktägare |
 | – | Offentlig driftsättning | **Endast produktägarens uttryckliga beslut** |
 

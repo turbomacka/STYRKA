@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import type { ExerciseId } from '../../domain/decision_engine';
+import type { ExerciseId } from '../../domain/catalog';
 import { exercise } from '../../domain/catalog';
 import { formatKg } from '../../domain/units';
-import { addSet, editSet, logSet, pauseSession, resumeSession, swapExercise, undoSet, type SetValues } from '../../application/training';
+import { addSet, displayOrder, editSet, logSet, pauseSession, previewSwap, rateSet, resumeSession, swapCandidates, swapExercise, swapExerciseLegacy, undoSet, type SetValues, type SwapOptions } from '../../application/training';
+import type { Familiarity } from '../../domain/model';
+import { estimatedMinutesFor } from '../../planner/planner';
 import { Banner, Icon, OfflineBanner, ReasonPopover, ToastWithUndo } from '../components/common';
 import { SetRow } from '../components/SetRow';
+import { SubstitutionSheet } from '../components/SubstitutionSheet';
 import { ExerciseSwapSheet, RestTimer, prescriptionText, restSecondsFor } from '../components/widgets';
-import { useServices } from '../services';
-import { MODE_SV, T } from '../strings';
+import { FLAGS, useServices } from '../services';
+import { MODE_SV, SUB, T } from '../strings';
 
 /** S08 Träna: helskärm, en övning i fokus, Pausa/Avsluta alltid synligt. */
 export function Train() {
@@ -17,7 +20,8 @@ export function Train() {
   const { ctx, online } = useServices();
   const nav = useNavigate();
   const session = useLiveQuery(() => ctx.db.sessions.get(id!), [ctx, id]);
-  const exs = useLiveQuery(async () => (await ctx.db.sessionExercises.where('sessionId').equals(id!).toArray()).filter((e) => !e.replacedById).sort((a, b) => a.orderIndex - b.orderIndex), [ctx, id]);
+  // Ersättare visas på originalets plats (v2); tidigare byten (v1) hamnar sist som förut.
+  const exs = useLiveQuery(async () => displayOrder(await ctx.db.sessionExercises.where('sessionId').equals(id!).toArray()), [ctx, id]);
   const sets = useLiveQuery(() => ctx.db.sets.where('sessionId').equals(id!).toArray(), [ctx, id]);
   const profile = useLiveQuery(() => ctx.db.profile.get(ctx.userId), [ctx]);
   const settings = useLiveQuery(() => ctx.db.exerciseSettings.toArray(), [ctx]);
@@ -32,6 +36,11 @@ export function Train() {
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const current = exs?.[Math.min(focus, (exs?.length ?? 1) - 1)];
+  const currentId = current?.id;
+  const currentExercise = current?.exerciseId;
+  const machineProfiles = useLiveQuery(async () => (currentExercise ? [...new Set((await ctx.db.sessionExercises.where('exerciseId').equals(currentExercise).toArray()).map((e) => e.variantKey))] : []), [ctx, currentExercise]);
+  const loadCandidates = useCallback(() => swapCandidates(ctx, currentId!), [ctx, currentId]);
+  const previewFor = useCallback((to: ExerciseId, o: { familiarity?: Familiarity; variantKey?: string }) => previewSwap(ctx, currentId!, to, o), [ctx, currentId]);
 
   // "Senast": föregående resultat för övningen (utanför detta pass).
   useEffect(() => {
@@ -80,6 +89,11 @@ export function Train() {
   const stepGrams = Math.round(((settings?.find((s) => s.exerciseId === current.exerciseId)?.incrementGrams ?? null) ?? exercise(current.exerciseId).defaultIncrementKg * 1000));
   const showRir = profile?.experience !== 'novice';
   const paused = session.status === 'paused';
+  const v2 = FLAGS.substitutionV2;
+  const remainingMin = estimatedMinutesFor(exs.map((e) => ({ ...e.snapshot, sets: sets.filter((s) => s.sessionExerciseId === e.id && s.kind === 'work' && s.status === 'planned' && !s.deleted).length })));
+  const swappedFrom = v2 && current.snapshot.substitution && current.snapshot.substitutionFrom ? current.snapshot.substitutionFrom : null;
+  const perSide = exercise(current.exerciseId).unilateral && exercise(current.exerciseId).catalogSince === '2.0.0';
+  const effortPrompt = v2 && current.snapshot.calibration && !showRir && (lk === 'external_kg' || lk === 'assistance_kg');
 
   const wrap = async (setId: string, label: string, fn: () => Promise<unknown>) => {
     try {
@@ -109,7 +123,7 @@ export function Train() {
       <header className="train-head">
         <div className="grow">
           <div className="small muted num">
-            Övning {focus + 1} av {exs.length} · {doneCount}/{allWork.length} set
+            Övning {focus + 1} av {exs.length} · {doneCount}/{allWork.length} set{v2 && remainingMin > 0 ? ` · cirka ${Math.round(remainingMin)} min kvar` : ''}
           </div>
           <h1 ref={headingRef} tabIndex={-1} style={{ fontSize: 22, margin: 0 }}>
             {exercise(current.exerciseId).nameSv}
@@ -134,8 +148,21 @@ export function Train() {
             {T.INFO_RECOMMEND}: {prescriptionText(current.snapshot)}
           </span>
         </div>
-        {current.snapshot.calibration && <Banner kind="info">{T.WARN_CAL}</Banner>}
+        {swappedFrom && (
+          <Banner kind="info">
+            {SUB.SWAPPED(exercise(swappedFrom).nameSv, exercise(current.exerciseId).nameSv)}{' '}
+            {current.snapshot.loadEstimationKind === 'population_prior_low_confidence' ? SUB.SWAPPED_PRIOR : current.snapshot.loadEstimationKind === 'none' ? SUB.SWAPPED_NONE : ''}
+          </Banner>
+        )}
+        {current.snapshot.calibration && (
+          <Banner kind="info">
+            {T.WARN_CAL}
+            {v2 && <span className="block-text">{SUB.CAL_INSTRUCTIONS}</span>}
+          </Banner>
+        )}
         {lk === 'assistance_kg' && <p className="small muted">Assistans: lägre siffra betyder tyngre för dig.</p>}
+        {v2 && current.snapshot.loadBasis === 'per_hand_kg' && <p className="small muted">{SUB.PER_HAND}</p>}
+        {v2 && perSide && <p className="small muted">{SUB.PER_SIDE}</p>}
         {previous && (
           <p className="small">
             <span className="label">{T.INFO_PREVIOUS}:</span> <span className="num">{previous}</span>
@@ -148,7 +175,10 @@ export function Train() {
               set={s}
               displayNo={i + 1}
               loadKind={lk}
+              loadBasis={current.snapshot.loadBasis}
               stepGrams={stepGrams}
+              effortPrompt={effortPrompt && s.kind === 'work'}
+              onRate={(e) => wrap(s.id, `${SUB.EFFORT[e]} sparat`, () => rateSet(ctx, s.id, e))}
               online={online}
               showRir={showRir}
               failed={failed.has(s.id)}
@@ -207,7 +237,22 @@ export function Train() {
         )}
       </main>
       {toast && <ToastWithUndo message={toast.msg} onUndo={() => { const sid = toast.setId; setToast(null); void wrap(sid, 'Set ångrat', () => undoSet(ctx, sid)).catch(() => undefined); }} onDone={() => setToast(null)} />}
-      {swap && profile && (
+      {swap && profile && v2 && (
+        <SubstitutionSheet
+          from={current.snapshot}
+          loadCandidates={loadCandidates}
+          preview={previewFor}
+          goals={profile.goals}
+          machineProfiles={machineProfiles ?? []}
+          onClose={() => setSwap(false)}
+          onConfirm={async (to: ExerciseId, o: SwapOptions) => {
+            await swapExercise(ctx, current.id, to, o);
+            setSwap(false);
+            say(to === current.exerciseId ? `Bytt maskin för ${exercise(to).nameSv}` : `Bytt till ${exercise(to).nameSv}`);
+          }}
+        />
+      )}
+      {swap && profile && !v2 && (
         <ExerciseSwapSheet
           current={current.exerciseId}
           equipment={profile.equipment}
@@ -215,7 +260,7 @@ export function Train() {
           onClose={() => setSwap(false)}
           onPick={async (to) => {
             try {
-              await swapExercise(ctx, current.id, to);
+              await swapExerciseLegacy(ctx, current.id, to);
               setSwap(false);
               say(`Bytt till ${exercise(to).nameSv}`);
             } catch (e) {

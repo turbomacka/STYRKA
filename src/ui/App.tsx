@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { BrowserRouter, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
@@ -113,6 +113,16 @@ function BottomTabs() {
   );
 }
 
+// Vetenskapssidan laddas separat så att inloggningen inte behöver ladda den.
+const Science = lazy(() => import('./screens/Science'));
+function SciencePage({ backTo, backLabel }: { backTo: string; backLabel: string }) {
+  return (
+    <Suspense fallback={<p className="page" aria-busy="true">Laddar…</p>}>
+      <Science backTo={backTo} backLabel={backLabel} />
+    </Suspense>
+  );
+}
+
 const FULLSCREEN = [/^\/pass\//, /^\/forhandsvisning/, /^\/spontan/];
 
 function Authed({ onSignedOut }: { onSignedOut: () => Promise<void> }) {
@@ -131,6 +141,8 @@ function Authed({ onSignedOut }: { onSignedOut: () => Promise<void> }) {
   if (profile === undefined || pulled === undefined) return <p className="page" aria-busy="true">Laddar…</p>;
   // Ny enhet: vänta på första hämtningen från servern innan introduktionen visas.
   if (!profile && online && !pulled && !waited) return <p className="page" aria-busy="true">Hämtar dina uppgifter…</p>;
+  // Publika informationssidor nås även före introduktionen.
+  if (loc.pathname === '/vetenskap') return <SciencePage backTo={profile?.onboardingCompletedAt ? '/profil' : '/'} backLabel={profile?.onboardingCompletedAt ? 'Till Profil' : 'Tillbaka'} />;
   if (!profile || !profile.onboardingCompletedAt) return <Onboarding onDone={() => nav('/', { replace: true })} />;
   const full = FULLSCREEN.some((r) => r.test(loc.pathname));
   return (
@@ -194,6 +206,7 @@ function Configured({ sb }: { sb: SupabaseClient }) {
       ) : (
         <Routes>
           <Route path="/integritet" element={<Privacy />} />
+          <Route path="/vetenskap" element={<SciencePage backTo="/" backLabel="Till inloggning" />} />
           <Route path="*" element={<Welcome supabase={sb} />} />
         </Routes>
       )}

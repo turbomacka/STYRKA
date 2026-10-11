@@ -4,6 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { estimatedOneRepMax, initialPrescription, recommendNext, recoveryGate, validateHeavyPair, type Exposure } from '../../src/domain/decision_engine';
+import { heavyPairAllowed } from '../../src/domain/heavyPair';
 import { exercise } from '../../src/domain/catalog';
 import { prescribe } from '../../src/domain/prescription';
 import { gramsToDecimalString, parseKg } from '../../src/domain/units';
@@ -266,7 +267,7 @@ describe('04 §2.1 acceptanstest – motor och planerare', () => {
     const pr = rule({ kind: 'block_pair_heavy', exerciseA: 'squat', exerciseB: 'deadlift' });
     for (let f = 1; f <= 7; f++) for (let rot = 0; rot < 7; rot++) {
       const snap = planRegular(input({ rotationIndex: rot, exerciseSettings: ALL_ESTIMATES, restrictions: [pr], profile: { plannedSessionsPerWeek: f } }));
-      expect(validateHeavyPair(snap.exercises.map((e) => ({ exerciseId: e.exerciseId, mode: e.mode, sets: e.sets, plannedKg: e.kg, estimatedOneRM: e.estimatedOneRM })), 'squat', 'deadlift')).toBe(true);
+      expect(heavyPairAllowed(snap.exercises.map((e) => ({ exerciseId: e.exerciseId, mode: e.mode, sets: e.sets, plannedKg: e.kg, estimatedOneRM: e.estimatedOneRM })), 'squat', 'deadlift')).toBe(true);
     }
   });
 

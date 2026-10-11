@@ -6,10 +6,10 @@
  * - Revisionskonflikt ⇒ explicit konfliktpost, ingen tyst last-write-wins. Andra poster synkas oberoende.
  * - Nätverks-/serverfel ⇒ exponentiell backoff; kön ligger kvar.
  */
-import { applyServerSetValues, consentFromRow, exerciseSettingsFromRow, profileFromRow, programFromRow, restrictionFromRow, sessionExerciseFromRow, sessionFromRow, setFromRow, setFullPatch, symptomFromRow, auditFromRow, profileRow } from '../server/mapping';
+import { applyServerSetValues, consentFromRow, exerciseSettingsFromRow, profileFromRow, programFromRow, restrictionFromRow, sessionExerciseFromRow, sessionFromRow, setFromRow, setFullPatch, symptomFromRow, auditFromRow, profileRow, calibrationFromRow, substitutionEventFromRow } from '../server/mapping';
 import { TransportError } from '../server/transport';
 import type { ConflictEntry, LocalProfile, LocalSet, OutboxEntry } from '../storage/db';
-import type { ExerciseId } from '../domain/decision_engine';
+import type { ExerciseId } from '../domain/catalog';
 import type { PlanSnapshot } from '../domain/model';
 import { outbox, type AppContext } from './context';
 
@@ -314,14 +314,17 @@ export class SyncEngine {
     for (const list of bySession.values()) {
       for (const se of list) {
         const snapshot = se.recommendation_snapshot as { substitutionReason?: string; substitutionFrom?: string };
-        if (snapshot?.substitutionReason === 'USER_SWAP') {
+        const replaces = (se.recommendation_snapshot as { substitution?: { replacesSessionExerciseId?: string } })?.substitution?.replacesSessionExerciseId;
+        if (replaces && list.some((x) => x.id === replaces)) {
+          replacedBy.set(replaces, se.id as string);
+        } else if (snapshot?.substitutionReason === 'USER_SWAP') {
           const from = list.filter((x) => x.exercise_slug === snapshot.substitutionFrom && (x.order_index as number) < (se.order_index as number)).sort((a, b) => (b.order_index as number) - (a.order_index as number))[0];
           if (from) replacedBy.set(from.id as string, se.id as string);
         }
       }
     }
     const seIndex = new Map(snap.sessionExercises.map((se) => [se.id as string, { sessionId: se.session_id as string, exerciseId: se.exercise_slug as ExerciseId }]));
-    await db.transaction('rw', [db.profile, db.exerciseSettings, db.restrictions, db.symptoms, db.consents, db.programs, db.sessions, db.sessionExercises, db.sets, db.audits, db.meta], async () => {
+    await db.transaction('rw', [db.profile, db.exerciseSettings, db.restrictions, db.symptoms, db.consents, db.programs, db.sessions, db.sessionExercises, db.sets, db.audits, db.meta, db.calibrations, db.substitutionEvents], async () => {
       const keep = <T extends { syncState: string }>(local: T | undefined) => !!local && local.syncState !== 'synced';
       if (snap.profile && !keep(await db.profile.get(userId))) await db.profile.put(profileFromRow(snap.profile, snap.equipment));
       for (const r of snap.exerciseProfiles) {
@@ -348,6 +351,8 @@ export class SyncEngine {
         await db.sets.put(setFromRow(r, se));
       }
       for (const r of snap.audits) if (!keep(await db.audits.get(r.id as string))) await db.audits.put(auditFromRow(r));
+      for (const r of snap.calibrations ?? []) if (!keep(await db.calibrations.get(r.id as string))) await db.calibrations.put(calibrationFromRow(r));
+      for (const r of snap.substitutionEvents ?? []) if (!keep(await db.substitutionEvents.get(r.id as string))) await db.substitutionEvents.put(substitutionEventFromRow(r));
       await db.meta.put({ key: 'lastPullAt', value: this.ctx.clock.now() });
     });
     this.emit();

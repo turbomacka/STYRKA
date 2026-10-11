@@ -106,7 +106,7 @@ export async function onboard(page: Page, opts: { pull?: 'Latsdrag' | 'Assistera
 export function shooter(page: Page, info: TestInfo) {
   const dir = `docs/evidence/screenshots/${info.project.name}`;
   mkdirSync(dir, { recursive: true });
-  return async (name: string) => {
-    await page.screenshot({ path: `${dir}/${name}.png`, fullPage: true });
+  return async (name: string, opts: { fullPage?: boolean } = {}) => {
+    await page.screenshot({ path: `${dir}/${name}.png`, fullPage: opts.fullPage ?? true });
   };
 }
