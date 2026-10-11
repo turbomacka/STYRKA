@@ -130,6 +130,16 @@ describe('staging', () => {
     expect((await A.c.from('notebook_notes').select('id')).data).toEqual([]);
   });
 
+  it('migration 007: balansbeslut med ägar-RLS', async () => {
+    const id = randomUUID();
+    const row = { id, user_id: A.id, candidate_key: 'a'.repeat(64), basis_key: 'b'.repeat(64), pattern_id: 'vertical_pull', status: 'dismissed', policy_version: 'balance-decisions/1.0.0', event_id: randomUUID() };
+    expect((await A.c.from('balance_suggestion_decisions').insert(row)).error).toBeNull();
+    expect((await B.c.from('balance_suggestion_decisions').select('id').eq('user_id', A.id)).data ?? []).toEqual([]);
+    expect((await client().from('balance_suggestion_decisions').select('id')).data ?? []).toEqual([]);
+    await B.c.from('balance_suggestion_decisions').delete().eq('id', id);
+    expect((await A.c.from('balance_suggestion_decisions').select('id')).data).toEqual([{ id }]);
+  });
+
   it('kontoradering tar bort kontot (körs även som städning)', async () => {
     const C = await user('c');
     await C.c.from('profiles').insert({ user_id: C.id, adult_confirmed: true });

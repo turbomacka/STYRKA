@@ -140,6 +140,47 @@ export const REASONS: Record<string, { text: string; ev: Ev }> = {
   CALIBRATED_TWO_EXPOSURES: { text: 'Övningen räknas som kalibrerad efter två kontrollerade pass.', ev: 'H' },
 };
 
+/** Texter för Balans (ÄA-BAL-001 §10). Inga värderande eller hotfulla ord. */
+export const BAL = {
+  TITLE: 'Balans',
+  SUBTITLE: 'Träna allsidigt och hållbart',
+  INTRO: 'Se hur din träning är fördelad och hitta nästa steg som passar dig.',
+  A: 'Träningens allsidighet',
+  A_METHOD: 'Staplarna visar arbetsset i olika rörelsemönster. De mäter inte muskelstyrka eller skaderisk.',
+  A_WINDOW: 'Genomförd träning senaste 28 dagarna',
+  A_PLAN: 'Av planerade set i genomförda ordinarie pass',
+  A_FOOT: 'Detta visar träningsfördelning, inte hur stark varje muskel är.',
+  SETS: (n: number) => `${n} arbetsset`,
+  PLANNED: (m: number, p: number) => `${m} av ${p} planerade set i genomförda ordinarie pass`,
+  EXTRA: (n: number) => `+${n} utöver plan`,
+  B: 'Styrkans utveckling',
+  B_NOTE: 'Jämförelsen bygger på uppskattad maxstyrka från dina loggade set. Grafen ovan är huvudkällan.',
+  C: 'Belastning och återhämtning',
+  C_NONE: 'Inga registrerade begränsningar eller besvär påverkar planeringen just nu.',
+  C_LIMITED: 'Dina registrerade begränsningar vägs in när nästa pass planeras.',
+  C_REVIEW: 'Det finns en aktuell begränsning. Förslag som påverkar området visas inte som automatiska ökningar.',
+  C_CARE: 'Vid kvarstående eller återkommande besvär bör du kontakta vården.',
+  C_LINK: 'Visa mina begränsningar',
+  D: 'Ditt nästa steg',
+  D_NONE: 'Inga förslag just nu. Du kan alltid se fördelningen ovan.',
+  CTA: 'Visa möjlig justering',
+  ACCEPT: 'Godkänn ändring',
+  KEEP: 'Behåll min plan',
+  NOT_NOW: 'Inte nu',
+  PREVIEW_TITLE: 'Möjlig justering (inte sparad)',
+  PREVIEW_CAL: 'Den nya övningen saknar egen historik: första gången väljer du en lätt, kontrollerad vikt.',
+  PREVIEW_ENGINE: 'Set, repetitioner och vikt bestäms av den vanliga planeringen, med dina begränsningar och återhämtning.',
+  ACCEPT_DISABLED: 'Att godkänna ändringar från Balans är inte aktiverat i den här versionen. Du kan själv byta övning i Plan.',
+  ACCEPTED: 'Ändringen är sparad. Kommande pass i Plan är uppdaterade.',
+  DISMISSED: 'Förslaget visas inte igen så länge underlaget är detsamma.',
+  FAILED: 'Det gick inte att genomföra. Försök igen.',
+  CONFLICT: 'Planen har ändrats under tiden. Öppna förslaget igen.',
+  METHOD_LINK: 'Så fungerar Balans',
+  EMPTY: 'När du har genomfört några pass kan du se hur träningen fördelas mellan olika rörelser.',
+  FOOTNOTE: 'Balans är en hjälp att förstå och planera din träning. Den kan inte avgöra om du kommer att skadas.',
+  OFFLINE_ACCEPT: 'Ändringen sparas på enheten och synkas när du är uppkopplad.',
+} as const;
+
 /** Texter för Min träningsplan (ÄA-PLAN-001). */
 export const PLAN = {
   TITLE: 'Min träningsplan',

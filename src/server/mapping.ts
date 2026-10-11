@@ -4,7 +4,7 @@ import type { ExerciseId } from '../domain/catalog';
 import { exercise, type Area, type EquipmentSlug } from '../domain/catalog';
 import type { ChoiceScope, Familiarity, LoadEstimationKind, PerceivedEffort, PlanSnapshot, PlannedExercise, Readiness, RuleKind, SessionKind, SessionStatus, SetKind, SetStatus, Side, SymptomReaction, Technique } from '../domain/model';
 import { decimalStringToGrams, gramsToDecimalString } from '../domain/units';
-import type { LocalAudit, LocalCalibration, LocalConsent, LocalExerciseSettings, LocalNote, LocalPlanRevision, LocalProfile, LocalProgram, LocalRestriction, LocalSession, LocalSessionExercise, LocalSet, LocalSubstitutionEvent, LocalSymptom } from '../storage/db';
+import type { LocalAudit, LocalBalanceDecision, LocalCalibration, LocalConsent, LocalExerciseSettings, LocalNote, LocalPlanRevision, LocalProfile, LocalProgram, LocalRestriction, LocalSession, LocalSessionExercise, LocalSet, LocalSubstitutionEvent, LocalSymptom } from '../storage/db';
 
 const dec = (g: number | null): string | null => (g === null ? null : gramsToDecimalString(g));
 const grams = (v: unknown): number | null => (v === null || v === undefined ? null : decimalStringToGrams(String(v)));
@@ -219,6 +219,15 @@ export function sessionExerciseFromRow(r: Record<string, unknown>, replacedById:
     createdAt: r.created_at as string,
     syncState: 'synced',
   };
+}
+
+// ---- ÄA-BAL-001 ----
+export function balanceDecisionRow(userId: string, d: LocalBalanceDecision): Record<string, unknown> {
+  return { id: d.id, user_id: userId, candidate_key: d.candidateKey, basis_key: d.basisKey, pattern_id: d.patternId, status: d.status, policy_version: d.policyVersion, event_id: d.eventId, updated_at: d.updatedAt };
+}
+
+export function balanceDecisionFromRow(r: Record<string, unknown>): LocalBalanceDecision {
+  return { id: r.id as string, candidateKey: r.candidate_key as string, basisKey: r.basis_key as string, patternId: r.pattern_id as string, status: r.status as LocalBalanceDecision['status'], policyVersion: r.policy_version as string, eventId: r.event_id as string, updatedAt: new Date(r.updated_at as string).toISOString(), syncState: 'synced' };
 }
 
 // ---- ÄA-PLAN-001 ----

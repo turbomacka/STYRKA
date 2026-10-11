@@ -28,6 +28,8 @@ export type ExportBundle = {
   /** Tillägg ÄA-PLAN-001: privata anteckningar och planrevisioner (strukturell plan, inga framtidsvikter). */
   notebookNotes: unknown[];
   planRevisions: unknown[];
+  /** Tillägg ÄA-BAL-001: dina beslut om balansförslag. */
+  balanceDecisions: unknown[];
 };
 
 const strip = <T extends { syncState?: unknown }>(x: T) => {
@@ -38,7 +40,7 @@ const strip = <T extends { syncState?: unknown }>(x: T) => {
 /** Export omfattar källregistreringar, set, pass, planversion, rekommendationsgrunder och aktuell profil (35). */
 export async function exportJson(ctx: AppContext): Promise<ExportBundle> {
   const { db } = ctx;
-  const [profile, settings, consent, restrictions, symptoms, programs, sessions, exs, sets, audits, pending, calibrations, events, notes, revisions] = await Promise.all([
+  const [profile, settings, consent, restrictions, symptoms, programs, sessions, exs, sets, audits, pending, calibrations, events, notes, revisions, balanceDecisions] = await Promise.all([
     db.profile.get(ctx.userId),
     db.exerciseSettings.toArray(),
     db.consents.get(ctx.userId),
@@ -54,6 +56,7 @@ export async function exportJson(ctx: AppContext): Promise<ExportBundle> {
     db.substitutionEvents.toArray(),
     db.notes.toArray(),
     db.planRevisions.toArray(),
+    db.balanceDecisions.toArray(),
   ]);
   return {
     format: 'styrka-export',
@@ -80,6 +83,7 @@ export async function exportJson(ctx: AppContext): Promise<ExportBundle> {
     substitutionEvents: events.sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(strip),
     notebookNotes: notes.filter((n) => n.body.length > 0).map(strip),
     planRevisions: revisions.sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(strip),
+    balanceDecisions: balanceDecisions.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)).map(strip),
   };
 }
 

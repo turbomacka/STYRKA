@@ -6,6 +6,7 @@ import { formatKg } from '../../domain/units';
 import { listSessions, performedVariants, strengthSeries, type SessionSummary, type StrengthSeries } from '../../application/history';
 import { Segmented } from '../components/common';
 import { ProgressChart } from '../components/ProgressChart';
+import { BalanceSection } from '../components/BalanceSection';
 import { useServices } from '../services';
 import { STATUS_SV, T, TEMPLATE_SV } from '../strings';
 
@@ -79,6 +80,7 @@ export function Progress() {
           </div>
         </>
       )}
+      <BalanceSection />
       <section className="card">
         <h2>Senaste pass</h2>
         {sessions.length === 0 ? (

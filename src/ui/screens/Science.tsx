@@ -22,6 +22,7 @@ const SECTIONS: Array<{ id: string; key: Section | 'E'; title: string }> = [
   { id: 'b-rekommendationer', key: 'B', title: 'B. Hur rekommendationerna fungerar' },
   { id: 'c-produktregler', key: 'C', title: 'C. Var forskningen upphör och produktval börjar' },
   { id: 'd-begransningar', key: 'D', title: 'D. Begränsningar och säkerhet' },
+  { id: 'balans', key: 'E', title: 'Så fungerar Balans' },
   { id: 'e-kallor', key: 'E', title: 'E. Källförteckning' },
 ];
 
@@ -164,7 +165,8 @@ export function Science({ backTo, backLabel }: { backTo: string; backLabel: stri
   const sources = useMemo(() => EVIDENCE.sources.filter((s) => matchesQuery([s.authors, s.title, s.publication, s.supported_claim_sv, s.limitations_sv, s.design, s.population].join(' '), query)), [query]);
   const hits = claims.length + rules.length + sources.length;
   const by = (s: Section) => claims.filter((c) => c.section === s);
-  const rulesBy = (s: Section) => rules.filter((r) => r.group === s);
+  const rulesBy = (s: Section) => rules.filter((r) => r.group === s && !r.rule_id.startsWith('balans-'));
+  const balanceRules = rules.filter((r) => r.rule_id.startsWith('balans-'));
 
   return (
     <main className="shell science" id="vetenskap">
@@ -283,7 +285,40 @@ export function Science({ backTo, backLabel }: { backTo: string; backLabel: stri
           ))}
         </Section>
 
-        <Section id="e-kallor" title={SECTIONS[4].title}>
+        <Section
+          id="balans"
+          title="Så fungerar Balans"
+          intro={
+            <p className="muted">
+              Balans under Utveckling beskriver hur din träning är fördelad. Den är ingen diagnos, inget betyg och ingen skaderiskberäkning. Mönsterpolicy {EVIDENCE.balanceMethod.patternPolicyVersion}, beslutsregler {EVIDENCE.balanceMethod.decisionPolicyVersion}.
+            </p>
+          }
+        >
+          <div className="card stack">
+            <ol>
+              {EVIDENCE.balanceMethod.points.filter((p) => matchesQuery(p, query)).map((p) => (
+                <li key={p}>{p}</li>
+              ))}
+            </ol>
+            <p className="small">
+              Källor:{' '}
+              {EVIDENCE.balanceMethod.source_ids.map((id, i) => (
+                <span key={id}>
+                  {i > 0 ? ', ' : ''}
+                  <a href={`#${sourceAnchor(id)}`}>
+                    {sourceById(id)!.authors.split(',')[0]} ({sourceById(id)!.year})
+                  </a>
+                </span>
+              ))}
+              . Ingen av dem validerar STYRKA:s balansgränser eller förslag.
+            </p>
+          </div>
+          {balanceRules.map((r) => (
+            <RuleCard key={r.rule_id} r={r} />
+          ))}
+        </Section>
+
+        <Section id="e-kallor" title={SECTIONS[5].title}>
           <ol className="list science-sources">
             {sources.map((s) => (
               <li key={s.source_id} id={sourceAnchor(s.source_id)} className="stack">
@@ -296,6 +331,12 @@ export function Science({ backTo, backLabel }: { backTo: string; backLabel: stri
                   {s.doi && !s.public_url.includes(s.doi) ? <> (DOI {s.doi})</> : null}
                 </p>
                 <dl className="science-dl small">
+                  {s.added_in && (
+                    <>
+                      <dt>Tillägg</dt>
+                      <dd>{s.added_in} (utanför produktägarens ursprungliga register)</dd>
+                    </>
+                  )}
                   <dt>Studietyp</dt>
                   <dd>{s.design}</dd>
                   <dt>Population</dt>

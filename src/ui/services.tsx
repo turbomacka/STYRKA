@@ -12,6 +12,10 @@ export const FLAGS = {
   loadRecommendationsEnabled: (import.meta.env.VITE_FLAG_LOAD_RECOMMENDATIONS ?? 'true') !== 'false',
   /** CR 2026-10-10-01: övningsbyte v2 (kalibrering, revisionsposter). 'false' ⇒ tidigare bytesvy S09 v1. */
   substitutionV2: (import.meta.env.VITE_FLAG_SUBSTITUTION_V2 ?? 'true') !== 'false',
+  /** ÄA-BAL-001: läsvy Balans under Utveckling ('false' döljer sektionen). */
+  balance: (import.meta.env.VITE_FLAG_BALANCE ?? 'true') !== 'false',
+  /** ÄA-BAL-001: godkänna planjusteringar från Balans. Avstängt tills godkända relationer mellan mönster finns. */
+  balanceAdjustments: (import.meta.env.VITE_FLAG_BALANCE_ADJUSTMENTS ?? 'false') === 'true',
 };
 
 export type Services = {

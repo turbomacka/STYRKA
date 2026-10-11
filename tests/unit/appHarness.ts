@@ -161,6 +161,7 @@ export class FakeServer implements SyncTransport {
       substitutionEvents: rows('session_exercise_substitution_events'),
       planRevisions: rows('plan_revisions'),
       notes: rows('notebook_notes'),
+      balanceDecisions: rows('balance_suggestion_decisions'),
     };
   }
 }

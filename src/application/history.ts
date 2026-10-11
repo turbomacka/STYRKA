@@ -26,7 +26,8 @@ export async function listSessions(ctx: AppContext, opts: { limit?: number; befo
   return out;
 }
 
-export type StrengthPoint = { at: string; kg: number; source: 'measured' | 'estimated' | 'performance'; detail: string };
+/** `sessionId` finns för punkter som härletts ur ett träningspass (inte ur en angiven uppskattning). */
+export type StrengthPoint = { at: string; kg: number; source: 'measured' | 'estimated' | 'performance'; detail: string; sessionId?: string };
 export type StrengthSeries = { exerciseId: ExerciseId; comparable: boolean; points: StrengthPoint[]; note: string | null };
 
 /**
@@ -58,11 +59,11 @@ export async function strengthSeries(ctx: AppContext, exerciseId: ExerciseId, si
     const est = e1rmFromEstimate(toUserSettings(settings).estimate!);
     if (est) points.push({ at: (settings.estimateTestedAt ? `${settings.estimateTestedAt}T00:00:00.000Z` : settings.updatedAt), kg: est.kg, source: est.source, detail: settings.estimateKind === '3rm' ? '3RM-uppgift' : settings.estimateKind === 'submax' ? 'submaximal uppgift' : '1RM-uppgift' });
   }
-  const perSession = new Map<string, { at: string; best: number; e1rm: number | null; measured: boolean }>();
+  const perSession = new Map<string, { at: string; best: number; e1rm: number | null; measured: boolean; sessionId: string }>();
   for (const s of sets) {
     if (s.actualGrams === null || s.actualReps === null || s.actualReps < 1) continue;
     const kgv = gramsToKg(s.actualGrams);
-    const cur = perSession.get(s.sessionId) ?? { at: s.occurredAt!, best: 0, e1rm: null, measured: false };
+    const cur = perSession.get(s.sessionId) ?? { at: s.occurredAt!, best: 0, e1rm: null, measured: false, sessionId: s.sessionId };
     cur.best = Math.max(cur.best, kgv);
     if (s.actualReps === 1 && s.rir === 0) {
       cur.measured = true;
@@ -75,8 +76,8 @@ export async function strengthSeries(ctx: AppContext, exerciseId: ExerciseId, si
     perSession.set(s.sessionId, cur);
   }
   for (const v of perSession.values()) {
-    points.push({ at: v.at, kg: v.best, source: 'performance', detail: 'bästa arbetsset' });
-    if (v.e1rm !== null) points.push({ at: v.at, kg: v.e1rm, source: v.measured ? 'measured' : 'estimated', detail: v.measured ? '1 rep, 0 kvar' : 'uppskattad från reps och reps kvar' });
+    points.push({ at: v.at, kg: v.best, source: 'performance', detail: 'bästa arbetsset', sessionId: v.sessionId });
+    if (v.e1rm !== null) points.push({ at: v.at, kg: v.e1rm, source: v.measured ? 'measured' : 'estimated', detail: v.measured ? '1 rep, 0 kvar' : 'uppskattad från reps och reps kvar', sessionId: v.sessionId });
   }
   points.sort((a, b) => a.at.localeCompare(b.at) || a.source.localeCompare(b.source));
   return { exerciseId, comparable: true, points, note: null };

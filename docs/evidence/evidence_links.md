@@ -1,6 +1,6 @@
 # Kontroll av källänkar (2026-10-11)
 
-Register: EVIDENS/2.0.0. DOI kontrolleras mot doi.org:s handle-API (responseCode 1 = registrerad DOI).
+Register: EVIDENS/2.1.0. DOI kontrolleras mot doi.org:s handle-API (responseCode 1 = registrerad DOI).
 
 | Källa | DOI | Resultat | Detalj |
 |---|---|---|---|
@@ -17,5 +17,8 @@ Register: EVIDENS/2.0.0. DOI kontrolleras mot doi.org:s handle-API (responseCode
 | nice2022 | – | OK | URL 200 |
 | mdcg2025 | – | OK | URL 200 |
 | saeterbakken2013 | 10.1519/JSC.0b013e318276b873 | OK | doi.org handle responseCode=1; URL 200 |
+| lauersen2014 | 10.1136/bjsports-2013-092538 | OK | doi.org handle responseCode=1; URL 403 |
+| parkinson2021 | 10.52082/jssm.2021.594 | OK | doi.org handle responseCode=1; URL 200 |
+| wang2020 | 10.1007/s40279-020-01280-1 | OK | doi.org handle responseCode=1; URL 200 |
 
 Fel: 0

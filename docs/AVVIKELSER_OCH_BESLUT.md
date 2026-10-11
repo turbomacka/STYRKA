@@ -138,6 +138,20 @@ Inga nya träningsregler. Framtidsplanen tas fram genom den befintliga planerare
 | P9 | Utskrift | Webbläsarens utskrift med utskrifts-CSS (ingen PDF-infrastruktur). |
 | P10 | Konflikter | Anteckningar sparas villkorat mot revision; konflikter visas i befintlig Synk-vy. |
 
+## 3d. ÄA-BAL-001 "Balans" (2026-10-12)
+
+| # | Fråga | Beslut |
+|---|---|---|
+| B1 | ÄA-UTV-001 (styrkekurvor, `deriveProgressSeries`) finns inte i repot | Styrkejämförelsen återanvänder befintliga Utveckling-serien `strengthSeries` (oförändrad e1RM-logik; punkterna fick bara ett tillagt `sessionId`). Endast session-härledda e1RM-punkter används. |
+| B2 | Kontrakt → befintligt schema | Utförda set: `training_sets`; pass: `training_sessions`; accepterad plan vid passtart: `training_sessions.snapshot` (oföränderlig, sparad vid start); byten: `session_exercises.replaced_by_id`/substitutionshändelser; aktiv planrevision: `plan_revisions`; spärrar: `restriction_rules`, symtom med samtycke och befintlig `activeSymptoms`. Ny tabell endast för beslut: `balance_suggestion_decisions` (migration 007). |
+| B3 | Planjustering "byt kompletteringsmoment mot annat mönster" | Den godkända substitutionskatalogen (SUBST/1.2.0) saknar relationer mellan olika rörelsemönster, och planeraren tillämpar bara godkända relationer. I produktion blir resultatet därför alltid "Det går inte att föreslå en justering inom dina nuvarande ramar." Mekanismen (förhandsvisning med verklig planerare, godkännande via profilval + revision) är verifierad med en **testrelation** som bara finns i testet. Godkännande ligger bakom `VITE_FLAG_BALANCE_ADJUSTMENTS` (av). **Produktbeslut krävs** om godkända relationer mellan mönster ska införas. |
+| B4 | Kandidatnyckel | Enligt §7.2 (inkl. aktiv planrevision). Godkänt förslag undertrycks för samma underlag oberoende av revision; förhandsvisning/avböjande accepterar samma underlag om bara planrevisionen bytts i bakgrunden. Godkännande kräver oförändrad revision. |
+| B5 | Mönsterpolicy | Exakt enligt §4; `lunge` (pensionerad, ej i tabellen) klassas uttryckligen som `other`. |
+| B6 | Beskrivande heuristiker (H) | "Täcker flera rörelsemönster" = minst 3 av 6 huvudmönster med set; "ligger nära valt upplägg" = minst 2 jämförbara pass, ≥ 8 planerade set och ≥ 90 % matchade. |
+| B7 | Bortprioriterat | Målprioritet 0 för ett prioriterat lyft i mönstret tolkas som uttryckligt avstående. |
+| B8 | Källor i §11 | Verifierade mot Crossref/PMC: Lauersen m.fl. BJSM 2014;48(11):871–877; Parkinson m.fl. J Sports Sci Med **2021** (anmodan: 2022), DOI 10.52082/jssm.2021.594 = PMC8488821; ACWR-artikeln har förstaförfattare **Wang C** (Shrier I sist), Sports Med 2020;50(7):1243–1254. Tillagda som märkt, versionssatt tillägg EVIDENS/2.1.0; registrets 13 källor och 8 påståenden oförändrade. |
+| B9 | Prestanda | Läsvy beräknas på begäran utan cache; 500 historiska pass verifierades för planlistan (PL24). Mätning av Balans på 500 pass på riktig mobil återstår. |
+
 ## 4. Medvetet ej implementerat
 
 - Anonym telemetri (FR40) – kräver separat godkännande; finns inte.

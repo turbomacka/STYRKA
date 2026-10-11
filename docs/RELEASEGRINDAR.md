@@ -35,6 +35,7 @@
 | RD08 | Källgranskning av vetenskapssidans svenska sammanfattningar av registrets påståenden och förklaringstexterna i substitutionskatalogen 1.2.0; godkännande av H-S1–H-S8 och tolkningen av "no active restriction" (K-6). Källor och relationer kommer nu från produktägarens filer; automatiskt kontrollerat är att de används oförändrade och att DOI/länkar svarar | Fackperson med metodkunskap |
 | RD09 | Om vetenskapssidans text om medicinteknisk gräns (MDCG 2019-11) får publiceras – texten är ingen juridisk bedömning | Jurist (del av RD01) |
 | – | Användartest ≥ 2 personer × 12 pass, staging-pilot, genomförd rollback | Produktägare |
+| – | ÄA-BAL-001: beslut om godkända relationer mellan rörelsemönster (annars förblir planjustering avstängd), granskning av heuristikerna i /vetenskap "Så fungerar balansförslagen", VoiceOver/TalkBack och 200 % textzoom på riktig iPhone/Android | Produktägare, fackperson, testare |
 | – | ÄA-PLAN-001: bekräfta visningsantagandet P4 och rättslig grund för anteckningar (P8); verifiera Plan-vyn på iPhone/Safari och Android/Chrome i ljust/mörkt läge och utan nät | Produktägare, jurist, testare |
 | – | Safari på riktig iPhone: helt offlinepass med installerad PWA (flygplansläge, omladdning, synk) och tangentbord/VoiceOver – de två E2E-fall som inte kan köras i WebKit på Windows (se TESTPROTOKOLL) | Testare med iPhone |
 | – | Offentlig driftsättning | **Endast produktägarens uttryckliga beslut** |

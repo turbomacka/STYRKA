@@ -295,3 +295,16 @@ small svg, .small svg.ico { width: 16px; height: 16px; vertical-align: -3px; }
   .print-write { display: block; margin-top: 4px; }
   .note-print { font-style: italic; }
 }
+
+/* Balans (ÄA-BAL-001) – lugn, ingen färg bär betydelse ensam */
+.balance-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); width: 100%; min-height: var(--tap); padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.balance-head-text { display: flex; flex-direction: column; gap: 2px; }
+.balance-title { font-size: 20px; font-weight: 700; }
+.balance-chevron { width: 24px; height: 24px; flex: none; }
+.balance-chevron.is-open { transform: rotate(180deg); }
+.balance-list > li.balance-row { display: grid; grid-template-columns: minmax(8em, 1fr) 2fr; gap: 4px var(--s2); align-items: center; padding: var(--s2) 0; }
+.balance-name { font-weight: 600; }
+.balance-bar { display: block; height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.balance-bar > span { display: block; height: 100%; background: var(--text-2); border-radius: 999px; }
+.balance-text { grid-column: 1 / -1; }
+.balance .h-small { font-size: 17px; margin: var(--s2) 0 0; }

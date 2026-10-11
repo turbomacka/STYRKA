@@ -23,8 +23,18 @@ describe('evidensregister', () => {
     expect(EVIDENCE.sourceRegister).toMatchObject({ file: 'spec/cr-2026-10-10-01/STYRKA_evidence_register.json', schema_version: register.schema_version, reviewed_at: register.reviewed_at });
   });
 
-  it('källorna är exakt registrets: id, titel, år, länk, studietyp, population, stöd och begränsningar ordagrant', () => {
-    expect(EVIDENCE.sources.map((s) => s.source_id)).toEqual(register.sources.map((s) => s.id));
+  it('källorna är exakt registrets (ordagrant) plus endast versionssatta, märkta tillägg', () => {
+    expect(EVIDENCE.sources.slice(0, register.sources.length).map((s) => s.source_id)).toEqual(register.sources.map((s) => s.id));
+    const additions = EVIDENCE.sources.slice(register.sources.length);
+    expect(additions.map((s) => s.source_id)).toEqual(EVIDENCE.registryAdditions.flatMap((a) => a.source_ids));
+    for (const s of additions) {
+      expect(s.added_in, s.source_id).toBe('EVIDENS/2.1.0');
+      expect(s.doi, s.source_id).toMatch(/^10\.\d{4,9}\/\S+$/);
+      expect(s.public_url).toMatch(/^https:\/\//);
+      expect(s.supported_claim_sv && s.limitations_sv && s.design && s.population, s.source_id).toBeTruthy();
+      expect(EVIDENCE.balanceMethod.source_ids).toContain(s.source_id);
+    }
+    for (const s of EVIDENCE.sources.slice(0, register.sources.length)) expect(s.added_in, s.source_id).toBeUndefined();
     for (const r of register.sources) {
       const s = EVIDENCE.sources.find((x) => x.source_id === r.id)!;
       expect({ title: s.title, year: s.year, public_url: s.public_url, design: s.design, population: s.population, supported: s.supported_claim_sv, limits: s.limitations_sv }, r.id).toEqual({
@@ -64,7 +74,7 @@ describe('evidensregister', () => {
     const used = new Set(EVIDENCE.claims.flatMap((c) => c.source_ids));
     for (const r of allRelations()) for (const e of r.evidence_ids) expect(sources.has(e), `${r.from}->${r.to}: ${e}`).toBe(true);
     for (const id of Object.keys(SEED.reference_urls)) expect(sources.has(id), id).toBe(true);
-    for (const s of EVIDENCE.sources) expect(used.has(s.source_id) || allRelations().some((r) => r.evidence_ids.includes(s.source_id)), s.source_id).toBe(true);
+    for (const s of EVIDENCE.sources) expect(used.has(s.source_id) || allRelations().some((r) => r.evidence_ids.includes(s.source_id)) || EVIDENCE.balanceMethod.source_ids.includes(s.source_id), s.source_id).toBe(true);
     // Seed-filens länkar är desamma som registrets.
     for (const [id, url] of Object.entries(SEED.reference_urls)) expect(EVIDENCE.sources.find((s) => s.source_id === id)!.public_url).toBe(url);
   });
@@ -79,7 +89,7 @@ describe('evidensregister', () => {
   });
 
   it('regler med siffror utan direkt empiriskt stöd är märkta som produktregel; inga påståenden om klinisk validering', () => {
-    const mustBeHeuristic = ['e1rm-uppskattning', 'startvikt', 'set-och-repetitioner', 'dubbel-progression', 'reps-i-reserv', 'missade-mal', 'tung-belastning', 'aterhamtning', 'omstart', 'tidsmodell', 'unilateral-tid', 'prioritet-baslyft', 'ovningsbyte-relationer', 'prior-frontboj', 'prior-hantelpress', 'forsta-exponering', 'kalibrerad-niva', 'upplevd-anstrangning'];
+    const mustBeHeuristic = ['balans-allsidighet', 'balans-styrka', 'balans-forslag', 'e1rm-uppskattning', 'startvikt', 'set-och-repetitioner', 'dubbel-progression', 'reps-i-reserv', 'missade-mal', 'tung-belastning', 'aterhamtning', 'omstart', 'tidsmodell', 'unilateral-tid', 'prioritet-baslyft', 'ovningsbyte-relationer', 'prior-frontboj', 'prior-hantelpress', 'forsta-exponering', 'kalibrerad-niva', 'upplevd-anstrangning'];
     for (const id of mustBeHeuristic) expect(EVIDENCE.rules.find((r) => r.rule_id === id)?.heuristic, id).toBe(true);
     expect(HEURISTIC_LABEL).toBe('Produktregel / ännu inte validerad tröskel');
     const text = JSON.stringify(raw);
@@ -92,7 +102,7 @@ describe('evidensregister', () => {
   it('registret innehåller inga persondata eller personfält', () => {
     const text = JSON.stringify(raw);
     expect(text).not.toMatch(/user_id|email|e-post:|@[a-z0-9-]+\.[a-z]{2,}/i);
-    const allowedTop = ['registryVersion', 'sourceRegister', 'methodVersion', 'ruleSetVersion', 'engineVersion', 'substitutionCatalogVersion', 'lastSubstantiveUpdate', 'verificationNote', 'sources', 'claims', 'limitations', 'rules'];
+    const allowedTop = ['registryVersion', 'sourceRegister', 'methodVersion', 'ruleSetVersion', 'engineVersion', 'substitutionCatalogVersion', 'lastSubstantiveUpdate', 'verificationNote', 'sources', 'claims', 'limitations', 'rules', 'registryAdditions', 'balanceMethod'];
     expect(Object.keys(raw).sort()).toEqual([...allowedTop].sort());
   });
 

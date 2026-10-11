@@ -30,6 +30,8 @@ export type EvidenceSource = {
   supported_claim_sv: string;
   limitations_sv: string;
   last_checked_at: string;
+  /** Versionssatt tillägg utanför produktägarens register (t.ex. EVIDENS/2.1.0 för Balans). */
+  added_in?: string;
 };
 
 export type EvidenceClaim = {
@@ -76,6 +78,9 @@ export type EvidenceRegistry = {
   /** Produktens begränsningar (avsnitt D) – inga forskningspåståenden. */
   limitations: string[];
   rules: MethodRule[];
+  registryAdditions: Array<{ version: string; date: string; reason: string; source_ids: string[] }>;
+  /** ÄA-BAL-001 §11: metodbeskrivning för Balans. */
+  balanceMethod: { patternPolicyVersion: string; decisionPolicyVersion: string; points: string[]; source_ids: string[] };
 };
 
 export const EVIDENCE = registry as EvidenceRegistry;

@@ -1,16 +1,16 @@
 {
-  "registryVersion": "EVIDENS/2.0.0",
+  "registryVersion": "EVIDENS/2.1.0",
   "sourceRegister": {
     "file": "spec/cr-2026-10-10-01/STYRKA_evidence_register.json",
     "schema_version": "1.0.0",
     "reviewed_at": "2026-10-10",
     "warning_sv": "Evidensregistret är beskrivande: det validerar inte STYRKA:s rekommendationsmotor eller medicinsk säkerhet."
   },
-  "methodVersion": "STYRKA-METOD/1.2.0",
+  "methodVersion": "STYRKA-METOD/1.3.0",
   "ruleSetVersion": "STYRKA-RULES/1.2.0",
   "engineVersion": "1.0.0",
   "substitutionCatalogVersion": "SUBST/1.2.0",
-  "lastSubstantiveUpdate": "2026-10-11",
+  "lastSubstantiveUpdate": "2026-10-12",
   "verificationNote": "Källor och påståenden kommer från produktägarens evidensregister (schema 1.0.0, granskat 2026-10-10). DOI och länkar kontrollerade mot Crossref, PMC och utgivarnas sidor 2026-10-11. Innehållet är en sammanfattning för allmänheten, inte en fullständig granskning av varje studie.",
   "sources": [
     {
@@ -194,6 +194,51 @@
       "supported_claim_sv": "Stående/sittande samt stång/hantel innebär olika förutsättningar för styrka och muskelaktivering.",
       "limitations_sv": "Ingen universell konverteringsfaktor för personer eller utrustning.",
       "last_checked_at": "2026-10-11"
+    },
+    {
+      "source_id": "lauersen2014",
+      "authors": "Lauersen JB, Bertelsen DM, Andersen LB",
+      "year": 2014,
+      "title": "The effectiveness of exercise interventions to prevent sports injuries: a systematic review and meta-analysis of randomised controlled trials",
+      "publication": "British Journal of Sports Medicine, 48(11), 871–877",
+      "doi": "10.1136/bjsports-2013-092538",
+      "public_url": "https://doi.org/10.1136/bjsports-2013-092538",
+      "design": "Systematisk översikt och metaanalys av randomiserade kontrollerade studier",
+      "population": "Deltagare i idrottsliga träningsinterventioner (se källan)",
+      "supported_claim_sv": "Träningsinterventioner, särskilt styrketräning, minskade idrottsskador i de undersökta idrottspopulationerna.",
+      "limitations_sv": "Gäller undersökta interventioner på gruppnivå. Visar inte att STYRKA:s balansprofil eller förslag minskar en enskild användares skaderisk.",
+      "last_checked_at": "2026-10-12",
+      "added_in": "EVIDENS/2.1.0"
+    },
+    {
+      "source_id": "parkinson2021",
+      "authors": "Parkinson AO, Apps CL, Morris JG, Barnett CT, Lewis MGC",
+      "year": 2021,
+      "title": "The Calculation, Thresholds and Reporting of Inter-Limb Strength Asymmetry: A Systematic Review",
+      "publication": "Journal of Sports Science and Medicine, 594–617",
+      "doi": "10.52082/jssm.2021.594",
+      "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8488821/",
+      "design": "Systematisk översikt",
+      "population": "Studier av styrkeasymmetri mellan ben (se källan)",
+      "supported_claim_sv": "Hur asymmetri mellan ben beräknas och vilka gränsvärden som används varierar kraftigt mellan studier.",
+      "limitations_sv": "Stöder inte generella asymmetrigränser eller kliniska slutsatser. STYRKA beräknar ingen sidosymmetri.",
+      "last_checked_at": "2026-10-12",
+      "added_in": "EVIDENS/2.1.0"
+    },
+    {
+      "source_id": "wang2020",
+      "authors": "Wang C, Vargas JT, Stokes T, Steele R, Shrier I",
+      "year": 2020,
+      "title": "Analyzing Activity and Injury: Lessons Learned from the Acute:Chronic Workload Ratio",
+      "publication": "Sports Medicine, 50(7), 1243–1254",
+      "doi": "10.1007/s40279-020-01280-1",
+      "public_url": "https://doi.org/10.1007/s40279-020-01280-1",
+      "design": "Metodologisk översiktsartikel",
+      "population": "Ej tillämpligt (metodkritik av belastningskvoter)",
+      "supported_claim_sv": "Kvoten mellan akut och kronisk träningsbelastning har metodologiska problem som underlag för skaderisk.",
+      "limitations_sv": "Handlar om belastningskvoter i idrottsforskning. STYRKA använder ingen sådan kvot och beräknar ingen skaderisk.",
+      "last_checked_at": "2026-10-12",
+      "added_in": "EVIDENS/2.1.0"
     }
   ],
   "claims": [
@@ -809,6 +854,104 @@
       "reason_codes": [
         "SUB_NEW_MACHINE_PROFILE"
       ]
+    },
+    {
+      "rule_id": "balans-allsidighet",
+      "group": "C",
+      "title_sv": "Balans: träningens allsidighet",
+      "method_sv": "Antal utförda arbetsset per rörelsemönster de senaste 28 kalenderdygnen i din tidszon (från midnatt för 27 dygn sedan till nu).",
+      "value_sv": "28 lokala kalenderdygn; ett primärt mönster per set",
+      "rationale_sv": "Enkelt, granskbart exponeringsmått; fönstret är ett produktval.",
+      "heuristic": true,
+      "reason_codes": [
+        "BAL_NO_DATA",
+        "BAL_SESSIONS_OBSERVED",
+        "BAL_PATTERN_COVERAGE"
+      ]
+    },
+    {
+      "rule_id": "balans-planjamforelse",
+      "group": "C",
+      "title_sv": "Balans: planerat jämfört med genomfört",
+      "method_sv": "Endast genomförda ordinarie pass jämförs, mot den accepterade planen vid passets start. Ett planerat moment räknas som utfört högst en gång; extra set och spontanpass redovisas som utöver plan. Saknas planunderlag visas ingen jämförelse.",
+      "value_sv": "Historisk plan vid passtart",
+      "rationale_sv": "Undviker påhittade nämnare och \"missade pass\".",
+      "heuristic": false,
+      "reason_codes": [
+        "BAL_NO_PLAN_SNAPSHOT"
+      ]
+    },
+    {
+      "rule_id": "balans-styrka",
+      "group": "C",
+      "title_sv": "Balans: jämförelse av styrkeutveckling",
+      "method_sv": "Uppskattad maxstyrka (e1RM) från loggade set; minst 3 pass per övning, minst 42 dagars spann, inom 12 veckor, samma lastbas. Procent = 100 × (sista − första) / första.",
+      "value_sv": "12 veckor; ≥ 3 pass; ≥ 42 dagar",
+      "rationale_sv": "Konservativ regel för att undvika missvisande småtal – inte en validerad reliabilitetströskel.",
+      "heuristic": true,
+      "reason_codes": [
+        "BAL_STRENGTH_CHANGE",
+        "BAL_STRENGTH_NOT_COMPARABLE"
+      ]
+    },
+    {
+      "rule_id": "balans-forslag",
+      "group": "C",
+      "title_sv": "Så fungerar balansförslagen",
+      "method_sv": "Ett förslag kan visas när samma rörelsemönster planerats i minst två genomförda ordinarie pass, minst fyra arbetsset planerats, minst tre saknas och mindre än 70 % gjorts. Inget förslag vid aktiv begränsning, olösta besvär eller om du själv prioriterat ned rörelsen. Högst ett förslag visas; ett avböjt förslag visas inte igen för samma underlag. En möjlig justering förhandsvisas utan att sparas och genomförs bara om du godkänner den.",
+      "value_sv": "≥ 2 pass, ≥ 4 planerade set, ≥ 3 saknade, < 70 %",
+      "rationale_sv": "Produktregel utan dokumenterad klinisk validering; skyddar mot överreaktion på enstaka uteblivna set.",
+      "heuristic": true,
+      "reason_codes": [
+        "BAL_PLAN_PATTERN_GAP",
+        "BAL_USER_DEPRIORITIZED",
+        "BAL_DISMISSED",
+        "BAL_PREVIEW_ONLY",
+        "BAL_NO_SAFE_PLAN_ADJUSTMENT"
+      ]
+    },
+    {
+      "rule_id": "balans-skaderisk",
+      "group": "C",
+      "title_sv": "Balans beräknar ingen skaderisk",
+      "method_sv": "Balans läser befintliga begränsningar, återhämtningsregler och rapporterade besvär men gör inga egna medicinska bedömningar och beräknar ingen risk.",
+      "value_sv": "Ingen riskmodell",
+      "rationale_sv": "Befintliga spärrar har företräde.",
+      "heuristic": false,
+      "reason_codes": [
+        "BAL_RESTRICTION_SUPPRESSED",
+        "BAL_REVIEW_REQUIRED"
+      ]
     }
-  ]
+  ],
+  "registryAdditions": [
+    {
+      "version": "EVIDENS/2.1.0",
+      "date": "2026-10-12",
+      "reason": "ÄA-BAL-001 §11: källor för metodavsnittet om Balans. Registrets ursprungliga källor och påståenden är oförändrade.",
+      "source_ids": [
+        "lauersen2014",
+        "parkinson2021",
+        "wang2020"
+      ]
+    }
+  ],
+  "balanceMethod": {
+    "patternPolicyVersion": "balance-patterns/1.0.0",
+    "decisionPolicyVersion": "balance-decisions/1.0.0",
+    "points": [
+      "Bara verkligt utförda arbetsset räknas (inte uppvärmning, planerade, överhoppade eller raderade set), med tiden då setet gjordes. Antal set är ett mått på hur träningen är fördelad – inte på muskeltillväxt, maximal styrka eller skadefrihet.",
+      "Sex rörelsemönster (knädominant, höftdominant, horisontell och vertikal press, horisontellt och vertikalt drag) är en praktisk produktklassificering, inte en biologisk eller klinisk norm. Varje övning har exakt ett primärt mönster så att inget set räknas två gånger.",
+      "Planerat jämförs bara med genomfört i dina genomförda ordinarie pass, mot den plan du accepterade när passet startade. Eftersom STYRKA planerar en följd av pass och inte datum räknas inga pass som missade när dagar går. Spontanpass och extra set redovisas separat.",
+      "För att jämföra styrkeutveckling mellan övningar krävs samma slags mått (uppskattad maxstyrka i kg med samma lastbas), minst tre pass per övning och minst 42 dagar mellan första och sista observationen inom tolv veckor. Assistans, kroppsvikt, tid och olika lastbaser jämförs inte procentuellt.",
+      "Gränserna för balansförslag (se Så fungerar balansförslagen nedan) är versionssatta produktheuristiker. De är inte validerade som säkra eller optimala träningsdoser.",
+      "Skaderisk kan inte beräknas ur balansprofilen. Dina egna begränsningar och rapporterade besvär har alltid företräde, och Balans föreslår aldrig att en spärr kringgås."
+    ],
+    "source_ids": [
+      "currier2026",
+      "lauersen2014",
+      "parkinson2021",
+      "wang2020"
+    ]
+  }
 }

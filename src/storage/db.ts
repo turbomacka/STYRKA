@@ -233,6 +233,19 @@ export type LocalNote = {
   syncState: SyncState;
 };
 
+/** ÄA-BAL-001: användarens beslut om ett balansförslag (inga härledda träningsdata). */
+export type LocalBalanceDecision = {
+  id: string;
+  candidateKey: string;
+  basisKey: string;
+  patternId: string;
+  status: 'previewed' | 'accepted' | 'dismissed' | 'invalidated';
+  policyVersion: string;
+  eventId: string;
+  updatedAt: string;
+  syncState: SyncState;
+};
+
 export type LocalAudit = { id: string; sessionId: string; engineVersion: string; inputsHash: string; reasonCodes: string[]; snapshot: PlanSnapshot; generatedAt: string; syncState: SyncState };
 
 export type OutboxOp =
@@ -244,7 +257,7 @@ export type OutboxOp =
   | { type: 'rpc'; name: 'erase_health_data' }
   | { type: 'note'; noteId: string; row: Record<string, unknown>; baseRevision?: number };
 
-export type ServerTable = 'profiles' | 'user_exercise_profiles' | 'health_consents' | 'restriction_rules' | 'programs' | 'training_sessions' | 'session_exercises' | 'symptom_reports' | 'recommendation_audits' | 'user_exercise_calibrations' | 'session_exercise_substitution_events' | 'plan_revisions' | 'notebook_notes';
+export type ServerTable = 'profiles' | 'user_exercise_profiles' | 'health_consents' | 'restriction_rules' | 'programs' | 'training_sessions' | 'session_exercises' | 'symptom_reports' | 'recommendation_audits' | 'user_exercise_calibrations' | 'session_exercise_substitution_events' | 'plan_revisions' | 'notebook_notes' | 'balance_suggestion_decisions';
 
 export type OutboxEntry = {
   seq?: number;
@@ -288,6 +301,7 @@ export class StyrkaDB extends Dexie {
   substitutionEvents!: Table<LocalSubstitutionEvent, string>;
   planRevisions!: Table<LocalPlanRevision, string>;
   notes!: Table<LocalNote, string>;
+  balanceDecisions!: Table<LocalBalanceDecision, string>;
 
   constructor(name: string) {
     super(name);
@@ -316,6 +330,10 @@ export class StyrkaDB extends Dexie {
     this.version(3).stores({
       planRevisions: 'id, createdAt',
       notes: 'id, targetType, slotSequence, sessionId',
+    });
+    // Version 4 (ÄA-BAL-001): beslut om balansförslag.
+    this.version(4).stores({
+      balanceDecisions: 'id, candidateKey, basisKey',
     });
   }
 }

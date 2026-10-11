@@ -51,6 +51,8 @@ export type ServerSnapshot = {
   /** Tillägg ÄA-PLAN-001 (tomma listor mot äldre server). */
   planRevisions: Record<string, unknown>[];
   notes: Record<string, unknown>[];
+  /** Tillägg ÄA-BAL-001. */
+  balanceDecisions: Record<string, unknown>[];
 };
 
 export interface SyncTransport {

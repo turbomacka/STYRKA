@@ -4,6 +4,53 @@ Miljö: Windows 10, Node 22.13, lokal Supabase (Postgres 17.11, GoTrue 2.197, Po
 
 Senare rättning ovanpå `97ee461`, publicerad på staging 2026-10-11: se [Rättningar efter granskningen](RATTNINGAR_2026-10-11.md) för F1–F6, förenklad mobilinloggning och aktuell verifiering. Stagingresultaten i tabellen nedan gäller den tidigare versionen.
 
+## ÄA-BAL-001 "Balans" (2026-10-12)
+
+Testmiljö: Windows 10, Node 22.13, lokal Supabase i Docker, Playwright 1.64 (Chromium, WebKit 27.2 – emulering), fake-indexeddb.
+
+| Nivå | Kommando | Resultat |
+|---|---|---|
+| Referenssmoke | `npm run test:reference` | **26/26 PASS** |
+| Enhet, komponent, DB | `npm test` | **273/273 PASS**, 26 filer, 0 hoppade |
+| E2E | `npx playwright test` | **89 körda: 87 PASS + 1 instabil (PASS 2/2 vid omkörning), 2 SKIP** (samma två WebKit-undantag som tidigare). Instabil: `core_flow` iPhone väntade på e-postkod från lokal Mailpit |
+| Källänkar | `node scripts/check-evidence-links.mjs` | **16/16**, alla DOI registrerade |
+| 2 100-planers regression | unit `regression_pre_cr_plans` | identisk med `3ec01ef` |
+| Lint / typecheck | | 0 fel |
+
+| ID | Test (fil › fall) | Resultat |
+|---|---|---|
+| BAL01 | unit `balance_domain` › tomläge; E2E `balance` › tomläge, ingen poäng | PASS |
+| BAL02–03 | unit `balance_domain` › 1 arbetsset, uppvärmning/ej utfört/överhoppat räknas inte, en gång | PASS |
+| BAL04 | unit › trap bar i höftdominant, ingen text om knä | PASS |
+| BAL05 | unit › okänt id ⇒ övrigt, ingen falsk lucka | PASS |
+| BAL06 | unit › alias `dumbbell_flat_bench` ⇒ `dumbbell_bench_press` ⇒ horisontell press; policyn täcker alla övningar; indata oförändrade | PASS |
+| BAL07 | unit `balance_app` › två konton åtskilda; db `balance_db` › RLS (läs/skapa/ändra/radera), kaskad | PASS |
+| BAL08 | unit › spontanpass: 3 utförda, 0 krediterade som planerade | PASS |
+| BAL09 | unit › inget "missat" vid uppehåll | PASS |
+| BAL10 | unit › planerat ur accepterad plan vid passtart | PASS |
+| BAL11 | unit `balance_app` › ny planrevision ändrar inte historisk jämförelse | PASS |
+| BAL12 | unit › saknad snapshot ⇒ planerat null, begränsningstext | PASS |
+| BAL13 | unit › 3 av 10, +2 extra, inget 5/10 | PASS |
+| BAL14–15 | unit › byte inom mönster krediteras; byte till annat mönster krediteras utfört mönster | PASS |
+| BAL16–17 | unit › högst planerat antal, aldrig över 100 %; delvis pass | PASS |
+| BAL18 | unit › Europe/Stockholm höst (25-timmarsdygn) och vår (23 timmar), gränsset in/ut | PASS |
+| BAL19 | unit + app › 36 framtida platser ger ingen nämnare | PASS |
+| BAL20 | unit › olika setnivåer enligt egen plan ⇒ ingen varning | PASS |
+| BAL21–22 | unit › bortprioriterat, begränsning och review_required ⇒ inget förslag, ingen medicinsk detalj i text | PASS |
+| BAL23–26 | unit › 2 punkter, olika lastbas, jämförbara serier med datum, assistans utesluten | PASS |
+| BAL27–29 | unit › 1–2 saknade set ⇒ inget; 3 av 10 ⇒ ett förslag; störst lucka + stabil tie-break | PASS |
+| BAL30 | unit › identisk output och nyckel; samma nyckel när fönstret flyttas med samma underlag | PASS |
+| BAL31 | unit + app + E2E › avböjt återkommer inte; annan saklig kandidat får visas | PASS |
+| BAL32 | app › godkänd katalog: "kan inte föreslå", inga ändringar; `balance_accept` › förhandsvisning med testrelation sparar inget; E2E | PASS |
+| BAL33 | `balance_accept` › exakt en framtida revision med `USER_ACCEPTED_BALANCE_SUGGESTION`, gamla pass/set orörda (**testrelation**, se AVVIKELSER B3) | PASS |
+| BAL34 | `balance_accept` › dubbeltryck, tappade kvittenser, offline och versionskonflikt ⇒ en logisk ändring | PASS |
+| BAL35 | `balance_accept` › tidsbudget ⇒ ingen mutation, "kan inte föreslå inom ramarna" | PASS |
+| BAL36 | `balance_app` › ångrat set ⇒ ny beräkning; kontobyte ⇒ inga andras data | PASS |
+| BAL37 | E2E › tangentbord, axe (WCAG 2.2 AA-taggar), 320 px utan horisontell skroll, mörkt läge, reducerad rörelse. **Ej automatiserat:** VoiceOver/TalkBack och 200 % systemtextstorlek på riktig enhet | PASS (delvis manuellt kvar) |
+| BAL38 | `balance_app` › två konton × 36 pass: identiska rekommendationer med och utan Balans; 2 100-planers regression | PASS |
+
+Inte kört: Safari på riktig iPhone och Chrome på riktig Android (ingen enhet/macOS i testmiljön).
+
 ## ÄA-PLAN-001 "Min träningsplan" (2026-10-11)
 
 | Nivå | Kommando | Resultat |

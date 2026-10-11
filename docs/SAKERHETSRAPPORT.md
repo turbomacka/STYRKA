@@ -76,6 +76,13 @@ Migration 005 (2026-10-11) är enbart katalogdata: ny övning `barbell_row` och 
 | `erase_health_data` | Utökad med radering av anteckningar (SECURITY INVOKER, oförändrad i övrigt) | db › PL27 |
 | Anteckningstext | Renderas alltid som ren text (React), skickas aldrig till externa tjänster | unit › PL13/PL14 |
 
+## 3f. ÄA-BAL-001 (migration 007, 2026-10-12)
+
+| Del | Åtgärd | Bevis |
+|---|---|---|
+| `balance_suggestion_decisions` | Ägar-RLS för CRUD, CHECK på mönster/status, en rad per kandidat och användare, kaskad vid kontoradering; lagrar inga set, symtom eller härledda värden | db › `balance_db` |
+| Analys | Ren lokal beräkning per användardatabas; inga externa anrop, ingen telemetri; inga symtomdetaljer i sammanfattningstext | unit › BAL22, BAL07 |
+
 ## 4. Kända risker och begränsningar
 
 | Risk | Bedömning / åtgärd |

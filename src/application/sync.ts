@@ -6,7 +6,7 @@
  * - Revisionskonflikt ⇒ explicit konfliktpost, ingen tyst last-write-wins. Andra poster synkas oberoende.
  * - Nätverks-/serverfel ⇒ exponentiell backoff; kön ligger kvar.
  */
-import { applyServerSetValues, consentFromRow, exerciseSettingsFromRow, profileFromRow, programFromRow, restrictionFromRow, sessionExerciseFromRow, sessionFromRow, setFromRow, setFullPatch, symptomFromRow, auditFromRow, profileRow, calibrationFromRow, substitutionEventFromRow, noteFromRow, noteRow, planRevisionFromRow } from '../server/mapping';
+import { applyServerSetValues, consentFromRow, exerciseSettingsFromRow, profileFromRow, programFromRow, restrictionFromRow, sessionExerciseFromRow, sessionFromRow, setFromRow, setFullPatch, symptomFromRow, auditFromRow, profileRow, calibrationFromRow, substitutionEventFromRow, noteFromRow, noteRow, planRevisionFromRow, balanceDecisionFromRow } from '../server/mapping';
 import { TransportError } from '../server/transport';
 import type { ConflictEntry, LocalProfile, LocalSet, OutboxEntry, ServerTable, SyncState } from '../storage/db';
 import type { ExerciseId } from '../domain/catalog';
@@ -311,7 +311,7 @@ export class SyncEngine {
       restriction_rules: 'restrictions', programs: 'programs', training_sessions: 'sessions',
       session_exercises: 'sessionExercises', symptom_reports: 'symptoms', recommendation_audits: 'audits',
       user_exercise_calibrations: 'calibrations', session_exercise_substitution_events: 'substitutionEvents',
-      plan_revisions: 'planRevisions', notebook_notes: 'notes',
+      plan_revisions: 'planRevisions', notebook_notes: 'notes', balance_suggestion_decisions: 'balanceDecisions',
     };
     const table = db.table<{ syncState: SyncState }, string>(localTables[entry.op.table]);
     const id = (entry.op.row.id ?? entry.op.row.user_id) as string;
@@ -424,7 +424,7 @@ export class SyncEngine {
       }
     }
     const seIndex = new Map(snap.sessionExercises.map((se) => [se.id as string, { sessionId: se.session_id as string, exerciseId: se.exercise_slug as ExerciseId }]));
-    await db.transaction('rw', [db.profile, db.exerciseSettings, db.restrictions, db.symptoms, db.consents, db.programs, db.sessions, db.sessionExercises, db.sets, db.audits, db.meta, db.calibrations, db.substitutionEvents, db.outbox, db.planRevisions, db.notes], async () => {
+    await db.transaction('rw', [db.profile, db.exerciseSettings, db.restrictions, db.symptoms, db.consents, db.programs, db.sessions, db.sessionExercises, db.sets, db.audits, db.meta, db.calibrations, db.substitutionEvents, db.outbox, db.planRevisions, db.notes, db.balanceDecisions], async () => {
       const queued = await db.outbox.toArray();
       const pendingIds = new Set(queued.map((e) => e.recordId));
       const keep = <T extends { syncState: string; id?: string; userId?: string }>(local: T | undefined) => {
@@ -476,6 +476,7 @@ export class SyncEngine {
         if (wasSynced(old) && !noteIds.has(old.id) && sameValue(old, await db.notes.get(old.id))) await db.notes.delete(old.id);
       }
       for (const r of snap.notes ?? []) if (!pendingErase && !keep(await db.notes.get(r.id as string))) await db.notes.put(noteFromRow(r));
+      for (const r of snap.balanceDecisions ?? []) if (!keep(await db.balanceDecisions.get(r.id as string))) await db.balanceDecisions.put(balanceDecisionFromRow(r));
       await db.meta.put({ key: 'lastPullAt', value: this.ctx.clock.now() });
     });
     this.emit();

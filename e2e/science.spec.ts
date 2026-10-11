@@ -21,8 +21,8 @@ test('SUB17: utloggad besökare når /vetenskap från välkomstsidan; källor oc
   // Versioner, källor med DOI/https, produktregelmärkning och begränsningar.
   await expect(page.getByText('STYRKA-RULES/1.2.0').first()).toBeVisible();
   await expect(page.getByText('Evidensregistret är beskrivande: det validerar inte STYRKA:s rekommendationsmotor eller medicinsk säkerhet.')).toBeVisible();
-  // Källförteckningen är exakt produktägarens evidensregister (13 källor).
-  await expect(page.locator('#e-kallor ol > li')).toHaveCount(13);
+  await expect(page.locator('#e-kallor ol > li')).toHaveCount(16); // 13 ur produktägarens register + 3 märkta tillägg (EVIDENS/2.1.0)
+  await expect(page.locator('#balans')).toContainText('Så fungerar balansförslagen');
   await expect(page.locator('#kalla-gullett2009')).toContainText('2009');
   await expect(page.locator('#kalla-saeterbakken2013')).toContainText('shoulder presses');
   await expect(page.getByText('Produktregel / ännu inte validerad tröskel').first()).toBeVisible();

@@ -209,8 +209,24 @@ function summarize(changeTypes: string[], prev: LocalPlanRevision | null, slots:
   return [changeTypes.map((c) => CHANGE_TYPE_SV[c] ?? c).join(', ') + '.', ...parts].join(' ');
 }
 
+/**
+ * Revisioner, senaste först. Ordningen följer revisionskedjan (`previousRevisionId`), så att två revisioner med samma
+ * tidsstämpel ändå ordnas rätt; vid förgrening (två enheter) avgör tid och därefter id.
+ */
 export async function planRevisions(ctx: AppContext): Promise<LocalPlanRevision[]> {
-  return (await ctx.db.planRevisions.toArray()).sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
+  const all = await ctx.db.planRevisions.toArray();
+  const byId = new Map(all.map((r) => [r.id, r]));
+  const depth = new Map<string, number>();
+  const depthOf = (r: LocalPlanRevision): number => {
+    const known = depth.get(r.id);
+    if (known !== undefined) return known;
+    depth.set(r.id, 0);
+    const prev = r.previousRevisionId ? byId.get(r.previousRevisionId) : undefined;
+    const d = prev ? depthOf(prev) + 1 : 0;
+    depth.set(r.id, d);
+    return d;
+  };
+  return all.sort((a, b) => depthOf(b) - depthOf(a) || b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
 }
 
 export async function latestRevision(ctx: AppContext): Promise<LocalPlanRevision | null> {
@@ -223,15 +239,20 @@ const locks = new WeakMap<object, Promise<LocalPlanRevision | null>>();
  * Omplanering (§5.3): skapar en ny, oföränderlig revision endast när indata ändrats. Att öppna planen eller expandera
  * rader ändrar ingen indata och ger därför ingen revision (PL16). Samma indata ⇒ samma innehåll och samma id.
  */
-export function refreshFuturePlan(ctx: AppContext): Promise<LocalPlanRevision | null> {
+export type RefreshOptions = {
+  /** Uttryckliga användarbeslut som ska synas i revisionens orsakskoder (t.ex. USER_ACCEPTED_BALANCE_SUGGESTION). */
+  extraReasons?: string[];
+};
+
+export function refreshFuturePlan(ctx: AppContext, opts: RefreshOptions = {}): Promise<LocalPlanRevision | null> {
   const running = locks.get(ctx.db);
-  if (running) return running.then(() => refreshFuturePlanNow(ctx));
-  const p = refreshFuturePlanNow(ctx).finally(() => locks.delete(ctx.db));
+  if (running) return running.then(() => refreshFuturePlanNow(ctx, opts));
+  const p = refreshFuturePlanNow(ctx, opts).finally(() => locks.delete(ctx.db));
   locks.set(ctx.db, p);
   return p;
 }
 
-async function refreshFuturePlanNow(ctx: AppContext): Promise<LocalPlanRevision | null> {
+async function refreshFuturePlanNow(ctx: AppContext, opts: RefreshOptions = {}): Promise<LocalPlanRevision | null> {
   const { db, userId } = ctx;
   if (!(await db.profile.get(userId))?.onboardingCompletedAt) return null;
   const pi = await planInputs(ctx);
@@ -257,8 +278,8 @@ async function refreshFuturePlanNow(ctx: AppContext): Promise<LocalPlanRevision 
     baseSequence: pi.baseSequence,
     horizon: STORED_HORIZON,
     changeType,
-    reasonCodes: latest ? types : ['INITIAL'],
-    summary: latest ? summarize(types.length ? types : ['HISTORY_CHANGED'], latest, slots) : `Första planen: ${STORED_HORIZON} kommande ordinarie pass från pass ${pi.baseSequence}.`,
+    reasonCodes: [...(latest ? types : ['INITIAL']), ...(opts.extraReasons ?? [])],
+    summary: (opts.extraReasons?.includes('USER_ACCEPTED_BALANCE_SUGGESTION') ? 'Balansförslag godkänt av dig. ' : '') + (latest ? summarize(types.length ? types : ['HISTORY_CHANGED'], latest, slots) : `Första planen: ${STORED_HORIZON} kommande ordinarie pass från pass ${pi.baseSequence}.`),
     inputsHash: pi.inputsHash,
     inputParts: pi.parts,
     contentHash,
@@ -299,6 +320,16 @@ export async function getFuturePlan(ctx: AppContext, count: number, asOfRevision
     if (pi.inputsHash === revision.inputsHash) slots = [...slots, ...computeSlots(ctx, pi, count - revision.horizon, revision.horizon)];
   }
   return { revision, slots, current: true };
+}
+
+/**
+ * Simulering utan sidoeffekter (ÄA-BAL-001 förhandsvisning): samma framtidssekvens som planen men med ändrade
+ * användarval i profilen. Använder befintliga planeraren oförändrad; skapar inga revisioner eller poster.
+ */
+export async function simulateFutureSlots(ctx: AppContext, count: number, profileChanges: Partial<PlannerInput['profile']> = {}): Promise<PlanSlot[]> {
+  const pi = await planInputs(ctx);
+  const input = { ...pi.input, profile: { ...pi.input.profile, ...profileChanges } };
+  return computeSlots(ctx, { ...pi, input }, count);
 }
 
 // ---------------------------------------------------------------------------

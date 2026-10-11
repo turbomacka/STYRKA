@@ -141,6 +141,7 @@ export class SupabaseTransport implements SyncTransport {
     const substitutionEvents = await optional('session_exercise_substitution_events');
     const planRevisions = await optional('plan_revisions');
     const notes = await optional('notebook_notes');
-    return { profile, equipment: equipment.map((e) => e.equipment_slug as string), exerciseProfiles, consents, restrictions, symptoms, programs, sessions, sessionExercises, sets, audits, calibrations, substitutionEvents, planRevisions, notes };
+    const balanceDecisions = await optional('balance_suggestion_decisions');
+    return { profile, equipment: equipment.map((e) => e.equipment_slug as string), exerciseProfiles, consents, restrictions, symptoms, programs, sessions, sessionExercises, sets, audits, calibrations, substitutionEvents, planRevisions, notes, balanceDecisions };
   }
 }
