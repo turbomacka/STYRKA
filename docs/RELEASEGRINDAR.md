@@ -10,6 +10,8 @@
 
 **CR-komplettering 2026-10-11 (produktägarens seed-fil och evidensregister):** substitutionskatalog och vetenskapssida följer nu filerna (se AVVIKELSER K-1–K-8). Migration `20261011000005_substitution_seed.sql` (additiv katalogdata) ska tillämpas före ny frontend. **Staging 2026-10-11:** migration 005 tillämpad före frontend (version `866d5394`, innehåller även rättningarna F1–F6). Röktest API **6/6**, webbläsare **4/4** (inloggning–pass–synk och publik `/vetenskap`); inga syntetiska testkonton kvar.
 
+**ÄA-PLAN-001 (2026-10-11):** migration 006 tillämpad på staging före frontend (version `c47b2336`). Röktest API **7/7** (inkl. planrevisioner/anteckningar: RLS, append-only, hälsoradering), webbläsare **4/4**. Inga syntetiska testkonton kvar.
+
 | Grind | Status | Kommentar |
 |---|---|---|
 | **G0 Byggbar** | ✅ lokalt | `npm ci`, lint, typecheck, enhetstester, migrationer på lokal Supabase, inga hemligheter i repo/bygge. CI-flöde finns (`.github/workflows/ci.yml`) men har inte körts – repot har ingen fjärr-remote. |
