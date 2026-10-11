@@ -55,7 +55,7 @@ Normhierarki enligt paketet: användarspärrar och säkerhetsgränser → numeri
 | plannerVersion | `STYRKA-PLANNER/1.0.0` |
 | ruleSetVersion | `STYRKA-RULES/1.2.0` (nya H-regler märkta i AVVIKELSER, inkl. H-S1–H-S8 för övningsbyte) |
 | catalogVersion | `2.0.1` (17 oförändrade + 31 erbjudna varianter enligt produktägarens kandidatmappning; `lunge` inaktiv) |
-| substitutionCatalogVersion | `SUBST/1.1.0` (härledd ur `spec/cr-2026-10-10-01/STYRKA_replacement_seed.json`, schema 1.0.0, oförändrad) |
+| substitutionCatalogVersion | `SUBST/1.2.0` (`src/planner/replacement_seed.json`, enda källa; originalet oförändrat i `spec/cr-2026-10-10-01/`) |
 | evidensregister / metod | `EVIDENS/2.0.0` / `STYRKA-METOD/1.2.0` (`src/science/evidence.json` ur `spec/cr-2026-10-10-01/STYRKA_evidence_register.json`; publik sida `/vetenskap`) |
 | templateVersion | `1.0.0` (`fixtures/planner_templates.json`) |
 | privacyNoticeVersion | `PN-2026-10-v1-UTKAST` (ej juridiskt granskad) |

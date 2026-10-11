@@ -1,0 +1,519 @@
+{
+  "schema_version": "1.0.0",
+  "catalog_version": "1.2.0",
+  "created_on": "2026-10-10",
+  "updated_on": "2026-10-11",
+  "derived_from": {
+    "file": "spec/cr-2026-10-10-01/STYRKA_replacement_seed.json",
+    "schema_version": "1.0.0",
+    "created_on": "2026-10-10"
+  },
+  "changelog": [
+    "1.2.0 (2026-10-11): tre par ur anmodans obligatoriska tabell (§2.2) införda efter produktägarens beslut: assisted_pullup–neutral_grip_lat_pulldown (movement_family), assisted_pullup–pullup (near_variant, skilda belastningsmodeller), romanian_deadlift–trap_bar_deadlift (accessory, bredare rörelsealternativ). Endast manuell kalibrering, ingen viktprior i någon riktning."
+  ],
+  "disclaimer": "Candidate mapping only. Not validated pairwise equivalence or clinical safety. All loads independent.",
+  "classification_definition": {
+    "near_variant": "similar mechanics, still exercise-specific strength",
+    "movement_family": "partial overlap, avoid specific 1RM transfer",
+    "accessory": "partial training stimulus; not equivalent for specific strength goal"
+  },
+  "empirical_priors": [
+    {
+      "source_slug": "squat",
+      "target_slug": "front_squat",
+      "ratio_e1rm": 0.8,
+      "prior_confidence": "low",
+      "population_basis": "11 resistance-trained participants; average front/back ratio 102.4/123.9=0.826",
+      "first_exposure_fraction_cap": 0.6,
+      "evidence_ids": [
+        "davis2020",
+        "gullett2009"
+      ],
+      "eligible_if": "valid source e1RM, target familiarity, available steps, no active restriction; explicitly confirm"
+    },
+    {
+      "source_slug": "bench_press",
+      "target_slug": "dumbbell_flat_bench",
+      "ratio_e1rm_total": 0.83,
+      "prior_confidence": "low",
+      "population_basis": "12 trained men; dumbbell total 1RM 17% less than barbell",
+      "first_exposure_fraction_cap": 0.6,
+      "divide_per_hand": true,
+      "evidence_ids": [
+        "saeterbakken2011"
+      ],
+      "eligible_if": "valid source e1RM, target familiarity, available steps, no active restriction; explicitly confirm"
+    }
+  ],
+  "reference_urls": {
+    "davis2020": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7241635/",
+    "gullett2009": "https://doi.org/10.1519/JSC.0b013e31818546bb",
+    "saeterbakken2011": "https://doi.org/10.1080/02640414.2010.543916",
+    "saeterbakken2013": "https://doi.org/10.1519/JSC.0b013e318276b873",
+    "saeterbakken2025": "https://doi.org/10.1007/s40279-025-02225-2",
+    "haugen2023": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10426227/",
+    "lee2018": "https://doi.org/10.1016/j.jesf.2018.08.001",
+    "swinton2011": "https://doi.org/10.1519/JSC.0b013e3181e73f87",
+    "doma2013": "https://doi.org/10.1080/14763141.2012.760204"
+  },
+  "candidate_edges": [
+    {
+      "from_slug": "squat",
+      "to_slug": "front_squat",
+      "relation_class": "near_variant",
+      "load_estimation_policy": "back_to_front_population_prior",
+      "notes_key": "barbell_front_vs_back",
+      "evidence_ids": [
+        "davis2020",
+        "gullett2009"
+      ],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "squat",
+      "to_slug": "safety_bar_squat",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "load_position_changes",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "squat",
+      "to_slug": "smith_squat",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "machine_specific",
+      "evidence_ids": [
+        "haugen2023"
+      ],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "squat",
+      "to_slug": "hack_squat",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "machine_and_rom",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "squat",
+      "to_slug": "goblet_squat",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "equipment_and_load_limit",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "squat",
+      "to_slug": "leg_press",
+      "relation_class": "accessory",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "no_specific_squat_strength_claim",
+      "evidence_ids": [
+        "haugen2023"
+      ],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "front_squat",
+      "to_slug": "safety_bar_squat",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "load_position_changes",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "front_squat",
+      "to_slug": "goblet_squat",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "front_loaded_pattern",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "deadlift",
+      "to_slug": "sumo_deadlift",
+      "relation_class": "near_variant",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "different_setup_and_moments",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "deadlift",
+      "to_slug": "trap_bar_deadlift",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "different_bar_and_kinetics",
+      "evidence_ids": [
+        "swinton2011"
+      ],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "deadlift",
+      "to_slug": "romanian_deadlift",
+      "relation_class": "accessory",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "hip_hinge_different_joint_demands",
+      "evidence_ids": [
+        "lee2018"
+      ],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "romanian_deadlift",
+      "to_slug": "dumbbell_romanian_deadlift",
+      "relation_class": "near_variant",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "different_load_basis",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "romanian_deadlift",
+      "to_slug": "stiff_leg_deadlift",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "different_rom_and_knee_angle",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "bench_press",
+      "to_slug": "dumbbell_flat_bench",
+      "relation_class": "near_variant",
+      "load_estimation_policy": "bench_to_dumbbell_population_prior",
+      "notes_key": "load_per_hand",
+      "evidence_ids": [
+        "saeterbakken2011"
+      ],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "bench_press",
+      "to_slug": "smith_bench_press",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "stabilization_and_machine",
+      "evidence_ids": [
+        "saeterbakken2011",
+        "haugen2023"
+      ],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "bench_press",
+      "to_slug": "machine_chest_press",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "machine_specific",
+      "evidence_ids": [
+        "haugen2023"
+      ],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "bench_press",
+      "to_slug": "incline_bench_press",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "changed_incline_and_muscle_emphasis",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "overhead_press",
+      "to_slug": "dumbbell_overhead_press",
+      "relation_class": "near_variant",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "per_hand_stability",
+      "evidence_ids": [
+        "saeterbakken2013"
+      ],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "overhead_press",
+      "to_slug": "seated_barbell_press",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "position_change",
+      "evidence_ids": [
+        "saeterbakken2013"
+      ],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "overhead_press",
+      "to_slug": "machine_shoulder_press",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "machine_specific",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "lat_pulldown",
+      "to_slug": "neutral_grip_lat_pulldown",
+      "relation_class": "near_variant",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "grip_and_machine_may_differ",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "lat_pulldown",
+      "to_slug": "assisted_pullup",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "external_vs_assistance_load",
+      "evidence_ids": [
+        "doma2013"
+      ],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "lat_pulldown",
+      "to_slug": "pullup",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "bodyweight_load",
+      "evidence_ids": [
+        "doma2013"
+      ],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "cable_row",
+      "to_slug": "chest_supported_row",
+      "relation_class": "near_variant",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "reduces_external_spinal_stabilization",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "cable_row",
+      "to_slug": "seated_machine_row",
+      "relation_class": "near_variant",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "machine_specific",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "cable_row",
+      "to_slug": "one_arm_dumbbell_row",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "unilateral_per_hand",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "cable_row",
+      "to_slug": "barbell_row",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "different_trunk_demand",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "cable_lateral_raise",
+      "to_slug": "dumbbell_lateral_raise",
+      "relation_class": "near_variant",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "resistance_curve_differs",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "cable_lateral_raise",
+      "to_slug": "machine_lateral_raise",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "machine_specific",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "biceps_curl",
+      "to_slug": "dumbbell_curl",
+      "relation_class": "near_variant",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "per_hand",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "biceps_curl",
+      "to_slug": "cable_curl",
+      "relation_class": "near_variant",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "resistance_curve",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "biceps_curl",
+      "to_slug": "incline_dumbbell_curl",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "shoulder_position",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "triceps_pushdown",
+      "to_slug": "rope_triceps_pushdown",
+      "relation_class": "near_variant",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "grip_differs",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "triceps_pushdown",
+      "to_slug": "overhead_triceps_extension",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "elbow_shoulder_position",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "cable_crunch",
+      "to_slug": "machine_crunch",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "machine_specific",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "cable_crunch",
+      "to_slug": "weighted_crunch",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "load_method",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "cable_crunch",
+      "to_slug": "plank",
+      "relation_class": "accessory",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "dynamic_vs_isometric",
+      "evidence_ids": [
+        "saeterbakken2025"
+      ],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "split_squat",
+      "to_slug": "bulgarian_split_squat",
+      "relation_class": "near_variant",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "unilateral_depth",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "split_squat",
+      "to_slug": "step_up",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "unilateral_dynamic",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "leg_press",
+      "to_slug": "hack_squat",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "machine_and_rom",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "assisted_pullup",
+      "to_slug": "neutral_grip_lat_pulldown",
+      "relation_class": "movement_family",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "external_vs_assistance_load",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "assisted_pullup",
+      "to_slug": "pullup",
+      "relation_class": "near_variant",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "assistance_vs_bodyweight_load_model",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    },
+    {
+      "from_slug": "romanian_deadlift",
+      "to_slug": "trap_bar_deadlift",
+      "relation_class": "accessory",
+      "load_estimation_policy": "manual_calibration",
+      "notes_key": "broader_hinge_alternative",
+      "evidence_ids": [],
+      "reverse_candidate_allowed": true,
+      "reverse_load_prior_allowed": false
+    }
+  ]
+}

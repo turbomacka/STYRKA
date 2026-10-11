@@ -53,7 +53,7 @@ Klassisk e-post + lösenord är huvudväg (önskat av produktägaren 2026-10-10)
 
 ## 3b. STYRKA-CR-2026-10-10-01 (2026-10-11): vetenskapssida och övningsbyte
 
-Ändringen är additiv: referensmotorn, befintliga program, setloggning, progressionsregler, konton, offlinehantering och historik är oförändrade. Aktuella versioner efter kompletteringen 2026-10-11: regelversion `STYRKA-RULES/1.2.0`, katalog `2.0.1`, substitutionskatalog `SUBST/1.1.0` (härledd ur produktägarens seed schema 1.0.0), evidensregister `EVIDENS/2.0.0` (ur produktägarens register schema 1.0.0), metodversion `STYRKA-METOD/1.2.0`.
+Ändringen är additiv: referensmotorn, befintliga program, setloggning, progressionsregler, konton, offlinehantering och historik är oförändrade. Aktuella versioner efter kompletteringen 2026-10-11: regelversion `STYRKA-RULES/1.2.0`, katalog `2.0.1`, substitutionskatalog `SUBST/1.2.0` (`src/planner/replacement_seed.json`, katalogversion 1.2.0 – enda källa), evidensregister `EVIDENS/2.0.0` (ur produktägarens register schema 1.0.0), metodversion `STYRKA-METOD/1.2.0`.
 
 ### Komplettering 2026-10-11: produktägarens `replacement_seed.json` och `evidence_register.json`
 
@@ -63,7 +63,7 @@ Filerna kom efter den första implementationen och ligger nu oförändrade i `sp
 |---|---|---|
 | K-1 | Substitutionskatalogen var rekonstruerad ur anmodans tabell; flera relationsklasser skilde sig (t.ex. bänkpress → hantelpress, knäböj → gobletknäböj, militärpress-paren, kabelrodd-paren). | Katalogen härleds nu direkt ur seed-filen: klass (`near_variant`/`movement_family`/`accessory`), `notes_key`, evidens-id och omvända kandidater (`reverse_candidate_allowed`, aldrig med viktprior). |
 | K-2 | Påhittat fält `strength_specificity` styrde ordning och "svagare överföring". | Borttaget. Ordning: relationsklass, egna data, favorit, ordning i seed-filen. Överföringsnotisen följer seed-filens klassdefinitioner. |
-| K-3 | Egna tilläggsrelationer utan stöd (bl.a. utfall, chins ↔ assisterade chins, split squat-varianter, benpress → gobletknäböj). | Borttagna. Kvar utöver seed-filen är endast tre par i anmodans obligatoriska tabell som seed-filen saknar: assisterade chins → neutralt latsdrag, assisterade chins → chins, rumänska marklyft → trap bar-marklyft (manuell kalibrering, inga evidens-id). |
+| K-3 | Egna tilläggsrelationer utan stöd (bl.a. utfall, chins ↔ assisterade chins, split squat-varianter, benpress → gobletknäböj). | Borttagna. Tre par ur anmodans obligatoriska tabell som seed-filen saknade är, efter produktägarens beslut 2026-10-11, införda i seed-filen version 1.2.0 (se nedan); undantagskoden är borttagen. |
 | K-4 | `barbell_row` saknades; `lunge` fanns men ingår inte i seed-filen. | `barbell_row` tillagd (katalog 2.0.1, migration 005). `lunge` erbjuds inte längre (`active = false`), raden finns kvar för eventuell historik. |
 | K-5 | Seed-sluggar skiljer sig för sex nya övningar. | Uttrycklig 1:1-mappning enligt §2.2 ("mappa till appens faktiska övningssluggar"): `dumbbell_flat_bench`→`dumbbell_bench_press`, `machine_chest_press`→`chest_press_machine`, `dumbbell_overhead_press`→`dumbbell_shoulder_press`, `machine_shoulder_press`→`shoulder_press_machine`, `machine_lateral_raise`→`lateral_raise_machine`, `rope_triceps_pushdown`→`rope_pushdown`. Redan driftsatta id behålls (inga omskrivningar). |
 | K-6 | Hjälpskattningen saknade seed-villkoret "no active restriction". | Tolkat försiktigt: ingen aktiv användarregel (blockering, parregel, set-/nivågräns, områdesnotering) som rör käll- eller målövningen eller målövningens områden; annars kalibrering utan siffra. Kvot, tak (0,60) och evidens-id läses från seed-filen. |
@@ -71,6 +71,22 @@ Filerna kom efter den första implementationen och ligger nu oförändrade i `sp
 | K-8 | Påståenden gick längre än registret stöder (t.ex. "minst två pass per vecka", "2–3 set", "STYRKA är inte en medicinteknisk produkt" – det sista en juridisk slutsats). | Påståendena är nu registrets åtta (`claims.*`, `rules.*`) med registrets klassning och regel-id. Den regulatoriska texten anger att avsett ändamål avgör och att juridisk bedömning inte är gjord. Produktbegränsningar visas separat, utan källhänvisning. |
 
 Rader nedan som rör S1 (rekonstruerad seed) är ersatta av K-1–K-5.
+
+### Seed-fil 1.2.0 (produktägarens beslut 2026-10-11)
+
+`src/planner/replacement_seed.json` är nu den enda auktoritativa källan: originalet (`spec/cr-2026-10-10-01/`, oförändrat) ordagrant plus tre par, med `catalog_version` 1.2.0, `derived_from` och `changelog`. Ett test säkerställer att inget annat än dessa tre par skiljer sig från originalet.
+
+| Par (båda riktningar) | Klass | Förklaring i appen | Vikt |
+|---|---|---|---|
+| Assisterade chins ↔ Latsdrag med neutralt grepp | `movement_family` | Assistans i stället för extern vikt – siffrorna betyder olika saker. | Manuell kalibrering |
+| Assisterade chins ↔ Chins | `near_variant` | Samma rörelse, men assistans och kroppsvikt är skilda belastningsmodeller – kilon kan inte jämföras eller räknas om. | Manuell kalibrering |
+| Rumänska marklyft ↔ Trap bar-marklyft | `accessory` (bredare rörelsealternativ) | Träningseffekten och belastningsfördelningen skiljer sig, och övningen är inte styrkemässigt likvärdig. | Manuell kalibrering |
+
+Ingen av relationerna har viktprior i någon riktning; historik och kalibrering är separata per övning. Inga evidens-id anges (ingen källa i registret jämför exakt dessa par).
+
+### Utfall
+
+`lunge` förblir inaktivt (produktägarens beslut 2026-10-11). Övningen fanns inte före ändringsbegäran och har ingen användning i staging; raden finns kvar så att eventuell historik bevaras.
 
 ### Tolkningar och beslut
 
@@ -96,7 +112,7 @@ Rader nedan som rör S1 (rekonstruerad seed) är ersatta av K-1–K-5.
 
 | Kod | Regel |
 |---|---|
-| H-S1 | Relationsklasser (`near_variant` / `movement_family` / `accessory`) per par enligt produktägarens seed-fil; tre par från anmodans tabell; omvända kandidater enligt `reverse_candidate_allowed`. |
+| H-S1 | Relationsklasser (`near_variant` / `movement_family` / `accessory`) per par enligt seed-filen 1.2.0; omvända kandidater enligt `reverse_candidate_allowed`. |
 | H-S2 | Ordning för förslag: relationsklass, egna data i målövningen, favorit, ordning i seed-filen; högst 3 tillåtna först, resten under "Visa fler" (ej tillåtna med skäl). |
 | H-S3 | Första exponering från hjälpskattning: högst 0,60 av preliminär e1RM (seed-filens `first_exposure_fraction_cap`), avrundat nedåt till viktsteget, aldrig över användarens maxtak, aldrig vid aktiv symtomflagga eller aktiv regel som rör övningarna (K-6). |
 | H-S4 | Populationskvoter 0,80 och 0,83 används endast som lågkonfidensförslag och uppgraderas aldrig av sig själva. |

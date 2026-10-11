@@ -30,9 +30,10 @@
 | RD05 | Samtyckesflöde och separat radering (text i appen är märkt utkast) | Jurist |
 | RD06 | Extern säkerhetsgranskning (SECURITY DEFINER-funktioner, Supabase-konfiguration) och incidentrutin | Säkerhetsgranskare |
 | RD07 | Fackgranskning av algoritmens säkerhetsgränser och alla H-värden (se AVVIKELSER) | Idrottsmedicinsk/legitimerad fackperson |
-| RD08 | Källgranskning av vetenskapssidans svenska sammanfattningar av registrets påståenden och de tre tabelltilläggen till kandidatmappningen; godkännande av H-S1–H-S8 och tolkningen av "no active restriction" (K-6). Källor och relationer kommer nu från produktägarens filer; automatiskt kontrollerat är att de används oförändrade och att DOI/länkar svarar | Fackperson med metodkunskap |
+| RD08 | Källgranskning av vetenskapssidans svenska sammanfattningar av registrets påståenden och förklaringstexterna i substitutionskatalogen 1.2.0; godkännande av H-S1–H-S8 och tolkningen av "no active restriction" (K-6). Källor och relationer kommer nu från produktägarens filer; automatiskt kontrollerat är att de används oförändrade och att DOI/länkar svarar | Fackperson med metodkunskap |
 | RD09 | Om vetenskapssidans text om medicinteknisk gräns (MDCG 2019-11) får publiceras – texten är ingen juridisk bedömning | Jurist (del av RD01) |
 | – | Användartest ≥ 2 personer × 12 pass, staging-pilot, genomförd rollback | Produktägare |
+| – | Safari på riktig iPhone: helt offlinepass med installerad PWA (flygplansläge, omladdning, synk) och tangentbord/VoiceOver – de två E2E-fall som inte kan köras i WebKit på Windows (se TESTPROTOKOLL) | Testare med iPhone |
 | – | Offentlig driftsättning | **Endast produktägarens uttryckliga beslut** |
 
 ## Vad produktägaren konkret behöver göra härnäst

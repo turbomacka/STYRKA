@@ -9,7 +9,7 @@
   "methodVersion": "STYRKA-METOD/1.2.0",
   "ruleSetVersion": "STYRKA-RULES/1.2.0",
   "engineVersion": "1.0.0",
-  "substitutionCatalogVersion": "SUBST/1.1.0",
+  "substitutionCatalogVersion": "SUBST/1.2.0",
   "lastSubstantiveUpdate": "2026-10-11",
   "verificationNote": "Källor och påståenden kommer från produktägarens evidensregister (schema 1.0.0, granskat 2026-10-10). DOI och länkar kontrollerade mot Crossref, PMC och utgivarnas sidor 2026-10-11. Innehållet är en sammanfattning för allmänheten, inte en fullständig granskning av varje studie.",
   "sources": [
@@ -695,7 +695,7 @@
       "group": "C",
       "title_sv": "Övningsbyte: tre slags relationer",
       "method_sv": "Varje bytesförslag kommer från produktägarens kandidatmappning och har en av tre relationer: nära variant (liknande teknik, men styrkan är fortfarande övningsspecifik), samma rörelsefamilj (delvis överlapp – ingen överföring av maxvikt) eller kompletterande alternativ (delvis träningsstimulus – inte likvärdig för ett specifikt styrkemål). Ingen relation betyder ”likvärdig”, och varje övning har egen belastning.",
-      "value_sv": "Kandidatmappning schema 1.0.0 (2026-10-10), i appen SUBST/1.1.0",
+      "value_sv": "Kandidatmappning, katalogversion 1.2.0 (SUBST/1.2.0)",
       "rationale_sv": "Mappningen är ett redaktionellt urval, inte validerad parvis likvärdighet eller klinisk säkerhet.",
       "heuristic": true,
       "reason_codes": [

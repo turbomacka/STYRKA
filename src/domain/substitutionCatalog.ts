@@ -1,13 +1,13 @@
 /**
  * Förvaltad substitutionskatalog (STYRKA-CR-2026-10-10-01 §2.2).
  *
- * Källa: produktägarens kandidatmappning `spec/cr-2026-10-10-01/STYRKA_replacement_seed.json` (schema 1.0.0),
- * läst OFÖRÄNDRAD. Den här modulen gör endast det anmodan kräver av utvecklaren: mappar seed-filens sluggar till
- * appens faktiska övnings-id, lägger till svenska förklaringstexter per `notes_key`, och kompletterar med de par i
- * anmodans obligatoriska tabell (§2.2) som saknas i seed-filen. Inga egna viktomräkningar: kvantitativa priors
- * finns ENDAST i seed-filens `empirical_priors` (två par) och gäller bara i angiven riktning (SUB24).
+ * Enda auktoritativa källa: `src/planner/replacement_seed.json` (katalogversion 1.2.0). Den är produktägarens
+ * kandidatmappning (`spec/cr-2026-10-10-01/STYRKA_replacement_seed.json`, schema 1.0.0, oförändrad) plus tre par ur
+ * anmodans obligatoriska tabell som produktägaren beslutat föra in 2026-10-11. Modulen mappar seed-sluggar till appens
+ * faktiska övnings-id och lägger till svenska förklaringstexter per `notes_key`. Inga egna viktomräkningar:
+ * kvantitativa priors finns ENDAST i seed-filens `empirical_priors` (två par) och gäller bara i angiven riktning (SUB24).
  */
-import seed from '../../spec/cr-2026-10-10-01/STYRKA_replacement_seed.json';
+import seed from '../planner/replacement_seed.json';
 import { exercise, isExerciseId, type ExerciseId } from './catalog';
 import type { RelationClass } from './model';
 
@@ -35,6 +35,10 @@ type SeedPrior = {
 };
 type Seed = {
   schema_version: string;
+  catalog_version: string;
+  updated_on: string;
+  derived_from: { file: string; schema_version: string; created_on: string };
+  changelog: string[];
   created_on: string;
   disclaimer: string;
   classification_definition: Record<RelationClass, string>;
@@ -44,8 +48,8 @@ type Seed = {
 };
 export const SEED = seed as unknown as Seed;
 
-/** Appens katalogversion för substitution: härledd ur seed schema 1.0.0 + mappning + tabelltillägg. */
-export const SUBSTITUTION_CATALOG_VERSION = 'SUBST/1.1.0';
+/** Katalogversion = seed-filens `catalog_version`. */
+export const SUBSTITUTION_CATALOG_VERSION = `SUBST/${SEED.catalog_version}`;
 
 /**
  * Seed-sluggar som i appen har ett annat (redan driftsatt, stabilt) övnings-id. Övriga seed-sluggar är identiska
@@ -115,8 +119,8 @@ export const NOTES_SV: Readonly<Record<string, string>> = {
   dynamic_vs_isometric: 'Statisk hållning i stället för rörelse; ersätter inte dynamisk styrka.',
   unilateral_depth: 'Bakre foten upphöjd ger större rörelseomfång.',
   unilateral_dynamic: 'Ett ben i taget upp på en låda eller bänk.',
-  cr_vertical_pull_assistance: 'Vertikalt drag med annan belastningstyp – ingen omräkning av kilo.',
-  cr_hinge_variation: 'Varierande rörelsemönster och dosering.',
+  assistance_vs_bodyweight_load_model: 'Samma rörelse, men assistans och kroppsvikt är skilda belastningsmodeller – kilon kan inte jämföras eller räknas om.',
+  broader_hinge_alternative: 'Bredare höftfällningsalternativ: träningseffekten och belastningsfördelningen skiljer sig, och övningen är inte styrkemässigt likvärdig.',
 };
 
 /** Seed-filens `population_basis` på svenska (gruppmedelvärden, inte individuella faktorer). */
@@ -129,13 +133,6 @@ export function priorBasisSv(fromApp: ExerciseId, toApp: ExerciseId): string | n
   const p = SEED.empirical_priors.find((x) => appSlug(x.source_slug) === fromApp && appSlug(x.target_slug) === toApp);
   return p ? (PRIOR_BASIS_SV[`${p.source_slug}->${p.target_slug}`] ?? null) : null;
 }
-
-/** Par i anmodans obligatoriska tabell (§2.2) som saknas i seed-filen. Endast manuell kalibrering. */
-const CR_TABLE_EDGES: SeedEdge[] = [
-  { from_slug: 'assisted_pullup', to_slug: 'neutral_grip_lat_pulldown', relation_class: 'movement_family', load_estimation_policy: 'manual_calibration', notes_key: 'cr_vertical_pull_assistance', evidence_ids: [], reverse_candidate_allowed: true, reverse_load_prior_allowed: false },
-  { from_slug: 'assisted_pullup', to_slug: 'pullup', relation_class: 'movement_family', load_estimation_policy: 'manual_calibration', notes_key: 'cr_vertical_pull_assistance', evidence_ids: [], reverse_candidate_allowed: true, reverse_load_prior_allowed: false },
-  { from_slug: 'romanian_deadlift', to_slug: 'trap_bar_deadlift', relation_class: 'movement_family', load_estimation_policy: 'manual_calibration', notes_key: 'cr_hinge_variation', evidence_ids: [], reverse_candidate_allowed: true, reverse_load_prior_allowed: false },
-];
 
 export type LoadPrior =
   | { kind: 'none' }
@@ -150,8 +147,8 @@ export type LoadPrior =
       population_basis: string;
     };
 
-/** Var relationen kommer ifrån (spårbarhet). */
-export type RelationOrigin = 'seed' | 'seed_reverse' | 'cr_table' | 'cr_table_reverse';
+/** Var relationen kommer ifrån: seed-filens par eller dess omvända kandidat. */
+export type RelationOrigin = 'seed' | 'seed_reverse';
 
 export type SubstitutionRelation = {
   from: ExerciseId;
@@ -179,28 +176,20 @@ function priorFor(edge: SeedEdge, reverse: boolean): LoadPrior {
 function build(): SubstitutionRelation[] {
   const out: SubstitutionRelation[] = [];
   const has = (a: ExerciseId, b: ExerciseId) => out.some((r) => r.from === a && r.to === b);
-  const add = (edges: SeedEdge[], origin: 'seed' | 'cr_table') => {
-    for (const e of edges) {
-      const from = appSlug(e.from_slug);
-      const to = appSlug(e.to_slug);
-      if (!has(from, to)) out.push({ from, to, relation: e.relation_class, notes_key: e.notes_key, rationale_sv: NOTES_SV[e.notes_key] ?? '', evidence_ids: [...e.evidence_ids], load_estimation_policy: e.load_estimation_policy, load_prior: priorFor(e, false), origin, order: out.length });
-    }
-  };
-  add(SEED.candidate_edges, 'seed');
-  add(CR_TABLE_EDGES, 'cr_table');
+  for (const e of SEED.candidate_edges) {
+    const from = appSlug(e.from_slug);
+    const to = appSlug(e.to_slug);
+    if (has(from, to)) throw new Error(`DUBBLETT_I_SEED ${e.from_slug}->${e.to_slug}`);
+    out.push({ from, to, relation: e.relation_class, notes_key: e.notes_key, rationale_sv: NOTES_SV[e.notes_key] ?? '', evidence_ids: [...e.evidence_ids], load_estimation_policy: e.load_estimation_policy, load_prior: priorFor(e, false), origin: 'seed', order: out.length });
+  }
   // Omvända kandidater (reverse_candidate_allowed) – aldrig med viktprior (reverse_load_prior_allowed = false).
-  for (const [edges, origin] of [
-    [SEED.candidate_edges, 'seed_reverse'],
-    [CR_TABLE_EDGES, 'cr_table_reverse'],
-  ] as const) {
-    for (const e of edges) {
-      if (!e.reverse_candidate_allowed) continue;
-      const from = appSlug(e.to_slug);
-      const to = appSlug(e.from_slug);
-      if (has(from, to)) continue;
-      if (e.reverse_load_prior_allowed) throw new Error(`OMVÄND_PRIOR_EJ_GODKÄND ${e.from_slug}->${e.to_slug}`);
-      out.push({ from, to, relation: e.relation_class, notes_key: e.notes_key, rationale_sv: NOTES_SV[e.notes_key] ?? '', evidence_ids: [...e.evidence_ids], load_estimation_policy: 'manual_calibration', load_prior: { kind: 'none' }, origin, order: out.length });
-    }
+  for (const e of SEED.candidate_edges) {
+    if (!e.reverse_candidate_allowed) continue;
+    const from = appSlug(e.to_slug);
+    const to = appSlug(e.from_slug);
+    if (has(from, to)) continue;
+    if (e.reverse_load_prior_allowed) throw new Error(`OMVÄND_PRIOR_EJ_GODKÄND ${e.from_slug}->${e.to_slug}`);
+    out.push({ from, to, relation: e.relation_class, notes_key: e.notes_key, rationale_sv: NOTES_SV[e.notes_key] ?? '', evidence_ids: [...e.evidence_ids], load_estimation_policy: 'manual_calibration', load_prior: { kind: 'none' }, origin: 'seed_reverse', order: out.length });
   }
   return out;
 }

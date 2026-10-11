@@ -8,25 +8,79 @@ import { readFileSync } from 'node:fs';
 import { CATALOG, OFFERED_CATALOG, RETIRED_SLUGS, exercise, isExerciseId, V1_SLUGS, type ExerciseId } from '../../src/domain/catalog';
 import { heavyPairAllowed } from '../../src/domain/heavyPair';
 import type { PlannedExercise } from '../../src/domain/model';
-import { allRelations, appSlug, APPROVED_PRIORS, relationBetween, relationsFrom, SEED, SEED_SLUG_TO_APP, validateSubstitutionCatalog } from '../../src/domain/substitutionCatalog';
+import { allRelations, appSlug, APPROVED_PRIORS, NOTES_SV, relationBetween, relationsFrom, SEED, SEED_SLUG_TO_APP, SUBSTITUTION_CATALOG_VERSION, validateSubstitutionCatalog } from '../../src/domain/substitutionCatalog';
 import { estimatedMinutesFor, FIRST_EXPOSURE_MAX_PCT, planRegular, planReplacement, substitutionCandidates, verifySubstitutionInvariants } from '../../src/planner/planner';
 import { ALL_ESTIMATES, NOW, est, hoursBefore, input, performed, plan, rule, sets, symptom } from './helpers';
 
 const squatHeavy = plan('squat', { kg: 92.5, mode: 'heavy', sets: 3, reps: 5, estimatedOneRM: 120 });
 const benchHeavy = plan('bench_press', { kg: 77.5, mode: 'heavy', sets: 3, reps: 5, estimatedOneRM: 100 });
 
-describe('substitutionskatalog = produktägarens replacement_seed.json (schema 1.0.0) + mappning', () => {
-  const seedPath = 'spec/cr-2026-10-10-01/STYRKA_replacement_seed.json';
-  const official = JSON.parse(readFileSync(seedPath, 'utf8')) as typeof SEED;
+describe('substitutionskatalog = replacement_seed.json 1.2.0 (enda källa) + slugmappning', () => {
+  const official = JSON.parse(readFileSync('spec/cr-2026-10-10-01/STYRKA_replacement_seed.json', 'utf8')) as typeof SEED;
+  const current = JSON.parse(readFileSync('src/planner/replacement_seed.json', 'utf8')) as typeof SEED;
+  const ADDED = [
+    { from_slug: 'assisted_pullup', to_slug: 'neutral_grip_lat_pulldown', relation_class: 'movement_family', notes_key: 'external_vs_assistance_load' },
+    { from_slug: 'assisted_pullup', to_slug: 'pullup', relation_class: 'near_variant', notes_key: 'assistance_vs_bodyweight_load_model' },
+    { from_slug: 'romanian_deadlift', to_slug: 'trap_bar_deadlift', relation_class: 'accessory', notes_key: 'broader_hinge_alternative' },
+  ];
 
-  it('seed-filen ligger oförändrad i repot (SHA-256 enligt manifest) och appen läser exakt den filen', () => {
+  it('originalunderlagen är oförändrade (SHA-256) och appen läser endast den auktoritativa seed-filen', () => {
     const manifest = JSON.parse(readFileSync('spec/cr-2026-10-10-01/SHA256.json', 'utf8')) as { files: Array<{ path: string; sha256: string }> };
     for (const f of manifest.files) expect(createHash('sha256').update(readFileSync(`spec/cr-2026-10-10-01/${f.path}`)).digest('hex'), f.path).toBe(f.sha256);
-    expect(SEED).toEqual(official);
+    expect(SEED).toEqual(current);
+    expect(SEED.catalog_version).toBe('1.2.0');
+    expect(SUBSTITUTION_CATALOG_VERSION).toBe('SUBST/1.2.0');
+    expect(SEED.derived_from).toEqual({ file: 'spec/cr-2026-10-10-01/STYRKA_replacement_seed.json', schema_version: official.schema_version, created_on: official.created_on });
+  });
+
+  it('version 1.2.0 = originalet ordagrant + exakt de tre beslutade paren (inget annat ändrat)', () => {
+    for (const k of ['schema_version', 'disclaimer', 'classification_definition', 'empirical_priors', 'reference_urls'] as const) expect(current[k], k).toEqual(official[k]);
+    expect(current.candidate_edges.slice(0, official.candidate_edges.length)).toEqual(official.candidate_edges);
+    const added = current.candidate_edges.slice(official.candidate_edges.length);
+    expect(added.map((e) => ({ from_slug: e.from_slug, to_slug: e.to_slug, relation_class: e.relation_class, notes_key: e.notes_key }))).toEqual(ADDED);
+    for (const e of added) expect(e).toMatchObject({ load_estimation_policy: 'manual_calibration', evidence_ids: [], reverse_candidate_allowed: true, reverse_load_prior_allowed: false });
+    expect(current.changelog.join(' ')).toMatch(/1\.2\.0/);
+  });
+
+  it('de tre nya paren: rätt klass i båda riktningar, ingen viktomräkning, separat historik och kalibrering', () => {
+    for (const a of ADDED) {
+      for (const [f, t] of [[a.from_slug, a.to_slug], [a.to_slug, a.from_slug]] as Array<[ExerciseId, ExerciseId]>) {
+        const r = relationBetween(f, t)!;
+        expect(r, `${f}->${t}`).toMatchObject({ relation: a.relation_class, load_prior: { kind: 'none' }, load_estimation_policy: 'manual_calibration' });
+        const res = planReplacement(input({ exerciseSettings: ALL_ESTIMATES }), { from: plan(f, { kg: 60, mode: 'moderate', sets: 2, reps: 8, estimatedOneRM: 80 }), to: t, others: [], familiarity: 'familiar' });
+        expect(res.status, `${f}->${t}`).toBe('ok');
+        expect([res.planned!.calibrationSuggestionKg, res.requiresConfirmation, res.planned!.substitution!.prior], `${f}->${t}`).toEqual([null, false, undefined]);
+        expect(res.planned!.kg, `${f}->${t}: inga kilo från ursprungsövningen`).not.toBe(60);
+      }
+    }
+    // RDL ↔ trap bar visas med tydlig information om skild träningseffekt och belastningsfördelning.
+    expect(relationBetween('romanian_deadlift', 'trap_bar_deadlift')!.rationale_sv).toMatch(/träningseffekten och belastningsfördelningen skiljer sig.*inte styrkemässigt likvärdig/);
+    expect(relationBetween('assisted_pullup', 'pullup')!.rationale_sv).toMatch(/skilda belastningsmodeller/);
+  });
+
+  it('katalogintegritet: inga dubbletter eller motsägande klasser, alla texter, endast seed-ursprung', () => {
+    expect(() => validateSubstitutionCatalog()).not.toThrow();
+    const key = (a: string, b: string) => [a, b].sort().join('<>');
+    const cls = new Map<string, string>();
+    for (const e of current.candidate_edges) {
+      const k = key(e.from_slug, e.to_slug);
+      expect(cls.has(k), `dubblett ${k}`).toBe(false);
+      cls.set(k, e.relation_class);
+      expect(Object.keys(current.classification_definition)).toContain(e.relation_class);
+      expect(NOTES_SV[e.notes_key], e.notes_key).toBeTruthy();
+      expect(e.reverse_load_prior_allowed, `${e.from_slug}->${e.to_slug}`).toBe(false);
+      if (e.load_estimation_policy !== 'manual_calibration') expect(current.empirical_priors.some((p) => p.source_slug === e.from_slug && p.target_slug === e.to_slug)).toBe(true);
+    }
+    const appCls = new Map(current.candidate_edges.map((e) => [key(appSlug(e.from_slug), appSlug(e.to_slug)), e.relation_class]));
+    for (const r of allRelations()) {
+      expect(['seed', 'seed_reverse']).toContain(r.origin);
+      expect(r.relation, `${r.from}->${r.to}`).toBe(appCls.get(key(r.from, r.to)));
+    }
+    expect(allRelations().length).toBe(current.candidate_edges.length * 2);
   });
 
   it('varje seed-slugg mappas till en befintlig övning med rimlig utrustning och lastbas', () => {
-    const slugs = new Set([...official.candidate_edges.flatMap((e) => [e.from_slug, e.to_slug]), ...official.empirical_priors.flatMap((p) => [p.source_slug, p.target_slug])]);
+    const slugs = new Set([...current.candidate_edges.flatMap((e) => [e.from_slug, e.to_slug]), ...official.empirical_priors.flatMap((p) => [p.source_slug, p.target_slug])]);
     for (const s of slugs) expect(isExerciseId(appSlug(s)), s).toBe(true);
     // Befintliga övningar (version 1) har samma id i seed-filen.
     for (const s of slugs) if (V1_SLUGS.has(s as ExerciseId)) expect(appSlug(s)).toBe(s);
@@ -40,22 +94,14 @@ describe('substitutionskatalog = produktägarens replacement_seed.json (schema 1
   });
 
   it('alla seed-par finns med seed-filens relationsklass och evidens; omvända kandidater utan viktprior', () => {
-    expect(() => validateSubstitutionCatalog()).not.toThrow();
-    for (const e of official.candidate_edges) {
+    for (const e of current.candidate_edges) {
       const r = relationBetween(appSlug(e.from_slug), appSlug(e.to_slug));
       expect(r, `${e.from_slug}->${e.to_slug}`).toMatchObject({ relation: e.relation_class, evidence_ids: e.evidence_ids, notes_key: e.notes_key, origin: 'seed' });
       const rev = relationBetween(appSlug(e.to_slug), appSlug(e.from_slug));
       expect(rev, `omvänd ${e.to_slug}->${e.from_slug}`).toBeTruthy();
       expect(rev!.load_prior.kind, `omvänd ${e.to_slug}->${e.from_slug}`).toBe('none');
     }
-    // Inga relationer utöver seed-filen och anmodans tabell (§2.2), och alla har svensk förklaring.
-    for (const r of allRelations()) {
-      expect(['seed', 'seed_reverse', 'cr_table', 'cr_table_reverse']).toContain(r.origin);
-      expect(['near_variant', 'movement_family', 'accessory']).toContain(r.relation);
-      expect(r.rationale_sv.length, `${r.from}->${r.to}`).toBeGreaterThan(10);
-    }
-    const crOnly = allRelations().filter((r) => r.origin === 'cr_table').map((r) => `${r.from}->${r.to}`);
-    expect(crOnly).toEqual(['assisted_pullup->neutral_grip_lat_pulldown', 'assisted_pullup->pullup', 'romanian_deadlift->trap_bar_deadlift']);
+    for (const r of allRelations()) expect(r.rationale_sv.length, `${r.from}->${r.to}`).toBeGreaterThan(10);
   });
 
   it('kvantitativa priors finns endast för seed-filens två par, i angiven riktning, med seed-filens värden', () => {
@@ -99,7 +145,7 @@ describe('substitutionskatalog = produktägarens replacement_seed.json (schema 1
     expect(RETIRED_SLUGS.has('lunge')).toBe(true);
     expect(OFFERED_CATALOG.some((c) => c.slug === 'lunge')).toBe(false);
     expect(allRelations().some((r) => r.from === 'lunge' || r.to === 'lunge')).toBe(false);
-    // Varje erbjuden övning finns i kandidatmappningen (eller anmodans tabell).
+    // Varje erbjuden övning finns i kandidatmappningen.
     const reachable = new Set(allRelations().flatMap((r) => [r.from, r.to]));
     for (const c of OFFERED_CATALOG) expect(reachable.has(c.slug), c.slug).toBe(true);
   });

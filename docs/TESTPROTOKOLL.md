@@ -4,7 +4,29 @@ Miljö: Windows 10, Node 22.13, lokal Supabase (Postgres 17.11, GoTrue 2.197, Po
 
 Senare rättning ovanpå `97ee461`, publicerad på staging 2026-10-11: se [Rättningar efter granskningen](RATTNINGAR_2026-10-11.md) för F1–F6, förenklad mobilinloggning och aktuell verifiering. Stagingresultaten i tabellen nedan gäller den tidigare versionen.
 
-## Senaste körning: CR-komplettering med produktägarens filer (2026-10-11)
+## Senaste körning: substitutionskatalog 1.2.0 (2026-10-11)
+
+Seed-filen 1.2.0 är enda källan (tre beslutade par införda, undantagskoden borttagen). Algoritm, rekommendationsmotor och historik oförändrade.
+
+| Nivå | Kommando | Resultat |
+|---|---|---|
+| Referenssmoke | `npm run test:reference` | **26/26 PASS** |
+| Enhet, komponent, DB | `npm test` | **211/211 PASS**, 20 filer |
+| Regression mot koden före ändringsbegäran | unit `regression_pre_cr_plans` | **2 100 planer / 7 333 föreskrifter identiska** med `3ec01ef` (SHA-256 över övning, nivå, set, reps, kg, sekunder, kalibrering, skälkoder, status, tid, borttagna övningar, varningar) |
+| Katalogintegritet | unit `substitution` | originalet ordagrant + exakt tre par; inga dubbletter/motsägande klasser; alla `notes_key` har text; omvända kandidater utan prior; de tre paren utan viktomräkning i båda riktningar |
+| E2E | `playwright test` | **78 PASS, 1 instabilt, 2 SKIP**. Det instabila fallet (`auth.spec.ts` › konto utan lösenord via Glömt lösenordet, desktop) väntar på bekräftelsemejl från lokal Mailpit; vid omkörning 2/3 godkända isolerat och hela auth-sviten 36/36. Ingen koppling till katalogändringen. |
+| Lint / typecheck | | 0 fel |
+
+**Överhoppade E2E-fall (endast iPhone/WebKit-projektet):**
+
+| Test | Vad det testar | Varför överhoppat | Kräver Safari på iPhone? |
+|---|---|---|---|
+| `a11y.spec.ts` › "tangentbord: starta pass och logga set utan mus…" | Starta pass och logga set enbart med tangentbord; skärmläsarstatus annonseras en gång | WebKit/Safari flyttar inte Tab-fokus mellan knappar som standard | Delvis: tangentbordsflödet är verifierat i Chromium; i Safari (iPhone med externt tangentbord, Mac med "Tab markerar alla kontroller") samt VoiceOver behöver det provas manuellt |
+| `offline_privacy.spec.ts` › "29: flygplansläge hela passet + omladdning offline…" | Helt offlinepass med service worker, omladdning offline och korrekt synk efteråt | Playwrights WebKit på Windows saknar service worker-offline | **Ja** – Safari/iOS har egen service worker- och lagringshantering (bl.a. rensning av data); måste provas på riktig iPhone, installerad PWA i flygplansläge |
+
+Verifiering i Safari på iPhone har **inte** kunnat utföras: testmiljön är Windows utan macOS/Xcode, iOS-simulator eller ansluten iPhone. Kvarstår som kontroll före produktionslansering.
+
+## CR-komplettering med produktägarens filer (2026-10-11)
 
 Ovanpå rättningarna (`495cf5f`): substitutionskatalogen härleds nu ur produktägarens `STYRKA_replacement_seed.json` och vetenskapssidan ur `STYRKA_evidence_register.json` (båda oförändrade i `spec/cr-2026-10-10-01/`, SHA-256 kontrolleras i test). Migration 005 (additiv).
 
