@@ -53,13 +53,13 @@ Normhierarki enligt paketet: användarspärrar och säkerhetsgränser → numeri
 |---|---|
 | engineVersion | `1.0.0` (STYRKA-ENGINE, referensmotor) |
 | plannerVersion | `STYRKA-PLANNER/1.0.0` |
-| ruleSetVersion | `STYRKA-RULES/1.1.0` (nya H-regler märkta i AVVIKELSER, inkl. H-S1–H-S8 för övningsbyte) |
-| catalogVersion | `2.0.0` (17 oförändrade + 31 varianter med lastbas, redskapsklass, maskinprofil, ensidighet och tidsfaktor) |
-| substitutionCatalogVersion | `SUBST/1.0.0` (`src/planner/replacement_seed.json`, redaktionellt urval) |
-| evidensregister / metod | `EVIDENS/1.0.0` / `STYRKA-METOD/1.1.0` (`src/science/evidence.json`, publik sida `/vetenskap`) |
+| ruleSetVersion | `STYRKA-RULES/1.2.0` (nya H-regler märkta i AVVIKELSER, inkl. H-S1–H-S8 för övningsbyte) |
+| catalogVersion | `2.0.1` (17 oförändrade + 31 erbjudna varianter enligt produktägarens kandidatmappning; `lunge` inaktiv) |
+| substitutionCatalogVersion | `SUBST/1.1.0` (härledd ur `spec/cr-2026-10-10-01/STYRKA_replacement_seed.json`, schema 1.0.0, oförändrad) |
+| evidensregister / metod | `EVIDENS/2.0.0` / `STYRKA-METOD/1.2.0` (`src/science/evidence.json` ur `spec/cr-2026-10-10-01/STYRKA_evidence_register.json`; publik sida `/vetenskap`) |
 | templateVersion | `1.0.0` (`fixtures/planner_templates.json`) |
 | privacyNoticeVersion | `PN-2026-10-v1-UTKAST` (ej juridiskt granskad) |
-| schemaMigration | `20261011000004` (additiv: kalibrering, revisionsposter för byten, lastbas, upplevd ansträngning) |
+| schemaMigration | `20261011000005` (additiva 004: kalibrering, revisionsposter, lastbas, upplevd ansträngning; 005: `barbell_row`, `lunge` inaktiv) |
 
 Feature flags (byggtid): `VITE_FLAG_LOAD_RECOMMENDATIONS=false` stänger av viktförslag utan att påverka historik eller export; `VITE_FLAG_SUBSTITUTION_V2=false` återgår till tidigare bytesvy (S09 v1). Se runbook för snabb rollback.
 

@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import type { Mode } from '../../domain/decision_engine';
 import type { ExerciseId } from '../../domain/catalog';
-import { ALL_AREAS, AREA_LABEL_SV, CATALOG, V1_SLUGS, exercise, isAvailable, type Area, type EquipmentSlug } from '../../domain/catalog';
+import { ALL_AREAS, AREA_LABEL_SV, CATALOG, OFFERED_CATALOG, V1_SLUGS, exercise, isAvailable, type Area, type EquipmentSlug } from '../../domain/catalog';
 import type { PlannedExercise, RuleKind, Side } from '../../domain/model';
 import { formatKg } from '../../domain/units';
 import type { ConflictEntry } from '../../storage/db';
@@ -12,7 +12,7 @@ import { Icon, LoadConfidence, ReasonPopover, Sheet } from './common';
 
 export function prescriptionText(p: PlannedExercise): string {
   // Lastbas och "per sida" visas endast för övningar med definierad semantik (katalog 2.0.0); äldre data tolkas inte om.
-  const perSide = exercise(p.exerciseId).unilateral && exercise(p.exerciseId).catalogSince === '2.0.0' ? ' per sida' : '';
+  const perSide = exercise(p.exerciseId).unilateral && exercise(p.exerciseId).catalogSince !== '1.0.0' ? ' per sida' : '';
   const perHand = p.loadBasis === 'per_hand_kg' ? ' per hantel' : '';
   const reps = p.loadKind === 'duration_sec' ? `${p.targetSeconds ?? '?'} s` : `${p.reps} reps${perSide}`;
   const suggestion = p.calibrationSuggestionKg != null ? ` · osäkert förslag ${formatKg(Math.round(p.calibrationSuggestionKg * 1000))} kg${perHand}` : ' · välj vikt';
@@ -175,7 +175,7 @@ export function RestrictionPicker({ consent, onSave, onCancel }: { consent: bool
       <label htmlFor={id}>{label}</label>
       <select id={id} value={val} onChange={(e) => set(e.target.value as ExerciseId | '')}>
         <option value="">{kind === 'block_exercise' || kind === 'limit_sets' || kind === 'limit_mode' ? (consent ? 'Välj övning (eller område nedan)' : 'Välj övning') : 'Välj övning'}</option>
-        {CATALOG.map((c) => (
+        {OFFERED_CATALOG.map((c) => (
           <option key={c.slug} value={c.slug}>
             {c.nameSv}
           </option>

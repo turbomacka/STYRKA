@@ -1,0 +1,232 @@
+{
+  "schema_version": "1.0.0",
+  "reviewed_at": "2026-10-10",
+  "warning": "Evidence register is descriptive; does not validate the proprietary STYRKA recommendation engine or medical safety.",
+  "sources": [
+    {
+      "id": "currier2026",
+      "title": "Resistance Training Prescription for Muscle Function, Hypertrophy, and Physical Performance in Healthy Adults: An Overview of Reviews",
+      "authors": "Currier med flera",
+      "year": 2026,
+      "permalink": "https://doi.org/10.1249/MSS.0000000000003897",
+      "study_type": "umbrella review",
+      "population_or_scope": "Friska vuxna",
+      "supported_claim_sv": "Styrketräning förbättrar maximal styrka; rekommendationsparametrar såsom frekvens, intensitet och volym varierar med målet.",
+      "limitations_sv": "Ger inte exakta individuella omräkningsfaktorer mellan olika övningar."
+    },
+    {
+      "id": "saeterbakken2025",
+      "title": "Task Specificity of Dynamic Resistance Training and Its Transferability to Non-trained Isometric Muscle Strength: A Systematic Review with Meta-analysis",
+      "authors": "Saeterbakken med flera",
+      "year": 2025,
+      "permalink": "https://doi.org/10.1007/s40279-025-02225-2",
+      "study_type": "systematisk översikt/metaanalys",
+      "population_or_scope": "43 studier, 1660 friska deltagare 16 till 60 år",
+      "supported_claim_sv": "Styrkeanpassning är i hög grad uppgiftsspecifik; träningsresultat i en övning kan inte jämställas direkt med en annan.",
+      "limitations_sv": "Primärt jämförelse dynamisk och isometrisk styrketestning, inte numerisk omräkning mellan samtliga gymövningar."
+    },
+    {
+      "id": "kassiano2022",
+      "title": "Does Varying Resistance Exercises Promote Superior Muscle Hypertrophy and Strength Gains? A Systematic Review",
+      "authors": "Kassiano med flera",
+      "year": 2022,
+      "permalink": "https://doi.org/10.1519/JSC.0000000000004258",
+      "study_type": "systematisk översikt",
+      "population_or_scope": "8 studier, 241 unga män",
+      "supported_claim_sv": "Systematiskt planerad övningsvariation kan vara användbar, medan alltför slumpmässig variation kan hämma specifika adaptationer.",
+      "limitations_sv": "Litet, snävt urval; inte bevis för specifik parvis övningsekvivalens."
+    },
+    {
+      "id": "davis2020",
+      "title": "Muscle Oxygen Demands of the Vastus Lateralis in Back and Front Squats",
+      "authors": "Davis, Yakel och Anderson",
+      "year": 2020,
+      "permalink": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7241635/",
+      "study_type": "laboratoriestudie",
+      "population_or_scope": "11 träningsvana, 5 kvinnor och 6 män",
+      "supported_claim_sv": "Medel 1RM 102,4 kg frontböj jämfört med 123,9 kg knäböj.",
+      "limitations_sv": "Mycket litet stickprov; medelvärdet anger inte en säker individuell konvertering. Undersöker även muskeloxygenation, inte skadeutfall."
+    },
+    {
+      "id": "gullett2009",
+      "title": "A biomechanical comparison of back and front squats in healthy trained individuals",
+      "authors": "Gullett med flera",
+      "year": 2009,
+      "permalink": "https://doi.org/10.1519/JSC.0b013e31818546bb",
+      "study_type": "crossover biomekanisk studie",
+      "population_or_scope": "15 friska träningsvana",
+      "supported_claim_sv": "Skillnader i ledkrafter och externa vikter mellan frontböj och knäböj.",
+      "limitations_sv": "Biomekaniska mått hos friska personer kan inte ensamma visa klinisk säkerhet vid knäskada."
+    },
+    {
+      "id": "saeterbakken2011",
+      "title": "A comparison of muscle activity and 1-RM strength of three chest-press exercises with different stability requirements",
+      "authors": "Saeterbakken, van den Tillaar och Fimland",
+      "year": 2011,
+      "permalink": "https://doi.org/10.1080/02640414.2010.543916",
+      "study_type": "inomindividjämförelse",
+      "population_or_scope": "12 träningsvana män",
+      "supported_claim_sv": "Total maximal hantelbelastning i press var i genomsnitt 17 procent lägre än skivstångsbänk.",
+      "limitations_sv": "Ej generell personlig faktor; annan hantelutrustning och erfarenhet kan ändra relationen."
+    },
+    {
+      "id": "swinton2011",
+      "title": "A biomechanical analysis of straight and hexagonal barbell deadlifts using submaximal loads",
+      "authors": "Swinton med flera",
+      "year": 2011,
+      "permalink": "https://doi.org/10.1519/JSC.0b013e3181e73f87",
+      "study_type": "biomekanisk jämförelse",
+      "population_or_scope": "19 manliga styrkelyftare",
+      "supported_claim_sv": "Trap bar och rak skivstång har olika belastningsfördelning och rörelsemekanik.",
+      "limitations_sv": "Ger inte universell lämplig viktomräkning eller medicinsk säkerhetsgaranti."
+    },
+    {
+      "id": "lee2018",
+      "title": "An electromyographic and kinetic comparison of conventional and Romanian deadlifts",
+      "authors": "Lee med flera",
+      "year": 2018,
+      "permalink": "https://doi.org/10.1016/j.jesf.2018.08.001",
+      "study_type": "laboratoriestudie",
+      "population_or_scope": "21 män",
+      "supported_claim_sv": "Konventionellt marklyft och rumänskt marklyft har skilda muskelaktiveringsmönster och ledmoment.",
+      "limitations_sv": "EMG betyder inte samma sak som träningsresultat eller säker belastning för en individ."
+    },
+    {
+      "id": "doma2013",
+      "title": "Kinematic and electromyographic comparisons between chin-ups and lat-pull down exercises",
+      "authors": "Doma, Deakin och Ness",
+      "year": 2013,
+      "permalink": "https://doi.org/10.1080/14763141.2012.760204",
+      "study_type": "laboratoriestudie",
+      "population_or_scope": "Jämförelse av chins och latsdrag",
+      "supported_claim_sv": "Ändrad rörelse och neuromuskulär belastning vid chins jämfört med latsdrag.",
+      "limitations_sv": "Ger ingen användbar kg-konvertering mellan assistansmaskin, kroppsvikt och latsdrag."
+    },
+    {
+      "id": "haugen2023",
+      "title": "Effect of free-weight vs. machine-based strength training on maximal strength, hypertrophy and jump performance: a systematic review and meta-analysis",
+      "authors": "Haugen med flera",
+      "year": 2023,
+      "permalink": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10426227/",
+      "study_type": "systematisk översikt/metaanalys",
+      "population_or_scope": "13 studier, 1016 deltagare",
+      "supported_claim_sv": "Styrkevinster påverkas av vilken träningsform och vilken testform som används.",
+      "limitations_sv": "Ger inte utbytesförhållanden för specifika maskiner och viktsystem."
+    },
+    {
+      "id": "nice2022",
+      "title": "Osteoarthritis in over 16s: diagnosis and management (NG226)",
+      "authors": "National Institute for Health and Care Excellence",
+      "year": 2022,
+      "permalink": "https://www.nice.org.uk/guidance/ng226/chapter/recommendations",
+      "study_type": "klinisk riktlinje",
+      "population_or_scope": "Personer med artros",
+      "supported_claim_sv": "Träning bör anpassas individuellt efter behov och funktion.",
+      "limitations_sv": "Kan inte tolkas som att en frontböj är ofarlig vid en viss knäskada."
+    },
+    {
+      "id": "mdcg2025",
+      "title": "MDCG 2019-11 rev.1: Qualification and classification of software under the MDR and IVDR",
+      "authors": "Medical Device Coordination Group",
+      "year": 2025,
+      "permalink": "https://health.ec.europa.eu/latest-updates/update-mdcg-2019-11-rev1-qualification-and-classification-software-regulation-eu-2017745-and-2025-06-17_en",
+      "study_type": "myndighetsvägledning",
+      "population_or_scope": "EU medicinteknisk klassificering av programvara",
+      "supported_claim_sv": "Avsett ändamål och funktioner avgör om medicintekniska regler kan aktualiseras.",
+      "limitations_sv": "Juridisk bedömning av appens slutliga avsedda ändamål krävs vid behov."
+    },
+    {
+      "id": "saeterbakken2013",
+      "title": "Effects of body position and loading modality on muscle activity and strength in shoulder presses",
+      "authors": "Saeterbakken och medförfattare",
+      "year": 2013,
+      "permalink": "https://doi.org/10.1519/JSC.0b013e318276b873",
+      "study_type": "experimentell jämförande studie",
+      "population_or_scope": "15 friska män",
+      "supported_claim_sv": "Stående/sittande samt stång/hantel innebär olika förutsättningar för styrka och muskelaktivering.",
+      "limitations_sv": "Ingen universell konverteringsfaktor för personer eller utrustning."
+    }
+  ],
+  "claims": [
+    {
+      "id": "claims.strength_basics",
+      "source_ids": [
+        "currier2026"
+      ],
+      "classification": "synthesis",
+      "rule_ids": [
+        "STYRKA-ENGINE/1.0.0"
+      ]
+    },
+    {
+      "id": "claims.exercise_specificity",
+      "source_ids": [
+        "saeterbakken2025",
+        "kassiano2022",
+        "haugen2023"
+      ],
+      "classification": "synthesis",
+      "rule_ids": [
+        "STYRKA-SUBSTITUTION/1.0.0"
+      ]
+    },
+    {
+      "id": "claims.front_squat_ratio",
+      "source_ids": [
+        "davis2020",
+        "gullett2009"
+      ],
+      "classification": "empirical_group_means_not_individual",
+      "rule_ids": [
+        "SUB:back_to_front_prior_0.80"
+      ]
+    },
+    {
+      "id": "claims.dumbbell_bench_ratio",
+      "source_ids": [
+        "saeterbakken2011"
+      ],
+      "classification": "empirical_group_mean_not_individual",
+      "rule_ids": [
+        "SUB:barbell_to_dumbbell_prior_0.83"
+      ]
+    },
+    {
+      "id": "claims.knee_individualization",
+      "source_ids": [
+        "nice2022",
+        "gullett2009"
+      ],
+      "classification": "recommendation_plus_biomechanics",
+      "rule_ids": [
+        "STYRKA-ENGINE:restriction_gate"
+      ]
+    },
+    {
+      "id": "rules.first_exposure_0.60",
+      "source_ids": [],
+      "classification": "product_heuristic_unvalidated",
+      "rule_ids": [
+        "SUB:first_exposure_fraction_cap"
+      ]
+    },
+    {
+      "id": "rules.two_exposures_calibrated",
+      "source_ids": [],
+      "classification": "product_heuristic_unvalidated",
+      "rule_ids": [
+        "SUB:calibration_quality"
+      ]
+    },
+    {
+      "id": "claims.regulatory_boundary",
+      "source_ids": [
+        "mdcg2025"
+      ],
+      "classification": "regulatory_guidance",
+      "rule_ids": [
+        "PUBLIC-SCIENCE:medical_limitations"
+      ]
+    }
+  ]
+}

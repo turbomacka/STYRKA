@@ -53,7 +53,24 @@ Klassisk e-post + lösenord är huvudväg (önskat av produktägaren 2026-10-10)
 
 ## 3b. STYRKA-CR-2026-10-10-01 (2026-10-11): vetenskapssida och övningsbyte
 
-Ändringen är additiv: referensmotorn, befintliga program, setloggning, progressionsregler, konton, offlinehantering och historik är oförändrade. Ny regelversion `STYRKA-RULES/1.1.0`, katalog `2.0.0`, substitutionskatalog `SUBST/1.0.0`, evidensregister `EVIDENS/1.0.0`, metodversion `STYRKA-METOD/1.1.0`.
+Ändringen är additiv: referensmotorn, befintliga program, setloggning, progressionsregler, konton, offlinehantering och historik är oförändrade. Aktuella versioner efter kompletteringen 2026-10-11: regelversion `STYRKA-RULES/1.2.0`, katalog `2.0.1`, substitutionskatalog `SUBST/1.1.0` (härledd ur produktägarens seed schema 1.0.0), evidensregister `EVIDENS/2.0.0` (ur produktägarens register schema 1.0.0), metodversion `STYRKA-METOD/1.2.0`.
+
+### Komplettering 2026-10-11: produktägarens `replacement_seed.json` och `evidence_register.json`
+
+Filerna kom efter den första implementationen och ligger nu oförändrade i `spec/cr-2026-10-10-01/` (SHA-256 i `SHA256.json`, kontrolleras i test). Granskningen av den tidigare implementationen mot filerna gav följande, som är rättat:
+
+| # | Avvikelse i tidigare implementation | Rättning |
+|---|---|---|
+| K-1 | Substitutionskatalogen var rekonstruerad ur anmodans tabell; flera relationsklasser skilde sig (t.ex. bänkpress → hantelpress, knäböj → gobletknäböj, militärpress-paren, kabelrodd-paren). | Katalogen härleds nu direkt ur seed-filen: klass (`near_variant`/`movement_family`/`accessory`), `notes_key`, evidens-id och omvända kandidater (`reverse_candidate_allowed`, aldrig med viktprior). |
+| K-2 | Påhittat fält `strength_specificity` styrde ordning och "svagare överföring". | Borttaget. Ordning: relationsklass, egna data, favorit, ordning i seed-filen. Överföringsnotisen följer seed-filens klassdefinitioner. |
+| K-3 | Egna tilläggsrelationer utan stöd (bl.a. utfall, chins ↔ assisterade chins, split squat-varianter, benpress → gobletknäböj). | Borttagna. Kvar utöver seed-filen är endast tre par i anmodans obligatoriska tabell som seed-filen saknar: assisterade chins → neutralt latsdrag, assisterade chins → chins, rumänska marklyft → trap bar-marklyft (manuell kalibrering, inga evidens-id). |
+| K-4 | `barbell_row` saknades; `lunge` fanns men ingår inte i seed-filen. | `barbell_row` tillagd (katalog 2.0.1, migration 005). `lunge` erbjuds inte längre (`active = false`), raden finns kvar för eventuell historik. |
+| K-5 | Seed-sluggar skiljer sig för sex nya övningar. | Uttrycklig 1:1-mappning enligt §2.2 ("mappa till appens faktiska övningssluggar"): `dumbbell_flat_bench`→`dumbbell_bench_press`, `machine_chest_press`→`chest_press_machine`, `dumbbell_overhead_press`→`dumbbell_shoulder_press`, `machine_shoulder_press`→`shoulder_press_machine`, `machine_lateral_raise`→`lateral_raise_machine`, `rope_triceps_pushdown`→`rope_pushdown`. Redan driftsatta id behålls (inga omskrivningar). |
+| K-6 | Hjälpskattningen saknade seed-villkoret "no active restriction". | Tolkat försiktigt: ingen aktiv användarregel (blockering, parregel, set-/nivågräns, områdesnotering) som rör käll- eller målövningen eller målövningens områden; annars kalibrering utan siffra. Kvot, tak (0,60) och evidens-id läses från seed-filen. |
+| K-7 | Vetenskapssidan hade sex källor utanför registret (Currier 2023, Pelland 2026, Zhang 2021, Hickmott 2022, Moseng 2024, Tung 2024) och saknade Saeterbakken 2013; `mdcg2019` hette `mdcg2025` i registret. | Källförteckningen är nu exakt registrets 13 källor. Titel, år, länk, studietyp, population, stött påstående och begränsning visas ordagrant; författare/tidskrift/DOI verifierade mot Crossref. |
+| K-8 | Påståenden gick längre än registret stöder (t.ex. "minst två pass per vecka", "2–3 set", "STYRKA är inte en medicinteknisk produkt" – det sista en juridisk slutsats). | Påståendena är nu registrets åtta (`claims.*`, `rules.*`) med registrets klassning och regel-id. Den regulatoriska texten anger att avsett ändamål avgör och att juridisk bedömning inte är gjord. Produktbegränsningar visas separat, utan källhänvisning. |
+
+Rader nedan som rör S1 (rekonstruerad seed) är ersatta av K-1–K-5.
 
 ### Tolkningar och beslut
 
@@ -79,9 +96,9 @@ Klassisk e-post + lösenord är huvudväg (önskat av produktägaren 2026-10-10)
 
 | Kod | Regel |
 |---|---|
-| H-S1 | Relationsklasser (nära variant / samma rörelsefamilj / kompletterande) och styrkespecificitet per par enligt `replacement_seed.json`. |
-| H-S2 | Ordning för förslag: relation, specificitet, egna data i målövningen, favorit, katalogordning; högst 3 tillåtna först, resten under "Visa fler" (ej tillåtna med skäl). |
-| H-S3 | Första exponering från hjälpskattning: högst 0,60 av preliminär e1RM (även om nivåns startandel är högre), avrundat nedåt till viktsteget, aldrig över användarens maxtak, aldrig vid aktiv symtomflagga. |
+| H-S1 | Relationsklasser (`near_variant` / `movement_family` / `accessory`) per par enligt produktägarens seed-fil; tre par från anmodans tabell; omvända kandidater enligt `reverse_candidate_allowed`. |
+| H-S2 | Ordning för förslag: relationsklass, egna data i målövningen, favorit, ordning i seed-filen; högst 3 tillåtna först, resten under "Visa fler" (ej tillåtna med skäl). |
+| H-S3 | Första exponering från hjälpskattning: högst 0,60 av preliminär e1RM (seed-filens `first_exposure_fraction_cap`), avrundat nedåt till viktsteget, aldrig över användarens maxtak, aldrig vid aktiv symtomflagga eller aktiv regel som rör övningarna (K-6). |
 | H-S4 | Populationskvoter 0,80 och 0,83 används endast som lågkonfidensförslag och uppgraderas aldrig av sig själva. |
 | H-S5 | Inom ett kalibreringspass förifylls kvarvarande set med senast utförda vikt; "för tungt" ⇒ ett viktsteg lättare (assistans: ett steg mer); ingen automatisk höjning inom passet. I kalibreringsläget (H-N1) ger "för tungt" även nästa pass ett steg lättare förslag. |
 | H-S6 | Nivån `calibrated` efter minst två avslutade pass med utförda arbetsset i målövningen (samma maskinprofil), kontrollerad teknik, inget "för tungt" och inga rapporterade besvär i övningens områden. |

@@ -1,0 +1,18 @@
+{
+  "name": "STYRKA-CR-2026-10-10-01 (oförändrade underlag från produktägaren)",
+  "received": "2026-10-11",
+  "files": [
+    {
+      "path": "IMPLEMENTERINGSANMODAN.md",
+      "sha256": "b34247fbe5abdd0be9aa39407483d432bee49e545372fb4622496c83888742bf"
+    },
+    {
+      "path": "STYRKA_replacement_seed.json",
+      "sha256": "d953824e79f73dd37d04ec67f959ed9d850517876dd1c125a6ff094bcff6ea99"
+    },
+    {
+      "path": "STYRKA_evidence_register.json",
+      "sha256": "50292d2e057e3195f664e222eabbd6a38adb568993250a674e9973374b8095c5"
+    }
+  ]
+}

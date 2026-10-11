@@ -4,6 +4,32 @@ Miljö: Windows 10, Node 22.13, lokal Supabase (Postgres 17.11, GoTrue 2.197, Po
 
 Senare rättning ovanpå `97ee461`, publicerad på staging 2026-10-11: se [Rättningar efter granskningen](RATTNINGAR_2026-10-11.md) för F1–F6, förenklad mobilinloggning och aktuell verifiering. Stagingresultaten i tabellen nedan gäller den tidigare versionen.
 
+## Senaste körning: CR-komplettering med produktägarens filer (2026-10-11)
+
+Ovanpå rättningarna (`495cf5f`): substitutionskatalogen härleds nu ur produktägarens `STYRKA_replacement_seed.json` och vetenskapssidan ur `STYRKA_evidence_register.json` (båda oförändrade i `spec/cr-2026-10-10-01/`, SHA-256 kontrolleras i test). Migration 005 (additiv).
+
+| Nivå | Kommando | Resultat |
+|---|---|---|
+| Referenssmoke | `npm run test:reference` | **26/26 PASS**, SHA256 för referensmotorn = manifest |
+| Enhet, komponent, DB (inkl. rättningarnas granskningsfall) | `npm test` | **207/207 PASS**, 19 filer (unit 154, ui 14, db 39) |
+| E2E | `playwright test` | **79 PASS, 2 SKIP** (samma två WebKit-undantag som tidigare), 5,9 min |
+| Källänkar | `node scripts/check-evidence-links.mjs` | **13/13** registerkällor svarar; alla DOI registrerade (Taylor & Francis svarar 403 på automatiska anrop men DOI är giltiga) |
+| Lint / typecheck | | 0 fel |
+
+Nya och ändrade kontroller i kompletteringen:
+
+| Kontroll | Test |
+|---|---|
+| Seed-filen och evidensregistret är oförändrade (SHA-256) och appen läser exakt seed-filen | unit `substitution` › "seed-filen ligger oförändrad…" |
+| Varje seed-slugg mappas till befintlig övning med rimlig utrustning/lastbas (6 namnmappningar, `barbell_row` tillagd) | unit `substitution` › "varje seed-slugg mappas…" |
+| Alla 40 seed-par finns med seed-filens relationsklass, `notes_key` och evidens-id; omvända kandidater utan viktprior; inga relationer utöver seed-filen och anmodans tabell (3 tillägg) | unit `substitution` › "alla seed-par finns…" |
+| Kvantitativa priors endast seed-filens två par (0,80 totalt; 0,83 totalt delat per hand), tak 0,60 från seed-filen | unit `substitution` › "kvantitativa priors…" |
+| Seed-villkoret "no active restriction": aktiv regel för käll-/målövning eller målets område ⇒ ingen hjälpskattning | unit `substitution` › "seed eligible_if…" |
+| Utfall (saknas i seed-filen) erbjuds inte; alla erbjudna övningar finns i kandidatmappningen; DB: endast erbjudna aktiva | unit `substitution`, db `substitution_db` |
+| Vetenskapssidans källor och påståenden = registrets (id, titel, år, länk, studietyp, population, stöd och begränsningar ordagrant; klassning och regel-id) | unit `evidence_registry` |
+| Ingen juridisk slutsats om medicinteknisk status | unit `evidence_registry` |
+| Publik sida visar registrets 13 källor och varningstext | E2E `science` (3 profiler) |
+
 ## Tidigare körning före rättningarna (97ee461)
 
 | Nivå | Kommando | Resultat |
@@ -43,7 +69,7 @@ Senare rättning ovanpå `97ee461`, publicerad på staging 2026-10-11: se [Rätt
 | SUB15 | unit `substitution` › ingen påhittad siffra | PASS |
 | SUB16 | unit `substitution_app` › utförda set behåller exercise_id, nya set knyts till ersättaren | PASS |
 | SUB17 | E2E `science` › utloggad når /vetenskap från välkomstsidan (3 profiler) | PASS |
-| SUB18 | E2E `science` › direktlänk till regel och källa (DOI); `docs/evidence/evidence_links.md` (18/18 länkar svarar) | PASS |
+| SUB18 | E2E `science` › direktlänk till regel och källa (DOI); `docs/evidence/evidence_links.md` (13/13 registerkällor svarar) | PASS |
 | SUB19 | unit `substitution` › hjälpskattning utan markerad osäkerhet underkänns (invariant kastar) | PASS |
 | SUB20 | unit `substitution_app` › 36 tidigare pass: inga historiska set, snapshots, audits eller serier ändras; hela befintliga sviten grön | PASS |
 | SUB21 | unit `substitution_app` › spontanpass med byte i samma belastningshistorik, påverkar nästa plan (återhämtning) | PASS |

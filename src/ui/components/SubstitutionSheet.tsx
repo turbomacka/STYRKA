@@ -7,7 +7,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { ExerciseId } from '../../domain/catalog';
 import { EQUIPMENT_LABEL_SV, exercise } from '../../domain/catalog';
 import type { ChoiceScope, Familiarity, PlannedExercise } from '../../domain/model';
-import { RELATION_LABEL_SV } from '../../domain/substitutionCatalog';
+import { RELATION_LABEL_SV, priorBasisSv } from '../../domain/substitutionCatalog';
 import { formatKg, kgToGrams, parseKg } from '../../domain/units';
 import type { ReplacementResult, SubstitutionCandidate } from '../../planner/planner';
 import type { SwapOptions } from '../../application/training';
@@ -56,6 +56,7 @@ export function SubstitutionSheet({ from, loadCandidates, preview, onConfirm, on
       {!choice && (
         <div className="stack">
           <p className="small muted">{SUB.INTRO}</p>
+          <p className="small muted">{SUB.CANDIDATES_NOTE}</p>
           {!list ? (
             <p aria-busy="true">Hämtar alternativ…</p>
           ) : (
@@ -102,7 +103,7 @@ function CandidateRow({ c, rootName, onPick }: { c: SubstitutionCandidate; rootN
   const r = c.result;
   const blocked = r.status !== 'ok' ? (SUB_BLOCKED_SV[r.status] ?? 'Kan inte väljas') : null;
   const relation = c.relation ? RELATION_LABEL_SV[c.relation.relation] : SUB.ORIGINAL;
-  const weak = c.relation && (c.relation.relation === 'complementary' || c.relation.strength_specificity === 'low');
+  const transfer = c.relation && c.relation.relation !== 'near_variant' ? SUB.TRANSFER[c.relation.relation](rootName) : null;
   const status = blocked ?? loadStatusText(r.planned?.loadEstimationKind, r.needsFamiliarity);
   const equipment = ex.equipment.map((e) => EQUIPMENT_LABEL_SV[e]).join(', ');
   return (
@@ -115,7 +116,7 @@ function CandidateRow({ c, rootName, onPick }: { c: SubstitutionCandidate; rootN
         <span className="small muted">{equipment}</span>
         <span className={`small ${blocked ? 'error-text' : ''}`}>{status}</span>
         {c.relation && <span className="small">{c.relation.rationale_sv}</span>}
-        {weak && <span className="small muted">{SUB.WEAK_TRANSFER(rootName)}</span>}
+        {transfer && <span className="small muted">{transfer}</span>}
       </button>
     </li>
   );
@@ -227,7 +228,7 @@ function ConfirmStep({ from, choice, rootName, goal, preview, machineProfiles, o
             <>
               {prior ? (
                 <Banner kind="warn" title={SUB.PRIOR_NOTE}>
-                  {SUB.PRIOR_DETAIL(exercise(prior.sourceExerciseId).nameSv.toLowerCase(), prior.pct)}
+                  {SUB.PRIOR_DETAIL(exercise(prior.sourceExerciseId).nameSv.toLowerCase(), prior.pct)} {priorBasisSv(prior.sourceExerciseId, choice.to)}
                 </Banner>
               ) : p.kg === null ? (
                 <Banner kind="info" title={SUB.NO_WEIGHT}>

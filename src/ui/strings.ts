@@ -125,9 +125,9 @@ export const REASONS: Record<string, { text: string; ev: Ev }> = {
   READINESS_PAIN_AREA: { text: 'Belastar området där du angav att du har ont i dag.', ev: 'U' },
   NO_RECENT_HEAVY_FLAG: { text: 'Ingen tung träning i mönstret senaste två dygnen.', ev: 'H' },
   // Övningsbyte (STYRKA-CR-2026-10-10-01). Relationerna är ett redaktionellt urval (H), inte bevis för likvärdig effekt.
-  SUB_RELATION_CLOSE: { text: 'Nära variant av den planerade övningen.', ev: 'H' },
-  SUB_RELATION_FAMILY: { text: 'Samma rörelsefamilj som den planerade övningen.', ev: 'H' },
-  SUB_RELATION_COMPLEMENTARY: { text: 'Kompletterande övning – svagare överföring till det ursprungliga styrkemålet.', ev: 'H' },
+  SUB_RELATION_NEAR_VARIANT: { text: 'Nära variant av den planerade övningen: liknande teknik, men styrkan är övningsspecifik.', ev: 'H' },
+  SUB_RELATION_MOVEMENT_FAMILY: { text: 'Samma rörelsefamilj: delvis överlapp, ingen direkt överföring av maxvikt.', ev: 'H' },
+  SUB_RELATION_ACCESSORY: { text: 'Kompletterande alternativ: delvis träningsstimulus, inte likvärdigt för det ursprungliga styrkemålet.', ev: 'H' },
   SUB_TARGET_OBSERVED: { text: 'Vikten bygger på din egen historik i den här övningen.', ev: 'U' },
   SUB_TARGET_ESTIMATED: { text: 'Vikten bygger på din egen uppskattning av maxstyrkan i den här övningen.', ev: 'U' },
   SUB_CALIBRATION: { text: 'Vikten bygger på din kalibrering i den här övningen.', ev: 'U' },
@@ -168,7 +168,12 @@ export const SUB = {
   SCOPE_FUTURE: 'Använd framöver',
   SCOPE_FUTURE_HELP: 'Påverkar bara kommande planering. Tidigare pass ändras inte.',
   GOAL_NOTE: (root: string) => `Ditt mål för ${root} ligger kvar. Byter du under längre tid tränar du ${root.toLowerCase()} mindre direkt.`,
-  WEAK_TRANSFER: (root: string) => `Svagare överföring till styrkan i ${root.toLowerCase()}.`,
+  /** Seed-filens klassdefinitioner, kopplade till det planerade lyftet. */
+  TRANSFER: {
+    movement_family: (root: string) => `Delvis överlapp – ingen direkt överföring till styrkan i ${root.toLowerCase()}.`,
+    accessory: (root: string) => `Inte likvärdig för ditt styrkemål i ${root.toLowerCase()}.`,
+  } as Record<'movement_family' | 'accessory', (root: string) => string>,
+  CANDIDATES_NOTE: 'Alternativen är kandidater, inte bevisat likvärdiga. Varje övning har egen vikt och historik.',
   CONFIRM: (name: string) => `Byt till ${name}`,
   BACK: 'Tillbaka',
   SWAPPED: (from: string, to: string) => `Bytt från ${from.toLowerCase()} till ${to.toLowerCase()}.`,

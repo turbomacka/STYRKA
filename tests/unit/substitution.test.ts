@@ -3,24 +3,74 @@
  * Numrering enligt anmodans §5 (SUB01–SUB24). Applikations-, offline- och DB-fall finns i egna filer.
  */
 import { describe, expect, it } from 'vitest';
-import { CATALOG, exercise, V1_SLUGS, type ExerciseId } from '../../src/domain/catalog';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { CATALOG, OFFERED_CATALOG, RETIRED_SLUGS, exercise, isExerciseId, V1_SLUGS, type ExerciseId } from '../../src/domain/catalog';
 import { heavyPairAllowed } from '../../src/domain/heavyPair';
 import type { PlannedExercise } from '../../src/domain/model';
-import { allRelations, APPROVED_PRIORS, relationBetween, relationsFrom, validateSubstitutionCatalog } from '../../src/domain/substitutionCatalog';
-import { estimatedMinutesFor, planRegular, planReplacement, substitutionCandidates, verifySubstitutionInvariants } from '../../src/planner/planner';
+import { allRelations, appSlug, APPROVED_PRIORS, relationBetween, relationsFrom, SEED, SEED_SLUG_TO_APP, validateSubstitutionCatalog } from '../../src/domain/substitutionCatalog';
+import { estimatedMinutesFor, FIRST_EXPOSURE_MAX_PCT, planRegular, planReplacement, substitutionCandidates, verifySubstitutionInvariants } from '../../src/planner/planner';
 import { ALL_ESTIMATES, NOW, est, hoursBefore, input, performed, plan, rule, sets, symptom } from './helpers';
 
 const squatHeavy = plan('squat', { kg: 92.5, mode: 'heavy', sets: 3, reps: 5, estimatedOneRM: 120 });
 const benchHeavy = plan('bench_press', { kg: 77.5, mode: 'heavy', sets: 3, reps: 5, estimatedOneRM: 100 });
 
-describe('substitutionskatalog (replacement_seed.json, SUBST/1.0.0)', () => {
-  it('är giltig: kända övningar, inga dubbletter, motivering, priors bara för godkända par', () => {
-    expect(() => validateSubstitutionCatalog()).not.toThrow();
-    const priors = allRelations().filter((r) => r.load_prior.kind === 'population_ratio').map((r) => [r.from, r.to]);
-    expect(priors).toEqual(APPROVED_PRIORS.map((x) => [...x]));
+describe('substitutionskatalog = produktägarens replacement_seed.json (schema 1.0.0) + mappning', () => {
+  const seedPath = 'spec/cr-2026-10-10-01/STYRKA_replacement_seed.json';
+  const official = JSON.parse(readFileSync(seedPath, 'utf8')) as typeof SEED;
+
+  it('seed-filen ligger oförändrad i repot (SHA-256 enligt manifest) och appen läser exakt den filen', () => {
+    const manifest = JSON.parse(readFileSync('spec/cr-2026-10-10-01/SHA256.json', 'utf8')) as { files: Array<{ path: string; sha256: string }> };
+    for (const f of manifest.files) expect(createHash('sha256').update(readFileSync(`spec/cr-2026-10-10-01/${f.path}`)).digest('hex'), f.path).toBe(f.sha256);
+    expect(SEED).toEqual(official);
   });
 
-  it('täcker anmodans tabell §2.2 och varje mallövning har minst ett alternativ', () => {
+  it('varje seed-slugg mappas till en befintlig övning med rimlig utrustning och lastbas', () => {
+    const slugs = new Set([...official.candidate_edges.flatMap((e) => [e.from_slug, e.to_slug]), ...official.empirical_priors.flatMap((p) => [p.source_slug, p.target_slug])]);
+    for (const s of slugs) expect(isExerciseId(appSlug(s)), s).toBe(true);
+    // Befintliga övningar (version 1) har samma id i seed-filen.
+    for (const s of slugs) if (V1_SLUGS.has(s as ExerciseId)) expect(appSlug(s)).toBe(s);
+    expect(exercise(appSlug('dumbbell_flat_bench'))).toMatchObject({ loadDisplayBasis: 'per_hand_kg', equipmentClass: 'dumbbell' });
+    expect(exercise(appSlug('dumbbell_overhead_press'))).toMatchObject({ loadDisplayBasis: 'per_hand_kg', equipmentClass: 'dumbbell' });
+    for (const m of ['machine_chest_press', 'machine_shoulder_press', 'machine_lateral_raise']) expect(exercise(appSlug(m))).toMatchObject({ equipmentClass: 'machine', requiresEquipmentProfile: true });
+    expect(exercise(appSlug('rope_triceps_pushdown'))).toMatchObject({ equipmentClass: 'cable' });
+    expect(exercise('barbell_row')).toMatchObject({ pattern: 'horizontal_pull', loadDisplayBasis: 'total_kg', equipmentClass: 'barbell' });
+    // Mappningen är 1:1.
+    expect(new Set(Object.values(SEED_SLUG_TO_APP)).size).toBe(Object.keys(SEED_SLUG_TO_APP).length);
+  });
+
+  it('alla seed-par finns med seed-filens relationsklass och evidens; omvända kandidater utan viktprior', () => {
+    expect(() => validateSubstitutionCatalog()).not.toThrow();
+    for (const e of official.candidate_edges) {
+      const r = relationBetween(appSlug(e.from_slug), appSlug(e.to_slug));
+      expect(r, `${e.from_slug}->${e.to_slug}`).toMatchObject({ relation: e.relation_class, evidence_ids: e.evidence_ids, notes_key: e.notes_key, origin: 'seed' });
+      const rev = relationBetween(appSlug(e.to_slug), appSlug(e.from_slug));
+      expect(rev, `omvänd ${e.to_slug}->${e.from_slug}`).toBeTruthy();
+      expect(rev!.load_prior.kind, `omvänd ${e.to_slug}->${e.from_slug}`).toBe('none');
+    }
+    // Inga relationer utöver seed-filen och anmodans tabell (§2.2), och alla har svensk förklaring.
+    for (const r of allRelations()) {
+      expect(['seed', 'seed_reverse', 'cr_table', 'cr_table_reverse']).toContain(r.origin);
+      expect(['near_variant', 'movement_family', 'accessory']).toContain(r.relation);
+      expect(r.rationale_sv.length, `${r.from}->${r.to}`).toBeGreaterThan(10);
+    }
+    const crOnly = allRelations().filter((r) => r.origin === 'cr_table').map((r) => `${r.from}->${r.to}`);
+    expect(crOnly).toEqual(['assisted_pullup->neutral_grip_lat_pulldown', 'assisted_pullup->pullup', 'romanian_deadlift->trap_bar_deadlift']);
+  });
+
+  it('kvantitativa priors finns endast för seed-filens två par, i angiven riktning, med seed-filens värden', () => {
+    const priors = allRelations().filter((r) => r.load_prior.kind === 'population_ratio');
+    expect(priors.map((r) => [r.from, r.to])).toEqual([
+      ['squat', 'front_squat'],
+      ['bench_press', 'dumbbell_bench_press'],
+    ]);
+    expect(APPROVED_PRIORS.map((x) => [...x])).toEqual(priors.map((r) => [r.from, r.to]));
+    expect(priors[0].load_prior).toMatchObject({ ratio: 0.8, basis: 'total', first_exposure_cap: 0.6, reference_ids: ['davis2020', 'gullett2009'] });
+    expect(priors[1].load_prior).toMatchObject({ ratio: 0.83, basis: 'per_hand_total', first_exposure_cap: 0.6, reference_ids: ['saeterbakken2011'] });
+    expect(FIRST_EXPOSURE_MAX_PCT).toBe(official.empirical_priors[0].first_exposure_fraction_cap);
+  });
+
+  it('anmodans tabell §2.2 täcks och varje mallövning har minst ett alternativ', () => {
     const table: Array<[ExerciseId, ExerciseId[]]> = [
       ['squat', ['front_squat', 'safety_bar_squat', 'smith_squat', 'hack_squat', 'goblet_squat', 'leg_press']],
       ['front_squat', ['squat', 'safety_bar_squat', 'goblet_squat']],
@@ -32,20 +82,12 @@ describe('substitutionskatalog (replacement_seed.json, SUBST/1.0.0)', () => {
       ['assisted_pullup', ['lat_pulldown', 'neutral_grip_lat_pulldown', 'pullup']],
       ['cable_row', ['chest_supported_row', 'seated_machine_row', 'one_arm_dumbbell_row']],
       ['cable_lateral_raise', ['dumbbell_lateral_raise', 'lateral_raise_machine']],
-      ['biceps_curl', ['dumbbell_curl', 'cable_curl', 'incline_dumbbell_curl']],
-      ['triceps_pushdown', ['rope_pushdown', 'overhead_triceps_extension']],
-      ['cable_crunch', ['machine_crunch', 'weighted_crunch', 'plank']],
-      ['bulgarian_split_squat', ['lunge', 'split_squat', 'step_up']],
     ];
     for (const [from, tos] of table) for (const to of tos) expect(relationBetween(from, to), `${from}->${to}`).toBeTruthy();
-    for (const slug of ['squat', 'bench_press', 'deadlift', 'romanian_deadlift', 'overhead_press', 'lat_pulldown', 'cable_row', 'chest_supported_row', 'cable_lateral_raise', 'biceps_curl', 'triceps_pushdown', 'cable_crunch', 'split_squat'] as ExerciseId[]) {
-      expect(relationsFrom(slug).length, slug).toBeGreaterThan(0);
-    }
-    // Ingen relation kallas likvärdig: alla har klass och svensk motivering.
-    for (const r of allRelations()) expect(['close_variant', 'same_family', 'complementary']).toContain(r.relation);
+    for (const slug of V1_SLUGS) expect(relationsFrom(slug).length, slug).toBeGreaterThan(0);
   });
 
-  it('katalog 2.0.0: version 1-övningarna är oförändrade och nya varianter har korrekt lastsemantik', () => {
+  it('katalog 2.0.1: version 1-övningarna oförändrade, nya varianter med korrekt lastsemantik, utfall erbjuds inte', () => {
     expect(CATALOG.filter((c) => V1_SLUGS.has(c.slug)).map((c) => c.slug)).toEqual([...V1_SLUGS]);
     expect(exercise('squat')).toMatchObject({ loadKind: 'external_kg', defaultIncrementKg: 2.5, timeMultiplier: 1, catalogSince: '1.0.0' });
     expect(exercise('dumbbell_bench_press').loadDisplayBasis).toBe('per_hand_kg');
@@ -53,8 +95,13 @@ describe('substitutionskatalog (replacement_seed.json, SUBST/1.0.0)', () => {
     expect(exercise('plank').loadDisplayBasis).toBe('seconds');
     expect(exercise('leg_press').requiresEquipmentProfile).toBe(true);
     expect(exercise('bulgarian_split_squat')).toMatchObject({ unilateral: true, timeMultiplier: 2 });
-    // Befintlig split squat: tidsmodellen oförändrad.
     expect(exercise('split_squat').timeMultiplier).toBe(1);
+    expect(RETIRED_SLUGS.has('lunge')).toBe(true);
+    expect(OFFERED_CATALOG.some((c) => c.slug === 'lunge')).toBe(false);
+    expect(allRelations().some((r) => r.from === 'lunge' || r.to === 'lunge')).toBe(false);
+    // Varje erbjuden övning finns i kandidatmappningen (eller anmodans tabell).
+    const reachable = new Set(allRelations().flatMap((r) => [r.from, r.to]));
+    for (const c of OFFERED_CATALOG) expect(reachable.has(c.slug), c.slug).toBe(true);
   });
 });
 
@@ -80,6 +127,23 @@ describe('§5 SUB-fall (domän/planerare)', () => {
     expect([p.kg, p.calibration, p.confidence]).toEqual([null, true, 'low']);
     expect(p.reasons).toContain('SUB_POPULATION_PRIOR_LOW_CONFIDENCE');
     expect(p.substitution!.evidenceIds).toEqual(expect.arrayContaining(['davis2020', 'gullett2009']));
+  });
+
+  it('seed eligible_if: aktiv begränsning för käll-/målövning eller målets område ⇒ ingen hjälpskattning (kalibrering)', () => {
+    const cases = [
+      rule({ kind: 'limit_mode', exerciseA: 'squat', maxMode: 'moderate' }),
+      rule({ kind: 'limit_sets', exerciseA: 'front_squat', maxSets: 2 }),
+      rule({ kind: 'region_note', area: 'knee' }),
+      rule({ kind: 'block_pair_heavy', exerciseA: 'squat', exerciseB: 'deadlift' }),
+    ];
+    for (const r of cases) {
+      const res = planReplacement(input({ exerciseSettings: [est('squat', 120)], restrictions: [r] }), { from: squatHeavy, to: 'front_squat', others: [], familiarity: 'familiar' });
+      expect(res.status, r.kind).toBe('ok');
+      expect([res.planned!.calibrationSuggestionKg, res.planned!.loadEstimationKind, res.requiresConfirmation], r.kind).toEqual([null, 'none', false]);
+    }
+    // Inaktiv regel påverkar inte.
+    const inactive = planReplacement(input({ exerciseSettings: [est('squat', 120)], restrictions: [{ ...cases[2], active: false }] }), { from: squatHeavy, to: 'front_squat', others: [], familiarity: 'familiar' });
+    expect(inactive.planned!.calibrationSuggestionKg).toBe(57.5);
   });
 
   it('SUB03: samma men okänd/ingen vana ⇒ ingen automatisk siffra, manuell kalibrering', () => {
@@ -110,12 +174,12 @@ describe('§5 SUB-fall (domän/planerare)', () => {
     expect(p.loadBasis).toBe('assistance_kg');
   });
 
-  it('SUB06/SUB07: knäböj → benpress och marklyft → rumänska marklyft: kompletterande, ingen omräkning', () => {
+  it('SUB06/SUB07: knäböj → benpress och marklyft → rumänska marklyft: kompletterande (accessory), ingen omräkning', () => {
     const lp = planReplacement(input({ exerciseSettings: [est('squat', 100)] }), { from: squatHeavy, to: 'leg_press', others: [], familiarity: 'familiar' });
-    expect([lp.relation!.relation, lp.planned!.kg, lp.planned!.calibrationSuggestionKg, lp.planned!.loadEstimationKind]).toEqual(['complementary', null, null, 'none']);
+    expect([lp.relation!.relation, lp.planned!.kg, lp.planned!.calibrationSuggestionKg, lp.planned!.loadEstimationKind]).toEqual(['accessory', null, null, 'none']);
     const dl = plan('deadlift', { kg: 115, mode: 'heavy', sets: 2, reps: 5, estimatedOneRM: 150 });
     const rdl = planReplacement(input({ exerciseSettings: [est('deadlift', 150)] }), { from: dl, to: 'romanian_deadlift', others: [], familiarity: 'familiar' });
-    expect([rdl.relation!.relation, rdl.planned!.kg, rdl.planned!.calibrationSuggestionKg]).toEqual(['complementary', null, null]);
+    expect([rdl.relation!.relation, rdl.planned!.kg, rdl.planned!.calibrationSuggestionKg]).toEqual(['accessory', null, null]);
     // Med egen uppskattning i målövningen används den (aldrig marklyftets).
     const own = planReplacement(input({ exerciseSettings: [est('deadlift', 150), est('romanian_deadlift', 110)] }), { from: dl, to: 'romanian_deadlift', others: [] });
     expect(own.planned!.loadEstimationKind).toBe('target_estimated');

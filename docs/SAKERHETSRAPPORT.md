@@ -63,6 +63,8 @@
 | Kontoradering | Nya tabeller raderas via kaskad | db › appflöde mot riktig server |
 | Vetenskapssidan `/vetenskap` | Publik, statiskt innehåll ur versionsstyrd JSON i bygget; inga API-anrop, inga persondata, inga tredjepartsskript; externa källor öppnas som vanliga länkar (`rel="noopener noreferrer"`) | unit › evidensregister utan persondata; E2E utloggad |
 
+Migration 005 (2026-10-11) är enbart katalogdata: ny övning `barbell_row` och `lunge` satt inaktiv; inga behörigheter eller funktioner ändras och inga rader raderas.
+
 **Kräver manuell säkerhetsgranskning före produktion:** den ersatta `private.apply_set_mutation` (SECURITY DEFINER) i migration 004. **Ordning vid driftsättning:** migration 004 måste tillämpas innan ny frontend publiceras. Annars avvisar en äldre server `perceivedEffort` (VALIDATION_ERROR) och de nya tabellerna saknas; klienten tål tomma svar vid hämtning men köposter avvisas.
 
 ## 4. Kända risker och begränsningar

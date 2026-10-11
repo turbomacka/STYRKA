@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { Experience } from '../../domain/decision_engine';
 import type { ExerciseId } from '../../domain/catalog';
-import { ALL_EQUIPMENT, CATALOG, EQUIPMENT_LABEL_SV, exercise, type EquipmentSlug } from '../../domain/catalog';
+import { ALL_EQUIPMENT, EQUIPMENT_LABEL_SV, OFFERED_CATALOG, exercise, type EquipmentSlug } from '../../domain/catalog';
 import { formatKg, parseKg } from '../../domain/units';
 import { patchProfile, removePermanentSubstitution, setActiveEquipmentProfile, setEstimate, updateExerciseSettings } from '../../application/profile';
 import { Banner, PageHeader, Segmented, Stepper } from '../components/common';
@@ -135,7 +135,7 @@ export function ExerciseSettingsScreen() {
       <div className="field">
         <label htmlFor="es-ex">Övning</label>
         <select id="es-ex" value={ex} onChange={(e) => { setEx(e.target.value as ExerciseId); setInc(''); setMax(''); setEst(''); setMsg(null); }}>
-          {CATALOG.map((c) => (
+          {OFFERED_CATALOG.map((c) => (
             <option key={c.slug} value={c.slug}>{c.nameSv}</option>
           ))}
         </select>

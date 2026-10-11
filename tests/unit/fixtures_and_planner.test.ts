@@ -49,7 +49,7 @@ describe('schemagenerator 08', () => {
 
   it('varje snapshot bär motor-, mall-, regel- och katalogversion samt inputsHash', () => {
     const s = planRegular(input({ exerciseSettings: ALL_ESTIMATES }));
-    expect(s).toMatchObject({ engineVersion: '1.0.0', templateVersion: '1.0.0', catalogVersion: '2.0.0' });
+    expect(s).toMatchObject({ engineVersion: '1.0.0', templateVersion: '1.0.0', catalogVersion: '2.0.1' });
     expect(s.inputsHash).toMatch(/^[0-9a-f]{64}$/);
     const s2 = planRegular(input({ exerciseSettings: ALL_ESTIMATES, minutes: 45 }));
     expect(s2.inputsHash).not.toBe(s.inputsHash);

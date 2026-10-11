@@ -1,75 +1,58 @@
 {
-  "registryVersion": "EVIDENS/1.0.0",
-  "methodVersion": "STYRKA-METOD/1.1.0",
-  "ruleSetVersion": "STYRKA-RULES/1.1.0",
+  "registryVersion": "EVIDENS/2.0.0",
+  "sourceRegister": {
+    "file": "spec/cr-2026-10-10-01/STYRKA_evidence_register.json",
+    "schema_version": "1.0.0",
+    "reviewed_at": "2026-10-10",
+    "warning_sv": "Evidensregistret är beskrivande: det validerar inte STYRKA:s rekommendationsmotor eller medicinsk säkerhet."
+  },
+  "methodVersion": "STYRKA-METOD/1.2.0",
+  "ruleSetVersion": "STYRKA-RULES/1.2.0",
   "engineVersion": "1.0.0",
-  "substitutionCatalogVersion": "SUBST/1.0.0",
+  "substitutionCatalogVersion": "SUBST/1.1.0",
   "lastSubstantiveUpdate": "2026-10-11",
-  "verificationNote": "DOI kontrollerade mot Crossref och doi.org, sammanfattningar och angivna siffror mot PubMed/PMC den 2026-10-11. Innehållet är en sammanfattning för allmänheten, inte en fullständig granskning av varje studie.",
+  "verificationNote": "Källor och påståenden kommer från produktägarens evidensregister (schema 1.0.0, granskat 2026-10-10). DOI och länkar kontrollerade mot Crossref, PMC och utgivarnas sidor 2026-10-11. Innehållet är en sammanfattning för allmänheten, inte en fullständig granskning av varje studie.",
   "sources": [
     {
       "source_id": "currier2026",
-      "authors": "Currier BS, D'Souza AC, Singh MAF, Lowisz CV, Rawson ES, Schoenfeld BJ, m.fl.",
+      "authors": "Currier BS, D’Souza AC, Singh MAF, m.fl.",
       "year": 2026,
-      "title": "American College of Sports Medicine Position Stand. Resistance Training Prescription for Muscle Function, Hypertrophy, and Physical Performance in Healthy Adults: An Overview of Reviews",
+      "title": "Resistance Training Prescription for Muscle Function, Hypertrophy, and Physical Performance in Healthy Adults: An Overview of Reviews",
       "publication": "Medicine & Science in Sports & Exercise, 58(4), 851–872",
       "doi": "10.1249/MSS.0000000000003897",
       "public_url": "https://doi.org/10.1249/MSS.0000000000003897",
-      "design": "Översikt av systematiska översikter (ställningstagande från ACSM)",
+      "design": "umbrella review",
       "population": "Friska vuxna",
-      "notes": "Sammanställer 137 systematiska översikter (över 30 000 deltagare). Maximal styrka förbättrades av tyngre belastning (minst 80 % av 1RM), hel rörelsebana, 2–3 set, övningen tidigt i passet och minst två pass per vecka. Gäller gruppnivå hos friska vuxna.",
-      "last_checked_at": "2026-10-11"
-    },
-    {
-      "source_id": "currier2023",
-      "authors": "Currier BS, McLeod JC, Banfield L, Beyene J, m.fl.",
-      "year": 2023,
-      "title": "Resistance training prescription for muscle strength and hypertrophy in healthy adults: a systematic review and Bayesian network meta-analysis",
-      "publication": "British Journal of Sports Medicine, 57(18), 1211–1220",
-      "doi": "10.1136/bjsports-2023-106807",
-      "public_url": "https://doi.org/10.1136/bjsports-2023-106807",
-      "design": "Systematisk översikt med bayesiansk nätverksmetaanalys",
-      "population": "Friska vuxna (styrkenätverket: 178 studier, n = 5 097, 45 % kvinnor)",
-      "notes": "Alla träningsupplägg var bättre än ingen träning. Högre belastning (över 80 % av 1RM) gav störst styrkeökning.",
-      "last_checked_at": "2026-10-11"
-    },
-    {
-      "source_id": "pelland2026",
-      "authors": "Pelland JC, Remmert JF, Robinson ZP, Hinson SR, Zourdos MC",
-      "year": 2026,
-      "title": "The Resistance Training Dose Response: Meta-Regressions Exploring the Effects of Weekly Volume and Frequency on Muscle Hypertrophy and Strength Gains",
-      "publication": "Sports Medicine, 56(2), 481–505 (publicerad online 2025-12-04)",
-      "doi": "10.1007/s40279-025-02344-w",
-      "public_url": "https://doi.org/10.1007/s40279-025-02344-w",
-      "design": "Metaregressioner av dos–respons",
-      "population": "Deltagare i styrketräningsstudier",
-      "notes": "Visar dos–respons för veckovolym och frekvens med avtagande marginalnytta. Metoden kan inte fastställa ett individuellt optimum.",
+      "supported_claim_sv": "Styrketräning förbättrar maximal styrka; rekommendationsparametrar såsom frekvens, intensitet och volym varierar med målet.",
+      "limitations_sv": "Ger inte exakta individuella omräkningsfaktorer mellan olika övningar.",
       "last_checked_at": "2026-10-11"
     },
     {
       "source_id": "saeterbakken2025",
-      "authors": "Saeterbakken AH, Stien N, Paulsen G, Behm DG, Andersen V, Solstad TEJ, Prieske O",
+      "authors": "Saeterbakken AH, Stien N, Paulsen G, m.fl.",
       "year": 2025,
       "title": "Task Specificity of Dynamic Resistance Training and Its Transferability to Non-trained Isometric Muscle Strength: A Systematic Review with Meta-analysis",
       "publication": "Sports Medicine, 55(7), 1651–1676",
       "doi": "10.1007/s40279-025-02225-2",
       "public_url": "https://doi.org/10.1007/s40279-025-02225-2",
-      "design": "Systematisk översikt med metaanalys",
-      "population": "43 studier, 1 660 deltagare",
-      "notes": "Effekten på den tränade (dynamiska) styrkan var måttlig, medan överföringen till otränade isometriska styrketester var liten. Visar att styrka i hög grad är uppgiftsspecifik.",
+      "design": "systematisk översikt/metaanalys",
+      "population": "43 studier, 1660 friska deltagare 16 till 60 år",
+      "supported_claim_sv": "Styrkeanpassning är i hög grad uppgiftsspecifik; träningsresultat i en övning kan inte jämställas direkt med en annan.",
+      "limitations_sv": "Primärt jämförelse dynamisk och isometrisk styrketestning, inte numerisk omräkning mellan samtliga gymövningar.",
       "last_checked_at": "2026-10-11"
     },
     {
       "source_id": "kassiano2022",
-      "authors": "Kassiano W, Nunes JP, Costa B, Ribeiro AS, Schoenfeld BJ, Cyrino ES",
+      "authors": "Kassiano W, Nunes JP, Costa B, m.fl.",
       "year": 2022,
       "title": "Does Varying Resistance Exercises Promote Superior Muscle Hypertrophy and Strength Gains? A Systematic Review",
       "publication": "Journal of Strength and Conditioning Research, 36(6), 1753–1762",
       "doi": "10.1519/JSC.0000000000004258",
       "public_url": "https://doi.org/10.1519/JSC.0000000000004258",
-      "design": "Systematisk översikt",
-      "population": "8 studier, totalt 241 unga män",
-      "notes": "Systematisk variation av övningar kan gynna regional muskeltillväxt och dynamisk styrka, medan överdriven, slumpmässig variation kan försämra resultaten. Underlaget är litet och gäller unga män.",
+      "design": "systematisk översikt",
+      "population": "8 studier, 241 unga män",
+      "supported_claim_sv": "Systematiskt planerad övningsvariation kan vara användbar, medan alltför slumpmässig variation kan hämma specifika adaptationer.",
+      "limitations_sv": "Litet, snävt urval; inte bevis för specifik parvis övningsekvivalens.",
       "last_checked_at": "2026-10-11"
     },
     {
@@ -80,22 +63,24 @@
       "publication": "International Journal of Exercise Science, 13(6), 734–743",
       "doi": "10.70252/VLJW1020",
       "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7241635/",
-      "design": "Experimentell jämförelse inom personer",
-      "population": "11 styrketränade personer (5 kvinnor, 6 män), medelålder 23,7 år",
-      "notes": "Medel-1RM var 102,4 ± 9,3 kg i frontböj och 123,9 ± 12,6 kg i knäböj (kvot ungefär 0,83). Liten grupp; gruppmedelvärden, inte en individuell omräkning.",
+      "design": "laboratoriestudie",
+      "population": "11 träningsvana, 5 kvinnor och 6 män",
+      "supported_claim_sv": "Medel 1RM 102,4 kg frontböj jämfört med 123,9 kg knäböj.",
+      "limitations_sv": "Mycket litet stickprov; medelvärdet anger inte en säker individuell konvertering. Undersöker även muskeloxygenation, inte skadeutfall.",
       "last_checked_at": "2026-10-11"
     },
     {
       "source_id": "gullett2009",
       "authors": "Gullett JC, Tillman MD, Gutierrez GM, Chow JW",
       "year": 2009,
-      "title": "A Biomechanical Comparison of Back and Front Squats in Healthy Trained Individuals",
+      "title": "A biomechanical comparison of back and front squats in healthy trained individuals",
       "publication": "Journal of Strength and Conditioning Research, 23(1), 284–292",
       "doi": "10.1519/JSC.0b013e31818546bb",
       "public_url": "https://doi.org/10.1519/JSC.0b013e31818546bb",
-      "design": "Biomekanisk crossover-studie",
-      "population": "15 friska, träningsvana personer",
-      "notes": "Knäböj gav högre kompressionskrafter och extensormoment i knäet än frontböj; total muskelaktivering var likartad. Författarna spekulerar om fördelar vid knäproblem, men studien undersökte endast friska personer – STYRKA drar ingen sådan slutsats.",
+      "design": "crossover biomekanisk studie",
+      "population": "15 friska träningsvana",
+      "supported_claim_sv": "Skillnader i ledkrafter och externa vikter mellan frontböj och knäböj.",
+      "limitations_sv": "Biomekaniska mått hos friska personer kan inte ensamma visa klinisk säkerhet vid knäskada.",
       "last_checked_at": "2026-10-11"
     },
     {
@@ -106,22 +91,24 @@
       "publication": "Journal of Sports Sciences, 29(5), 533–538",
       "doi": "10.1080/02640414.2010.543916",
       "public_url": "https://doi.org/10.1080/02640414.2010.543916",
-      "design": "Experimentell jämförelse inom personer",
-      "population": "12 friska, styrketränade män (medelålder 22,7 år)",
-      "notes": "Sammanlagd hantelvikt vid 1RM var 17 % lägre än skivstångens och 14 % lägre än i smithmaskin. Mycket begränsad population.",
+      "design": "inomindividjämförelse",
+      "population": "12 träningsvana män",
+      "supported_claim_sv": "Total maximal hantelbelastning i press var i genomsnitt 17 procent lägre än skivstångsbänk.",
+      "limitations_sv": "Ej generell personlig faktor; annan hantelutrustning och erfarenhet kan ändra relationen.",
       "last_checked_at": "2026-10-11"
     },
     {
       "source_id": "swinton2011",
       "authors": "Swinton PA, Stewart A, Agouris I, Keogh JW, Lloyd R",
       "year": 2011,
-      "title": "A Biomechanical Analysis of Straight and Hexagonal Barbell Deadlifts Using Submaximal Loads",
+      "title": "A biomechanical analysis of straight and hexagonal barbell deadlifts using submaximal loads",
       "publication": "Journal of Strength and Conditioning Research, 25(7), 2000–2009",
       "doi": "10.1519/JSC.0b013e3181e73f87",
       "public_url": "https://doi.org/10.1519/JSC.0b013e3181e73f87",
-      "design": "Biomekanisk jämförelse inom personer",
+      "design": "biomekanisk jämförelse",
       "population": "19 manliga styrkelyftare",
-      "notes": "1RM var högre med hexagonal stång (trap bar) än med rak stång (265 mot 245 kg), och belastningen fördelades annorlunda mellan lederna. Visar att samma rörelsefamilj kan ge både högre och lägre maxvikt.",
+      "supported_claim_sv": "Trap bar och rak skivstång har olika belastningsfördelning och rörelsemekanik.",
+      "limitations_sv": "Ger inte universell lämplig viktomräkning eller medicinsk säkerhetsgaranti.",
       "last_checked_at": "2026-10-11"
     },
     {
@@ -132,9 +119,10 @@
       "publication": "Journal of Exercise Science & Fitness, 16(3), 87–93",
       "doi": "10.1016/j.jesf.2018.08.001",
       "public_url": "https://doi.org/10.1016/j.jesf.2018.08.001",
-      "design": "Biomekanisk jämförelse (EMG och ledmoment)",
+      "design": "laboratoriestudie",
       "population": "21 män",
-      "notes": "Vanligt marklyft gav högre aktivitet i lårets framsida och sätesmuskeln samt större knä- och fotledsmoment än rumänskt marklyft. Övningarna kompletterar varandra snarare än ersätter varandra.",
+      "supported_claim_sv": "Konventionellt marklyft och rumänskt marklyft har skilda muskelaktiveringsmönster och ledmoment.",
+      "limitations_sv": "EMG betyder inte samma sak som träningsresultat eller säker belastning för en individ.",
       "last_checked_at": "2026-10-11"
     },
     {
@@ -145,61 +133,24 @@
       "publication": "Sports Biomechanics, 12(3), 302–313",
       "doi": "10.1080/14763141.2012.760204",
       "public_url": "https://doi.org/10.1080/14763141.2012.760204",
-      "design": "Biomekanisk jämförelse (rörelseanalys och EMG)",
-      "population": "Träningsvana deltagare (se källan)",
-      "notes": "Chins och latsdrag skilde sig i muskelaktivering och rörelse i axel och nacke. Ingen kilogramomräkning mellan övningarna kan härledas.",
+      "design": "laboratoriestudie",
+      "population": "Jämförelse av chins och latsdrag",
+      "supported_claim_sv": "Ändrad rörelse och neuromuskulär belastning vid chins jämfört med latsdrag.",
+      "limitations_sv": "Ger ingen användbar kg-konvertering mellan assistansmaskin, kroppsvikt och latsdrag.",
       "last_checked_at": "2026-10-11"
     },
     {
       "source_id": "haugen2023",
       "authors": "Haugen ME, Vårvik FT, Larsen S, Haugen AS, van den Tillaar R, Bjørnsen T",
       "year": 2023,
-      "title": "Effect of free-weight vs. machine-based strength training on maximal strength, hypertrophy and jump performance – a systematic review and meta-analysis",
+      "title": "Effect of free-weight vs. machine-based strength training on maximal strength, hypertrophy and jump performance: a systematic review and meta-analysis",
       "publication": "BMC Sports Science, Medicine and Rehabilitation, 15(1), 103",
       "doi": "10.1186/s13102-023-00713-4",
       "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10426227/",
-      "design": "Systematisk översikt med metaanalys",
-      "population": "Deltagare i jämförande träningsstudier",
-      "notes": "Styrkeförändringar är specifika för träningsformen (fri vikt eller maskin); valet kan styras av individuella preferenser och mål.",
-      "last_checked_at": "2026-10-11"
-    },
-    {
-      "source_id": "zhang2021",
-      "authors": "Zhang X, Li H, Bi S, Luo Y, Cao Y, Zhang G",
-      "year": 2021,
-      "title": "Auto-Regulation Method vs. Fixed-Loading Method in Maximum Strength Training for Athletes: A Systematic Review and Meta-Analysis",
-      "publication": "Frontiers in Physiology, 12, 651112",
-      "doi": "10.3389/fphys.2021.651112",
-      "public_url": "https://doi.org/10.3389/fphys.2021.651112",
-      "design": "Systematisk översikt med metaanalys",
-      "population": "8 studier, 166 idrottare",
-      "notes": "Jämför autoreglerad och fast belastning. Litet underlag och idrottspopulation – begränsad generaliserbarhet.",
-      "last_checked_at": "2026-10-11"
-    },
-    {
-      "source_id": "hickmott2022",
-      "authors": "Hickmott LM, Chilibeck PD, Shaw KA, Butcher SJ",
-      "year": 2022,
-      "title": "The Effect of Load and Volume Autoregulation on Muscular Strength and Hypertrophy: A Systematic Review and Meta-Analysis",
-      "publication": "Sports Medicine – Open, 8(1), 9",
-      "doi": "10.1186/s40798-021-00404-9",
-      "public_url": "https://doi.org/10.1186/s40798-021-00404-9",
-      "design": "Systematisk översikt med metaanalys",
-      "population": "Deltagare i träningsstudier",
-      "notes": "Autoreglering av belastning och volym är ett möjligt alternativ; överlägsenhet mot fast belastning är inte säkerställd.",
-      "last_checked_at": "2026-10-11"
-    },
-    {
-      "source_id": "moseng2024",
-      "authors": "Moseng T, Vliet Vlieland TPM, Battista S, m.fl.",
-      "year": 2024,
-      "title": "EULAR recommendations for the non-pharmacological core management of hip and knee osteoarthritis: 2023 update",
-      "publication": "Annals of the Rheumatic Diseases, 83(6), 730–740",
-      "doi": "10.1136/ard-2023-225041",
-      "public_url": "https://doi.org/10.1136/ard-2023-225041",
-      "design": "Kliniska rekommendationer (EULAR)",
-      "population": "Personer med höft- och knäartros",
-      "notes": "Rekommenderar träning med individuellt anpassad dos och progression. Gäller artros – inte automatiskt andra knäbesvär.",
+      "design": "systematisk översikt/metaanalys",
+      "population": "13 studier, 1016 deltagare",
+      "supported_claim_sv": "Styrkevinster påverkas av vilken träningsform och vilken testform som används.",
+      "limitations_sv": "Ger inte utbytesförhållanden för specifika maskiner och viktsystem.",
       "last_checked_at": "2026-10-11"
     },
     {
@@ -210,312 +161,227 @@
       "publication": "NICE guideline NG226",
       "doi": null,
       "public_url": "https://www.nice.org.uk/guidance/ng226/chapter/recommendations",
-      "design": "Klinisk riktlinje",
-      "population": "Personer över 16 år med artros",
-      "notes": "Rekommenderar individuellt anpassad terapeutisk träning. Gäller artros, inte allmän styrketräning.",
+      "design": "klinisk riktlinje",
+      "population": "Personer med artros",
+      "supported_claim_sv": "Träning bör anpassas individuellt efter behov och funktion.",
+      "limitations_sv": "Kan inte tolkas som att en frontböj är ofarlig vid en viss knäskada.",
       "last_checked_at": "2026-10-11"
     },
     {
-      "source_id": "tung2024",
-      "authors": "Tung MJY, Lantz GA, Lopes AD, Berglund L",
-      "year": 2024,
-      "title": "Injuries in weightlifting and powerlifting: an updated systematic review",
-      "publication": "BMJ Open Sport & Exercise Medicine, 10(4), e001884",
-      "doi": "10.1136/bmjsem-2023-001884",
-      "public_url": "https://doi.org/10.1136/bmjsem-2023-001884",
-      "design": "Systematisk översikt",
-      "population": "Tävlande tyngdlyftare och styrkelyftare",
-      "notes": "Vanligaste skadeställen var knä, ländrygg, axel och händer. Observationer från tävlingslyftare är inte direkt överförbara till vanliga gymbesökare.",
-      "last_checked_at": "2026-10-11"
-    },
-    {
-      "source_id": "mdcg2019",
-      "authors": "Europeiska kommissionen, Medical Device Coordination Group (MDCG)",
+      "source_id": "mdcg2025",
+      "authors": "Medical Device Coordination Group (MDCG)",
       "year": 2025,
-      "title": "MDCG 2019-11 rev.1 – Qualification and classification of software under Regulation (EU) 2017/745 and Regulation (EU) 2017/746",
-      "publication": "Europeiska kommissionens vägledning, rev. 1 (2025-06-17)",
+      "title": "MDCG 2019-11 rev.1: Qualification and classification of software under the MDR and IVDR",
+      "publication": "Europeiska kommissionen, MDCG 2019-11 rev.1",
       "doi": null,
       "public_url": "https://health.ec.europa.eu/latest-updates/update-mdcg-2019-11-rev1-qualification-and-classification-software-regulation-eu-2017745-and-2025-06-17_en",
-      "design": "Regulatorisk vägledning",
-      "population": "Ej tillämpligt",
-      "notes": "Avsett ändamål avgör om programvara är en medicinteknisk produkt. STYRKA:s gräns mot medicinteknik är ännu inte juridiskt bedömd.",
+      "design": "myndighetsvägledning",
+      "population": "EU medicinteknisk klassificering av programvara",
+      "supported_claim_sv": "Avsett ändamål och funktioner avgör om medicintekniska regler kan aktualiseras.",
+      "limitations_sv": "Juridisk bedömning av appens slutliga avsedda ändamål krävs vid behov.",
+      "last_checked_at": "2026-10-11"
+    },
+    {
+      "source_id": "saeterbakken2013",
+      "authors": "Saeterbakken AH, Fimland MS",
+      "year": 2013,
+      "title": "Effects of body position and loading modality on muscle activity and strength in shoulder presses",
+      "publication": "Journal of Strength and Conditioning Research, 27(7), 1824–1831",
+      "doi": "10.1519/JSC.0b013e318276b873",
+      "public_url": "https://doi.org/10.1519/JSC.0b013e318276b873",
+      "design": "experimentell jämförande studie",
+      "population": "15 friska män",
+      "supported_claim_sv": "Stående/sittande samt stång/hantel innebär olika förutsättningar för styrka och muskelaktivering.",
+      "limitations_sv": "Ingen universell konverteringsfaktor för personer eller utrustning.",
       "last_checked_at": "2026-10-11"
     }
   ],
   "claims": [
     {
-      "claim_id": "progressiv-traning",
+      "claim_id": "claims.strength_basics",
       "section": "A",
-      "title_sv": "Progressiv styrketräning ökar maximal styrka",
-      "plain_language_sv": "Regelbunden styrketräning där belastningen gradvis ökar förbättrar maximal styrka jämfört med att inte träna. Det gäller i stort sett alla träningsupplägg som studerats.",
-      "evidence_kind": "E1",
-      "population_scope": "Friska vuxna",
-      "caveats_sv": "Resultaten gäller grupper. Hur mycket en enskild person utvecklas varierar och kan inte förutsägas exakt.",
+      "title_sv": "Styrketräning ökar maximal styrka",
+      "plain_language_sv": "Regelbunden styrketräning förbättrar maximal styrka hos friska vuxna. Hur ofta, hur tungt och hur mycket man bör träna varierar med målet – det finns ingen enskild rätt dos.",
+      "evidence_kind": "synthesis",
+      "population_scope": "currier2026: Friska vuxna",
+      "caveats_sv": "Ger inte exakta individuella omräkningsfaktorer mellan olika övningar.",
       "source_ids": [
-        "currier2026",
-        "currier2023"
+        "currier2026"
       ],
-      "rule_ids": [
-        "dubbel-progression"
-      ],
-      "last_reviewed_at": "2026-10-11",
-      "rule_is_heuristic": false,
-      "engine_version": "1.0.0"
-    },
-    {
-      "claim_id": "belastning-och-set",
-      "section": "A",
-      "title_sv": "Tyngre belastning och 2–3 set gynnar maximal styrka",
-      "plain_language_sv": "För maximal styrka har tyngre belastning (omkring 80 % av 1RM eller mer), hel rörelsebana, 2–3 set och att träna övningen tidigt i passet gett bäst resultat på gruppnivå.",
-      "evidence_kind": "E1",
-      "population_scope": "Friska vuxna",
-      "caveats_sv": "STYRKA:s startvikter ligger avsiktligt lägre än 80 % (försiktighet för nya användare). Det är ett produktval, inte forskningens rekommendation.",
-      "source_ids": [
-        "currier2026",
-        "currier2023"
+      "register_rule_ids": [
+        "STYRKA-ENGINE/1.0.0"
       ],
       "rule_ids": [
         "startvikt",
         "set-och-repetitioner",
-        "tung-belastning"
+        "dubbel-progression",
+        "programmall"
       ],
-      "last_reviewed_at": "2026-10-11",
+      "last_reviewed_at": "2026-10-10",
       "rule_is_heuristic": false,
       "engine_version": "1.0.0"
     },
     {
-      "claim_id": "frekvens-och-volym",
+      "claim_id": "claims.exercise_specificity",
       "section": "A",
-      "title_sv": "Minst två pass per vecka; mer volym ger avtagande nytta",
-      "plain_language_sv": "Minst två träningspass per vecka gynnar styrka. Mer veckovolym och fler pass ger mer effekt upp till en gräns, men varje extra set ger allt mindre.",
-      "evidence_kind": "E1",
-      "population_scope": "Friska vuxna i träningsstudier",
-      "caveats_sv": "Ingen studie kan ange den optimala dosen för just dig. STYRKA fördelar därför volymen över de pass du själv väljer.",
-      "source_ids": [
-        "currier2026",
-        "pelland2026"
-      ],
-      "rule_ids": [
-        "programmall",
-        "set-och-repetitioner"
-      ],
-      "last_reviewed_at": "2026-10-11",
-      "rule_is_heuristic": false,
-      "engine_version": "1.0.0"
-    },
-    {
-      "claim_id": "specificitet",
-      "section": "A",
-      "title_sv": "Styrka är delvis uppgiftsspecifik",
-      "plain_language_sv": "Man blir starkast i det man tränar. Effekten på den tränade övningen är tydligt större än överföringen till andra sätt att mäta styrka. Styrka som tränas i maskin syns bäst i maskin, och styrka med fria vikter syns bäst med fria vikter.",
-      "evidence_kind": "E1",
-      "population_scope": "Deltagare i träningsstudier",
-      "caveats_sv": "Därför behåller STYRKA ditt mål för baslyftet även när du byter övning, och visar att ett längre byte gör träningen mindre direkt riktad mot just det lyftet.",
+      "title_sv": "Styrka är i hög grad övningsspecifik",
+      "plain_language_sv": "Det du tränar blir du främst bättre på. Resultat i en övning kan inte jämställas direkt med en annan, och styrkevinster påverkas av vilken träningsform och testform som används. Systematiskt planerad variation kan vara användbar; alltför slumpmässig variation kan hämma specifika anpassningar.",
+      "evidence_kind": "synthesis",
+      "population_scope": "saeterbakken2025: 43 studier, 1660 friska deltagare 16 till 60 år; kassiano2022: 8 studier, 241 unga män; haugen2023: 13 studier, 1016 deltagare",
+      "caveats_sv": "Primärt jämförelse dynamisk och isometrisk styrketestning, inte numerisk omräkning mellan samtliga gymövningar. Litet, snävt urval; inte bevis för specifik parvis övningsekvivalens. Ger inte utbytesförhållanden för specifika maskiner och viktsystem.",
       "source_ids": [
         "saeterbakken2025",
+        "kassiano2022",
         "haugen2023"
+      ],
+      "register_rule_ids": [
+        "STYRKA-SUBSTITUTION/1.0.0"
       ],
       "rule_ids": [
         "ovningsbyte-relationer",
-        "separat-historik"
+        "separat-historik",
+        "maskinprofil"
       ],
-      "last_reviewed_at": "2026-10-11",
+      "last_reviewed_at": "2026-10-10",
       "rule_is_heuristic": false,
       "engine_version": "1.0.0"
     },
     {
-      "claim_id": "variation",
-      "section": "A",
-      "title_sv": "Variation av övningar kan vara rimlig – men systematiskt",
-      "plain_language_sv": "En systematisk översikt fann att genomtänkt variation av övningar kan gynna muskeltillväxt och styrka, medan slumpmässig och överdriven variation kan försämra resultaten.",
-      "evidence_kind": "E2",
-      "population_scope": "Unga män (8 studier, 241 deltagare)",
-      "caveats_sv": "Litet underlag. STYRKA erbjuder byten med förklaring men påstår inte att ett byte ger bättre resultat.",
-      "source_ids": [
-        "kassiano2022"
-      ],
-      "rule_ids": [
-        "ovningsbyte-relationer"
-      ],
-      "last_reviewed_at": "2026-10-11",
-      "rule_is_heuristic": false,
-      "engine_version": "1.0.0"
-    },
-    {
-      "claim_id": "autoreglering",
-      "section": "A",
-      "title_sv": "Reps i reserv är ett möjligt verktyg, inte bevisat överlägset",
-      "plain_language_sv": "Att anpassa belastningen efter hur många repetitioner man hade kvar är ett rimligt alternativ till fast belastning, men det är inte visat att det ger bättre resultat.",
-      "evidence_kind": "E2",
-      "population_scope": "Främst idrottare och vana personer",
-      "caveats_sv": "Underlagen är små. Därför är reps i reserv frivilligt i STYRKA.",
-      "source_ids": [
-        "zhang2021",
-        "hickmott2022"
-      ],
-      "rule_ids": [
-        "reps-i-reserv"
-      ],
-      "last_reviewed_at": "2026-10-11",
-      "rule_is_heuristic": false,
-      "engine_version": "1.0.0"
-    },
-    {
-      "claim_id": "individuell-anpassning",
-      "section": "A",
-      "title_sv": "Individuell anpassning är grundprincipen vid artros",
-      "plain_language_sv": "Riktlinjer för knä- och höftartros rekommenderar träning med individuellt anpassad dos och progression.",
-      "evidence_kind": "E2",
-      "population_scope": "Personer med knä- eller höftartros",
-      "caveats_sv": "Artros är inte detsamma som alla knäbesvär. STYRKA ger inga råd om behandling och ersätter inte vården.",
-      "source_ids": [
-        "moseng2024",
-        "nice2022"
-      ],
-      "rule_ids": [
-        "symtom-och-besvar",
-        "anvandarregler"
-      ],
-      "last_reviewed_at": "2026-10-11",
-      "rule_is_heuristic": false,
-      "engine_version": "1.0.0"
-    },
-    {
-      "claim_id": "frontboj-jamforelse",
+      "claim_id": "claims.front_squat_ratio",
       "section": "C",
       "title_sv": "Frontböj och knäböj: olika maxvikt",
-      "plain_language_sv": "I en liten studie med 11 styrketränade personer var maxvikten i frontböj i genomsnitt cirka 83 % av maxvikten i knäböj. En annan studie fann lägre krafter i knäet i frontböj än i knäböj.",
-      "evidence_kind": "E2",
-      "population_scope": "Friska, styrketränade unga vuxna (11 respektive 15 personer)",
-      "caveats_sv": "Gruppmedelvärden från små studier – inte en personlig omräkning. Biomekaniska skillnader hos friska bevisar inte att frontböj är skonsammare vid skada.",
+      "plain_language_sv": "I en liten studie med 11 träningsvana personer var medel-1RM 102,4 kg i frontböj och 123,9 kg i knäböj. En annan studie visar skillnader i ledkrafter och yttre vikter mellan övningarna. Det är gruppmedelvärden – inte en säker omräkning för en enskild person.",
+      "evidence_kind": "empirical_group_means_not_individual",
+      "population_scope": "davis2020: 11 träningsvana, 5 kvinnor och 6 män; gullett2009: 15 friska träningsvana",
+      "caveats_sv": "Mycket litet stickprov; medelvärdet anger inte en säker individuell konvertering. Undersöker även muskeloxygenation, inte skadeutfall. Biomekaniska mått hos friska personer kan inte ensamma visa klinisk säkerhet vid knäskada.",
       "source_ids": [
         "davis2020",
         "gullett2009"
+      ],
+      "register_rule_ids": [
+        "SUB:back_to_front_prior_0.80"
       ],
       "rule_ids": [
         "prior-frontboj",
         "forsta-exponering"
       ],
-      "last_reviewed_at": "2026-10-11",
-      "rule_is_heuristic": true,
+      "last_reviewed_at": "2026-10-10",
+      "rule_is_heuristic": false,
       "engine_version": "1.0.0"
     },
     {
-      "claim_id": "hantelpress-jamforelse",
+      "claim_id": "claims.dumbbell_bench_ratio",
       "section": "C",
       "title_sv": "Hantelpress och bänkpress: olika maxvikt",
-      "plain_language_sv": "I en studie med 12 styrketränade män var den sammanlagda hantelvikten vid maxlyft i genomsnitt 17 % lägre än skivstångens.",
-      "evidence_kind": "E2",
-      "population_scope": "12 friska, styrketränade män",
-      "caveats_sv": "Mycket begränsad population. Används bara som ett försiktigt, osäkert första förslag som du alltid bekräftar.",
+      "plain_language_sv": "Hos 12 träningsvana män var den sammanlagda maximala hantelvikten i press i genomsnitt 17 procent lägre än i bänkpress med skivstång. Gruppmedelvärde – inte en personlig faktor.",
+      "evidence_kind": "empirical_group_mean_not_individual",
+      "population_scope": "saeterbakken2011: 12 träningsvana män",
+      "caveats_sv": "Ej generell personlig faktor; annan hantelutrustning och erfarenhet kan ändra relationen.",
       "source_ids": [
         "saeterbakken2011"
+      ],
+      "register_rule_ids": [
+        "SUB:barbell_to_dumbbell_prior_0.83"
       ],
       "rule_ids": [
         "prior-hantelpress",
         "forsta-exponering",
         "per-hand"
       ],
-      "last_reviewed_at": "2026-10-11",
+      "last_reviewed_at": "2026-10-10",
+      "rule_is_heuristic": false,
+      "engine_version": "1.0.0"
+    },
+    {
+      "claim_id": "claims.knee_individualization",
+      "section": "A",
+      "title_sv": "Träning anpassas individuellt – ingen övning är bevisat ofarlig vid knäbesvär",
+      "plain_language_sv": "Riktlinjer för artros anger att träning bör anpassas efter individens behov och funktion. Biomekaniska mätningar hos friska personer kan inte ensamma visa att en viss övning, till exempel frontböj, är säker vid en knäskada. Därför går dina egna blockeringar och rapporterade besvär alltid före förslagen.",
+      "evidence_kind": "recommendation_plus_biomechanics",
+      "population_scope": "nice2022: Personer med artros; gullett2009: 15 friska träningsvana",
+      "caveats_sv": "Kan inte tolkas som att en frontböj är ofarlig vid en viss knäskada. Biomekaniska mått hos friska personer kan inte ensamma visa klinisk säkerhet vid knäskada.",
+      "source_ids": [
+        "nice2022",
+        "gullett2009"
+      ],
+      "register_rule_ids": [
+        "STYRKA-ENGINE:restriction_gate"
+      ],
+      "rule_ids": [
+        "symtom-och-besvar",
+        "anvandarregler"
+      ],
+      "last_reviewed_at": "2026-10-10",
+      "rule_is_heuristic": false,
+      "engine_version": "1.0.0"
+    },
+    {
+      "claim_id": "rules.first_exposure_0.60",
+      "section": "C",
+      "title_sv": "Högst 60 % vid första försöket efter byte",
+      "plain_language_sv": "När en hjälpskattning används blir första förslaget högst 60 % av den preliminära maxstyrkan. Siffran är en försiktighetsregel som vi har valt – den bygger inte på någon studie.",
+      "evidence_kind": "product_heuristic_unvalidated",
+      "population_scope": "Ej tillämpligt – produktregel",
+      "caveats_sv": "Ingen källa: värdet är en versionsstyrd produktheuristik som inte är validerad.",
+      "source_ids": [],
+      "register_rule_ids": [
+        "SUB:first_exposure_fraction_cap"
+      ],
+      "rule_ids": [
+        "forsta-exponering"
+      ],
+      "last_reviewed_at": "2026-10-10",
       "rule_is_heuristic": true,
       "engine_version": "1.0.0"
     },
     {
-      "claim_id": "samma-familj-olika-maxvikt",
+      "claim_id": "rules.two_exposures_calibrated",
       "section": "C",
-      "title_sv": "Samma rörelsefamilj kan ge högre eller lägre maxvikt",
-      "plain_language_sv": "Med trap bar lyfte styrkelyftare mer än med vanlig skivstång. Vanligt och rumänskt marklyft belastar musklerna olika, och chins skiljer sig från latsdrag. Därför räknar STYRKA inte om kilo mellan övningar.",
-      "evidence_kind": "E2",
-      "population_scope": "Små grupper av träningsvana män",
-      "caveats_sv": "Studierna jämför rörelser, inte individuell maxkapacitet för dig.",
-      "source_ids": [
-        "swinton2011",
-        "lee2018",
-        "doma2013"
+      "title_sv": "Kalibrerad efter två kontrollerade pass",
+      "plain_language_sv": "En ny övning räknas som kalibrerad när du har minst två kontrollerade pass i den utan rapporterade hinder. Det är en produktregel, inte ett mått på mätsäkerhet i befolkningen.",
+      "evidence_kind": "product_heuristic_unvalidated",
+      "population_scope": "Ej tillämpligt – produktregel",
+      "caveats_sv": "Ingen källa: värdet är en versionsstyrd produktheuristik som inte är validerad.",
+      "source_ids": [],
+      "register_rule_ids": [
+        "SUB:calibration_quality"
       ],
       "rule_ids": [
-        "ovningsbyte-startvikt",
-        "separat-historik"
+        "kalibrerad-niva"
       ],
-      "last_reviewed_at": "2026-10-11",
-      "rule_is_heuristic": false,
+      "last_reviewed_at": "2026-10-10",
+      "rule_is_heuristic": true,
       "engine_version": "1.0.0"
     },
     {
-      "claim_id": "maskin-och-fri-vikt",
-      "section": "C",
-      "title_sv": "Maskiner och fria vikter är olika mått",
-      "plain_language_sv": "Styrkeförändringar är specifika för om man tränar i maskin eller med fria vikter. Olika maskiner har dessutom olika utväxling, så deras kilosiffror kan inte jämföras.",
-      "evidence_kind": "E2",
-      "population_scope": "Deltagare i jämförande träningsstudier",
-      "caveats_sv": "Att olika maskinmodeller inte är jämförbara är en produktbedömning; STYRKA för separat historik per maskin när du anger en annan maskin.",
-      "source_ids": [
-        "haugen2023"
-      ],
-      "rule_ids": [
-        "maskinprofil",
-        "separat-historik"
-      ],
-      "last_reviewed_at": "2026-10-11",
-      "rule_is_heuristic": false,
-      "engine_version": "1.0.0"
-    },
-    {
-      "claim_id": "friska-populationer",
+      "claim_id": "claims.regulatory_boundary",
       "section": "D",
-      "title_sv": "Forskningen gäller främst friska personer",
-      "plain_language_sv": "De flesta studier som STYRKA bygger på gäller friska, ofta träningsvana vuxna. Resultaten gäller inte automatiskt personer med besvär, sjukdom eller skada.",
-      "evidence_kind": "E1",
-      "population_scope": "Friska vuxna",
-      "caveats_sv": "Har du besvär som påverkar träningen bör du rådgöra med vården. STYRKA ställer inga diagnoser.",
+      "title_sv": "Avsett ändamål avgör om medicintekniska regler gäller",
+      "plain_language_sv": "Enligt EU:s vägledning avgör programvarans avsedda ändamål och funktioner om medicintekniska regler kan bli aktuella. STYRKA är utformad som träningsstöd: appen ställer inga diagnoser, ger ingen behandling och beräknar ingen skaderisk. Någon juridisk bedömning av appens slutliga avsedda ändamål har ännu inte gjorts.",
+      "evidence_kind": "regulatory_guidance",
+      "population_scope": "mdcg2025: EU medicinteknisk klassificering av programvara",
+      "caveats_sv": "Juridisk bedömning av appens slutliga avsedda ändamål krävs vid behov.",
       "source_ids": [
-        "currier2026",
-        "davis2020",
-        "saeterbakken2011"
+        "mdcg2025"
+      ],
+      "register_rule_ids": [
+        "PUBLIC-SCIENCE:medical_limitations"
       ],
       "rule_ids": [
         "symtom-och-besvar"
       ],
-      "last_reviewed_at": "2026-10-11",
-      "rule_is_heuristic": false,
-      "engine_version": "1.0.0"
-    },
-    {
-      "claim_id": "skador-observationer",
-      "section": "D",
-      "title_sv": "Ingen beräknad skaderisk",
-      "plain_language_sv": "Hos tävlande tyngd- och styrkelyftare är knä, ländrygg, axel och händer vanliga skadeställen. Det säger inget om din personliga risk, och STYRKA räknar inte ut någon skaderisk.",
-      "evidence_kind": "E2",
-      "population_scope": "Tävlande tyngdlyftare och styrkelyftare",
-      "caveats_sv": "Ingen garanti för att träningen är skadefri. Registrering av besvär är ingen diagnos och gör inte någon övning medicinskt säkrare.",
-      "source_ids": [
-        "tung2024"
-      ],
-      "rule_ids": [
-        "symtom-och-besvar"
-      ],
-      "last_reviewed_at": "2026-10-11",
-      "rule_is_heuristic": false,
-      "engine_version": "1.0.0"
-    },
-    {
-      "claim_id": "medicinteknisk-grans",
-      "section": "D",
-      "title_sv": "STYRKA är inte en medicinteknisk produkt för diagnos eller behandling",
-      "plain_language_sv": "Om programvara räknas som medicinteknisk produkt avgörs av dess avsedda ändamål. STYRKA är avsett för träning, inte för diagnos, behandling eller rehabilitering.",
-      "evidence_kind": "R",
-      "population_scope": "Ej tillämpligt",
-      "caveats_sv": "Den juridiska bedömningen av gränsen är ännu inte gjord och ska göras innan appen används av allmänheten.",
-      "source_ids": [
-        "mdcg2019"
-      ],
-      "rule_ids": [
-        "symtom-och-besvar"
-      ],
-      "last_reviewed_at": "2026-10-11",
+      "last_reviewed_at": "2026-10-10",
       "rule_is_heuristic": false,
       "engine_version": "1.0.0"
     }
+  ],
+  "limitations": [
+    "STYRKA kan inte garantera optimal utveckling eller att träningen är skadefri.",
+    "Källorna gäller främst friska, ofta träningsvana personer. Resultaten gäller inte automatiskt personer med besvär.",
+    "Att registrera besvär är ingen diagnos eller behandling, och STYRKA påstår aldrig att en viss övning är medicinskt säkrare.",
+    "Dina egna blockeringsregler respekteras alltid, även när du byter övning.",
+    "Att träningen är fullständigt optimerad för just dig är inte bevisat.",
+    "Bytesförslagen är kandidater: de är inte validerade som parvis likvärdiga eller kliniskt säkra, och varje övning har egen belastning."
   ],
   "rules": [
     {
@@ -734,7 +600,7 @@
       "rule_id": "unilateral-tid",
       "group": "C",
       "title_sv": "Ensidiga övningar tar längre tid",
-      "method_sv": "Nya ensidiga övningar (t.ex. bulgarisk split squat, utfall, step up, enarms hantelrodd) räknas med dubbel arbetstid eftersom båda sidor tränas.",
+      "method_sv": "Nya ensidiga övningar (bulgarisk split squat, step up, enarms hantelrodd) räknas med dubbel arbetstid eftersom båda sidor tränas.",
       "value_sv": "Tidsfaktor 2 för arbetsset",
       "rationale_sv": "Schablon. Den befintliga övningen split squat har oförändrad tidsberäkning.",
       "heuristic": true,
@@ -828,14 +694,14 @@
       "rule_id": "ovningsbyte-relationer",
       "group": "C",
       "title_sv": "Övningsbyte: tre slags relationer",
-      "method_sv": "Varje bytesförslag har en relation: nära variant (stort överlapp, egen styrkehistorik), samma rörelsefamilj (liknande muskelarbete men annan teknik eller biomekanik) eller kompletterande alternativ (täcker delar av syftet men ersätter inte baslyftet). Ingen relation betyder 'likvärdig'.",
-      "value_sv": "Redaktionellt urval, substitutionskatalog SUBST/1.0.0",
-      "rationale_sv": "Urvalet är en produktbedömning, inte ett bevis för lika styrkeeffekt.",
+      "method_sv": "Varje bytesförslag kommer från produktägarens kandidatmappning och har en av tre relationer: nära variant (liknande teknik, men styrkan är fortfarande övningsspecifik), samma rörelsefamilj (delvis överlapp – ingen överföring av maxvikt) eller kompletterande alternativ (delvis träningsstimulus – inte likvärdig för ett specifikt styrkemål). Ingen relation betyder ”likvärdig”, och varje övning har egen belastning.",
+      "value_sv": "Kandidatmappning schema 1.0.0 (2026-10-10), i appen SUBST/1.1.0",
+      "rationale_sv": "Mappningen är ett redaktionellt urval, inte validerad parvis likvärdighet eller klinisk säkerhet.",
       "heuristic": true,
       "reason_codes": [
-        "SUB_RELATION_CLOSE",
-        "SUB_RELATION_FAMILY",
-        "SUB_RELATION_COMPLEMENTARY"
+        "SUB_RELATION_NEAR_VARIANT",
+        "SUB_RELATION_MOVEMENT_FAMILY",
+        "SUB_RELATION_ACCESSORY"
       ]
     },
     {
@@ -867,8 +733,8 @@
       "rule_id": "prior-frontboj",
       "group": "C",
       "title_sv": "Hjälpskattning knäböj → frontböj",
-      "method_sv": "Om du har en giltig maxstyrka i knäböj, har gjort frontböj tidigare och saknar egna frontböjsdata: preliminär maxstyrka i frontböj = 0,80 × knäböj. Första vikt = den andelen enligt startvikten, men högst 60 %, avrundad nedåt. Gäller inte omvänt.",
-      "value_sv": "Faktor 0,80 (forskning: cirka 0,83 i en liten studie)",
+      "method_sv": "Endast om alla villkor är uppfyllda: giltig maxstyrka i knäböj, du har gjort frontböj tidigare, inga egna frontböjsdata, tillgängliga viktsteg och ingen aktiv begränsning eller besvärsflagga. Då är preliminär maxstyrka i frontböj = 0,80 × knäböj, och första vikten blir andelen enligt startvikten men högst 60 %, avrundad nedåt. Du måste bekräfta eller ändra vikten. Gäller inte omvänt.",
+      "value_sv": "Kvot 0,80 (studiens gruppmedelvärde: 102,4/123,9 ≈ 0,83)",
       "rationale_sv": "Något försiktigare än studiens gruppmedelvärde. Låg säkerhet; ersätts av din faktiska prestation.",
       "heuristic": true,
       "reason_codes": [
@@ -879,7 +745,7 @@
       "rule_id": "prior-hantelpress",
       "group": "C",
       "title_sv": "Hjälpskattning bänkpress → liggande hantelpress",
-      "method_sv": "Om du har en giltig maxstyrka i bänkpress, har gjort hantelpress tidigare och saknar egna data: preliminär sammanlagd hantelvikt = 0,83 × bänkpress. Första vikt per hantel = den andelen enligt startvikten, men högst 60 %, delat med två och avrundat nedåt till tillgängligt hantelsteg. Gäller inte omvänt.",
+      "method_sv": "Endast om alla villkor är uppfyllda: giltig maxstyrka i bänkpress, du har gjort hantelpress tidigare, inga egna data, tillgängliga viktsteg och ingen aktiv begränsning eller besvärsflagga. Då är preliminär sammanlagd hantelvikt = 0,83 × bänkpress; första vikt per hantel blir andelen enligt startvikten men högst 60 %, delat med två och avrundat nedåt. Du måste bekräfta eller ändra vikten. Gäller inte omvänt.",
       "value_sv": "Faktor 0,83 på sammanlagd hantelvikt",
       "rationale_sv": "Motsvarar studiens 17 % lägre hantelvikt. Låg säkerhet.",
       "heuristic": true,
@@ -892,7 +758,7 @@
       "group": "C",
       "title_sv": "Högst 60 % vid första försöket",
       "method_sv": "Ett första förslag från en hjälpskattning använder högst 60 % av den preliminära maxstyrkan, även om din vana normalt skulle ge högre startvikt.",
-      "value_sv": "0,60",
+      "value_sv": "0,60 (första exponering)",
       "rationale_sv": "Försiktighet vid osäkert underlag – inte en empirisk säkerhetsgräns.",
       "heuristic": true,
       "reason_codes": []
@@ -901,7 +767,7 @@
       "rule_id": "kalibrerad-niva",
       "group": "C",
       "title_sv": "När räknas en ny övning som kalibrerad",
-      "method_sv": "En övning räknas som kalibrerad efter minst två kontrollerade pass med utförda arbetsset utan rapporterade besvär i berörda områden.",
+      "method_sv": "En övning (per maskinprofil) räknas som kalibrerad efter minst två avslutade pass med utförda arbetsset, kontrollerad teknik, inget ”för tungt” och inga rapporterade besvär i övningens områden.",
       "value_sv": "Två kontrollerade exponeringar",
       "rationale_sv": "Enkel produktregel för säkerhetsnivå i förslaget.",
       "heuristic": true,

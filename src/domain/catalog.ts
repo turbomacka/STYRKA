@@ -15,7 +15,7 @@ import type { ExerciseId as RefExerciseId } from './decision_engine';
  * Appen använder därför den utökade typen nedan; referensfunktionerna anropas med typomvandling vid gränsen
  * (deras logik är oberoende av slug utom för assisted_pullup/pullup/plank, som hanteras före anrop).
  */
-export const CATALOG_VERSION = '2.0.0' as const;
+export const CATALOG_VERSION = '2.0.1' as const;
 
 export type { RefExerciseId };
 export type ExtraExerciseId =
@@ -38,6 +38,7 @@ export type ExtraExerciseId =
   | 'neutral_grip_lat_pulldown'
   | 'seated_machine_row'
   | 'one_arm_dumbbell_row'
+  | 'barbell_row'
   | 'dumbbell_lateral_raise'
   | 'lateral_raise_machine'
   | 'dumbbell_curl'
@@ -89,7 +90,7 @@ export type VariantMetadata = {
   timeMultiplier: number;
   /** Katalog 1.x angav inte om hantelvikt är per hand; befintlig semantik bevaras oförändrad. */
   legacyUnspecifiedBasis?: boolean;
-  catalogSince: '1.0.0' | '2.0.0';
+  catalogSince: '1.0.0' | '2.0.0' | '2.0.1';
 };
 
 export type CatalogExercise = CatalogExerciseV1 & VariantMetadata;
@@ -150,14 +151,14 @@ const META_V1: Record<RefExerciseId, VariantMetadata> = {
 };
 
 type NewExercise = CatalogExerciseV1 & { slug: ExtraExerciseId };
-const N = (base: Omit<NewExercise, 'priorityLift' | 'bonus'> & { bonus?: boolean }, meta: Omit<VariantMetadata, 'catalogSince' | 'timeMultiplier'>): CatalogExercise => ({
+const N = (base: Omit<NewExercise, 'priorityLift' | 'bonus'> & { bonus?: boolean }, meta: Omit<VariantMetadata, 'catalogSince' | 'timeMultiplier'>, since: '2.0.0' | '2.0.1' = '2.0.0'): CatalogExercise => ({
   priorityLift: false,
   bonus: false,
   ...base,
   ...meta,
   // H: unilateral övning räknas för båda sidor i tidsmodellen (§3.4).
   timeMultiplier: meta.unilateral ? 2 : 1,
-  catalogSince: '2.0.0',
+  catalogSince: since,
 });
 const meta = (loadDisplayBasis: LoadDisplayBasis, equipmentClass: EquipmentClass, requiresEquipmentProfile = false, unilateral = false) => ({ loadDisplayBasis, equipmentClass, requiresEquipmentProfile, unilateral });
 
@@ -194,9 +195,20 @@ const CATALOG_V2_NEW: readonly CatalogExercise[] = [
   N({ slug: 'bulgarian_split_squat', nameSv: 'Bulgarisk split squat', pattern: 'squat', loadKind: 'external_kg', equipment: ['dumbbell', 'bench'], defaultIncrementKg: 2, timeKind: 'other_compound', areas: ['knee', 'hip', 'ankle_foot'], recoveryGroup: 'lower' }, meta('per_hand_kg', 'dumbbell', false, true)),
   N({ slug: 'lunge', nameSv: 'Utfall', pattern: 'squat', loadKind: 'external_kg', equipment: ['dumbbell'], defaultIncrementKg: 2, timeKind: 'other_compound', areas: ['knee', 'hip', 'ankle_foot'], recoveryGroup: 'lower' }, meta('per_hand_kg', 'dumbbell', false, true)),
   N({ slug: 'step_up', nameSv: 'Step up', pattern: 'squat', loadKind: 'external_kg', equipment: ['dumbbell', 'bench'], defaultIncrementKg: 2, timeKind: 'other_compound', areas: ['knee', 'hip', 'ankle_foot'], recoveryGroup: 'lower' }, meta('per_hand_kg', 'dumbbell', false, true)),
+  // Katalog 2.0.1: krävs av seed-filens par cable_row → barbell_row.
+  N({ slug: 'barbell_row', nameSv: 'Skivstångsrodd', pattern: 'horizontal_pull', loadKind: 'external_kg', equipment: ['barbell', 'plates'], defaultIncrementKg: 2.5, timeKind: 'barbell_compound', areas: ['shoulder', 'elbow', 'lower_back'], recoveryGroup: 'pull' }, meta('total_kg', 'barbell'), '2.0.1'),
 ];
 
 export const CATALOG: readonly CatalogExercise[] = [...CATALOG_V1.map((x) => ({ ...x, ...META_V1[x.slug as RefExerciseId] })), ...CATALOG_V2_NEW];
+
+/**
+ * Övningar som inte längre erbjuds (katalog 2.0.1): finns kvar så att eventuell historik kan visas,
+ * men föreslås aldrig och visas inte i val. `lunge` saknas i produktägarens kandidatmappning.
+ */
+export const RETIRED_SLUGS: ReadonlySet<ExerciseId> = new Set<ExerciseId>(['lunge']);
+
+/** Katalogen som erbjuds i val och listor (utan pensionerade övningar). */
+export const OFFERED_CATALOG: readonly CatalogExercise[] = CATALOG.filter((x) => !RETIRED_SLUGS.has(x.slug));
 
 /** Övningar som fanns i version 1 (programmallarnas och spontanpassets ursprungliga urval). */
 export const V1_SLUGS: ReadonlySet<ExerciseId> = new Set(CATALOG_V1.map((x) => x.slug));

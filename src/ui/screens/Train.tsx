@@ -92,7 +92,7 @@ export function Train() {
   const v2 = FLAGS.substitutionV2;
   const remainingMin = estimatedMinutesFor(exs.map((e) => ({ ...e.snapshot, sets: sets.filter((s) => s.sessionExerciseId === e.id && s.kind === 'work' && s.status === 'planned' && !s.deleted).length })));
   const swappedFrom = v2 && current.snapshot.substitution && current.snapshot.substitutionFrom ? current.snapshot.substitutionFrom : null;
-  const perSide = exercise(current.exerciseId).unilateral && exercise(current.exerciseId).catalogSince === '2.0.0';
+  const perSide = exercise(current.exerciseId).unilateral && exercise(current.exerciseId).catalogSince !== '1.0.0';
   const effortPrompt = v2 && current.snapshot.calibration && !showRir && (lk === 'external_kg' || lk === 'assistance_kg');
 
   const wrap = async (setId: string, label: string, fn: () => Promise<unknown>) => {

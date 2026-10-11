@@ -5,7 +5,14 @@
  */
 import registry from './evidence.json';
 
-export type EvidenceKind = 'E1' | 'E2' | 'H' | 'U' | 'R';
+/** Klassning enligt produktägarens evidensregister (`classification`). */
+export type Classification =
+  | 'synthesis'
+  | 'empirical_group_means_not_individual'
+  | 'empirical_group_mean_not_individual'
+  | 'recommendation_plus_biomechanics'
+  | 'product_heuristic_unvalidated'
+  | 'regulatory_guidance';
 export type Section = 'A' | 'B' | 'C' | 'D';
 
 export type EvidenceSource = {
@@ -15,10 +22,13 @@ export type EvidenceSource = {
   title: string;
   publication: string;
   doi: string | null;
+  /** Registrets `permalink` (DOI-länk eller offentlig publikationssida). */
   public_url: string;
   design: string;
   population: string;
-  notes: string;
+  /** Ordagrant från registret. */
+  supported_claim_sv: string;
+  limitations_sv: string;
   last_checked_at: string;
 };
 
@@ -27,10 +37,13 @@ export type EvidenceClaim = {
   section: Section;
   title_sv: string;
   plain_language_sv: string;
-  evidence_kind: EvidenceKind;
+  evidence_kind: Classification;
   population_scope: string;
   caveats_sv: string;
   source_ids: string[];
+  /** Registrets `rule_ids` (ordagrant). */
+  register_rule_ids: string[];
+  /** Metodregler på sidan (ankare). */
   rule_ids: string[];
   last_reviewed_at: string;
   rule_is_heuristic: boolean;
@@ -51,6 +64,7 @@ export type MethodRule = {
 
 export type EvidenceRegistry = {
   registryVersion: string;
+  sourceRegister: { file: string; schema_version: string; reviewed_at: string; warning_sv: string };
   methodVersion: string;
   ruleSetVersion: string;
   engineVersion: string;
@@ -59,23 +73,26 @@ export type EvidenceRegistry = {
   verificationNote: string;
   sources: EvidenceSource[];
   claims: EvidenceClaim[];
+  /** Produktens begränsningar (avsnitt D) – inga forskningspåståenden. */
+  limitations: string[];
   rules: MethodRule[];
 };
 
 export const EVIDENCE = registry as EvidenceRegistry;
 
-export const EVIDENCE_KIND_SV: Record<EvidenceKind, string> = {
-  E1: 'Stöd i systematiska översikter (gruppnivå)',
-  E2: 'Indirekt eller begränsat stöd',
-  H: 'Produktregel – ännu inte validerad tröskel',
-  U: 'Ditt eget val',
-  R: 'Regulatorisk vägledning',
+export const CLASSIFICATION_SV: Record<Classification, string> = {
+  synthesis: 'Syntes av forskningsöversikter (gruppnivå)',
+  empirical_group_means_not_individual: 'Gruppmedelvärden – inte en individuell faktor',
+  empirical_group_mean_not_individual: 'Gruppmedelvärde – inte en individuell faktor',
+  recommendation_plus_biomechanics: 'Klinisk riktlinje och biomekanisk studie',
+  product_heuristic_unvalidated: 'Produktregel / ännu inte validerad tröskel',
+  regulatory_guidance: 'Myndighetsvägledning',
 };
 
 export const HEURISTIC_LABEL = 'Produktregel / ännu inte validerad tröskel';
 
 export const ruleAnchor = (ruleId: string) => `regel-${ruleId}`;
-export const claimAnchor = (claimId: string) => `pastaende-${claimId}`;
+export const claimAnchor = (claimId: string) => `pastaende-${claimId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 export const sourceAnchor = (sourceId: string) => `kalla-${sourceId}`;
 
 /** Prefixkoder som har ett variabelt suffix i motorn (t.ex. TEMPLATE_A, TIME_LIMIT_30). */
@@ -96,8 +113,15 @@ export function ruleById(id: string): MethodRule | undefined {
   return EVIDENCE.rules.find((r) => r.rule_id === id);
 }
 
+/** Registrets permanenta länk (DOI eller offentlig publikationssida). */
 export function sourceHref(s: EvidenceSource): string {
-  return s.doi ? `https://doi.org/${s.doi}` : s.public_url;
+  return s.public_url;
+}
+
+export function sourceLinkLabel(s: EvidenceSource): string {
+  if (s.public_url.startsWith('https://doi.org/')) return `doi:${s.public_url.slice('https://doi.org/'.length)}`;
+  if (s.public_url.includes('pmc.ncbi.nlm.nih.gov')) return 'PubMed Central';
+  return new URL(s.public_url).hostname;
 }
 
 /** Fritextsökning över synlig text (gemener, utan diakritiskt beroende för å/ä/ö). */

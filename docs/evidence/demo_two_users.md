@@ -3,8 +3,8 @@
 Genererad av `tests/db/demo_two_users.test.ts` mot lokal Supabase (2026-10-11). Simulerad klocka; alla data syntetiska.
 
 ## Konton
-- **A** (`aa6dfecb-f776-452e-8e3f-61f72854af52`): 2 pass/vecka, 60 min, medelvan, **latsdrag**, RIR anges.
-- **B** (`e4196264-fae0-486d-b9fd-a53f415d03d8`): 3 pass/vecka, 45 min, novis, **assisterade chins** (eget variantval), `block_pair_heavy(squat, deadlift)`, inga RIR, offline under pass 5–8.
+- **A** (`55811ca5-e51e-47d9-9f71-aefc83cb9d98`): 2 pass/vecka, 60 min, medelvan, **latsdrag**, RIR anges.
+- **B** (`85095a40-8a5f-484a-b2b2-6d21db10b278`): 3 pass/vecka, 45 min, novis, **assisterade chins** (eget variantval), `block_pair_heavy(squat, deadlift)`, inga RIR, offline under pass 5–8.
 
 ## Verifierat i databasen
 - A: extra: 1, planned: 36 · utförda set på server = lokalt = 387

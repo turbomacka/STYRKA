@@ -6,7 +6,7 @@
 import 'fake-indexeddb/auto';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { CATALOG } from '../../src/domain/catalog';
+import { CATALOG, OFFERED_CATALOG } from '../../src/domain/catalog';
 import { openUserDb } from '../../src/storage/db';
 import { SupabaseTransport } from '../../src/server/supabaseTransport';
 import type { AppContext } from '../../src/application/context';
@@ -67,10 +67,13 @@ afterAll(async () => {
   await closeSql();
 });
 
-describe('migration 004: katalog 2.0.0 med variantmetadata', () => {
-  it('alla appens övningar finns med lastbas, redskapsklass, maskinprofilkrav, unilateral och tidsfaktor', async () => {
-    const rows = await sql<{ slug: string; load_display_basis: string; equipment_class: string; requires_equipment_profile: boolean; unilateral: boolean; time_multiplier: string; catalog_since: string }>(`select slug, load_display_basis, equipment_class, requires_equipment_profile, unilateral, time_multiplier::text, catalog_since from public.exercise_catalog where active`);
+describe('migration 004/005: katalog 2.0.1 med variantmetadata', () => {
+  it('alla appens övningar finns med lastbas, redskapsklass, maskinprofilkrav, unilateral och tidsfaktor; endast erbjudna är aktiva', async () => {
+    const rows = await sql<{ slug: string; active: boolean; load_display_basis: string; equipment_class: string; requires_equipment_profile: boolean; unilateral: boolean; time_multiplier: string; catalog_since: string }>(`select slug, active, load_display_basis, equipment_class, requires_equipment_profile, unilateral, time_multiplier::text, catalog_since from public.exercise_catalog`);
     expect(rows.map((r) => r.slug).sort()).toEqual(CATALOG.map((c) => c.slug).sort());
+    expect(rows.filter((r) => r.active).map((r) => r.slug).sort()).toEqual(OFFERED_CATALOG.map((c) => c.slug).sort());
+    expect(rows.find((r) => r.slug === 'lunge')?.active).toBe(false);
+    expect(rows.find((r) => r.slug === 'barbell_row')).toMatchObject({ active: true, catalog_since: '2.0.1' });
     for (const c of CATALOG) {
       const r = rows.find((x) => x.slug === c.slug)!;
       expect({ basis: r.load_display_basis, eq: r.equipment_class, req: r.requires_equipment_profile, uni: r.unilateral, tm: Number(r.time_multiplier), since: r.catalog_since }, c.slug).toEqual({ basis: c.loadDisplayBasis, eq: c.equipmentClass, req: c.requiresEquipmentProfile, uni: c.unilateral, tm: c.timeMultiplier, since: c.catalogSince });

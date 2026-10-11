@@ -1,8 +1,8 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
+  CLASSIFICATION_SV,
   EVIDENCE,
-  EVIDENCE_KIND_SV,
   HEURISTIC_LABEL,
   claimAnchor,
   matchesQuery,
@@ -11,6 +11,7 @@ import {
   sourceAnchor,
   sourceById,
   sourceHref,
+  sourceLinkLabel,
   type EvidenceClaim,
   type MethodRule,
   type Section,
@@ -41,7 +42,7 @@ function ClaimCard({ c }: { c: EvidenceClaim }) {
       <h3 id={`${claimAnchor(c.claim_id)}-t`}>{c.title_sv}</h3>
       <p>{c.plain_language_sv}</p>
       <p className="small">
-        <span className="chip">{EVIDENCE_KIND_SV[c.evidence_kind]}</span> {c.rule_is_heuristic && <HeuristicBadge />}
+        {c.rule_is_heuristic ? <HeuristicBadge /> : <span className="chip science-badge">{CLASSIFICATION_SV[c.evidence_kind]}</span>}
       </p>
       <dl className="science-dl small">
         <dt>Population</dt>
@@ -50,19 +51,27 @@ function ClaimCard({ c }: { c: EvidenceClaim }) {
         <dd>{c.caveats_sv}</dd>
         <dt>Källor</dt>
         <dd>
-          <ul className="science-inline">
-            {c.source_ids.map((id) => {
-              const s = sourceById(id)!;
-              return (
-                <li key={id}>
-                  <a href={`#${sourceAnchor(id)}`}>
-                    {s.authors.split(',')[0]} m.fl. ({s.year})
-                  </a>{' '}
-                  – <a href={sourceHref(s)} target="_blank" rel="noopener noreferrer">{s.doi ? `doi:${s.doi}` : 'källsida'}<span className="visually-hidden"> (öppnas i nytt fönster)</span></a>
-                </li>
-              );
-            })}
-          </ul>
+          {c.source_ids.length === 0 ? (
+            'Ingen – produktregel'
+          ) : (
+            <ul className="science-inline">
+              {c.source_ids.map((id) => {
+                const s = sourceById(id)!;
+                return (
+                  <li key={id}>
+                    <a href={`#${sourceAnchor(id)}`}>
+                      {s.authors.split(',')[0]} ({s.year})
+                    </a>{' '}
+                    –{' '}
+                    <a href={sourceHref(s)} target="_blank" rel="noopener noreferrer">
+                      {sourceLinkLabel(s)}
+                      <span className="visually-hidden"> (öppnas i nytt fönster)</span>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </dd>
         {c.rule_ids.length > 0 && (
           <>
@@ -78,6 +87,8 @@ function ClaimCard({ c }: { c: EvidenceClaim }) {
             </dd>
           </>
         )}
+        <dt>Regel-id i registret</dt>
+        <dd>{c.register_rule_ids.join(', ')}</dd>
         <dt>Senast granskad</dt>
         <dd>{c.last_reviewed_at}</dd>
       </dl>
@@ -150,7 +161,7 @@ export function Science({ backTo, backLabel }: { backTo: string; backLabel: stri
 
   const claims = useMemo(() => EVIDENCE.claims.filter((c) => matchesQuery(claimText(c), query)), [query]);
   const rules = useMemo(() => EVIDENCE.rules.filter((r) => matchesQuery(ruleText(r), query)), [query]);
-  const sources = useMemo(() => EVIDENCE.sources.filter((s) => matchesQuery([s.authors, s.title, s.publication, s.notes, s.design, s.population].join(' '), query)), [query]);
+  const sources = useMemo(() => EVIDENCE.sources.filter((s) => matchesQuery([s.authors, s.title, s.publication, s.supported_claim_sv, s.limitations_sv, s.design, s.population].join(' '), query)), [query]);
   const hits = claims.length + rules.length + sources.length;
   const by = (s: Section) => claims.filter((c) => c.section === s);
   const rulesBy = (s: Section) => rules.filter((r) => r.group === s);
@@ -177,9 +188,16 @@ export function Science({ backTo, backLabel }: { backTo: string; backLabel: stri
             <dd>{EVIDENCE.substitutionCatalogVersion}</dd>
             <dt>Senaste sakliga uppdatering</dt>
             <dd>{EVIDENCE.lastSubstantiveUpdate}</dd>
+            <dt>Evidensregister</dt>
+            <dd>
+              Schema {EVIDENCE.sourceRegister.schema_version}, granskat {EVIDENCE.sourceRegister.reviewed_at}
+            </dd>
             <dt>Kontroll</dt>
             <dd>{EVIDENCE.verificationNote}</dd>
           </dl>
+          <p className="small">
+            <strong>{EVIDENCE.sourceRegister.warning_sv}</strong>
+          </p>
         </header>
 
         <nav aria-label="Innehåll på sidan" className="card no-print">
@@ -201,7 +219,15 @@ export function Science({ backTo, backLabel }: { backTo: string; backLabel: stri
           </span>
         </div>
 
-        <Section id="a-forskningen" title={SECTIONS[0].title} intro={<p className="muted">Forskningsresultat på gruppnivå, med klickbar källa per påstående.</p>}>
+        <Section
+          id="a-forskningen"
+          title={SECTIONS[0].title}
+          intro={
+            <p className="muted">
+              Forskningsresultat på gruppnivå, med klickbar källa per påstående. Registret innehåller inga källor som anger exakta vilotider eller antal timmar mellan pass – sådana värden i STYRKA är produktregler (se B och C).
+            </p>
+          }
+        >
           {by('A').map((c) => (
             <ClaimCard key={c.claim_id} c={c} />
           ))}
@@ -240,11 +266,13 @@ export function Science({ backTo, backLabel }: { backTo: string; backLabel: stri
 
         <Section id="d-begransningar" title={SECTIONS[3].title}>
           <div className="card stack">
+            <h3 className="h-small">Produktens begränsningar</h3>
             <ul>
-              <li>STYRKA kan inte garantera optimal utveckling eller att träningen är skadefri.</li>
-              <li>Resultat från friska försökspersoner gäller inte automatiskt personer med besvär.</li>
-              <li>Att registrera besvär är ingen diagnos eller behandling, och STYRKA påstår aldrig att en viss övning är medicinskt säkrare.</li>
-              <li>Dina egna blockeringsregler respekteras alltid, även när du byter övning.</li>
+              {EVIDENCE.limitations
+                .filter((l) => matchesQuery(l, query))
+                .map((l) => (
+                  <li key={l}>{l}</li>
+                ))}
             </ul>
           </div>
           {by('D').map((c) => (
@@ -262,17 +290,20 @@ export function Science({ backTo, backLabel }: { backTo: string; backLabel: stri
                 <p>
                   {s.authors} ({s.year}). <cite>{s.title}</cite>. {s.publication}.{' '}
                   <a href={sourceHref(s)} target="_blank" rel="noopener noreferrer">
-                    {s.doi ? `https://doi.org/${s.doi}` : s.public_url}
+                    {s.public_url}
                     <span className="visually-hidden"> (öppnas i nytt fönster)</span>
                   </a>
+                  {s.doi && !s.public_url.includes(s.doi) ? <> (DOI {s.doi})</> : null}
                 </p>
                 <dl className="science-dl small">
                   <dt>Studietyp</dt>
                   <dd>{s.design}</dd>
                   <dt>Population</dt>
                   <dd>{s.population}</dd>
-                  <dt>Relevanta resultat och begränsningar</dt>
-                  <dd>{s.notes}</dd>
+                  <dt>Vad källan stöder</dt>
+                  <dd>{s.supported_claim_sv}</dd>
+                  <dt>Begränsningar</dt>
+                  <dd>{s.limitations_sv}</dd>
                   <dt>Senast kontrollerad</dt>
                   <dd>{s.last_checked_at}</dd>
                 </dl>

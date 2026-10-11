@@ -3,7 +3,7 @@ import type { ExerciseId } from './catalog';
 import type { Area, EquipmentSlug, LoadDisplayBasis, LoadKind } from './catalog';
 
 /** Versionsnummer som sparas i varje plansnapshot (04 §4). */
-export const RULESET_VERSION = 'STYRKA-RULES/1.1.0' as const;
+export const RULESET_VERSION = 'STYRKA-RULES/1.2.0' as const;
 export const PLANNER_VERSION = 'STYRKA-PLANNER/1.0.0' as const;
 
 export type Readiness = 'good' | 'normal' | 'tired' | 'pain';
@@ -115,7 +115,8 @@ export type PlannedExercise = {
 };
 
 export type LoadEstimationKind = 'target_observed' | 'target_estimated' | 'calibration' | 'population_prior_low_confidence' | 'none';
-export type RelationClass = 'close_variant' | 'same_family' | 'complementary';
+/** Relationsklasser enligt replacement_seed.json (schema 1.0.0). */
+export type RelationClass = 'near_variant' | 'movement_family' | 'accessory';
 export type Familiarity = 'familiar' | 'unfamiliar' | 'unknown';
 export type ChoiceScope = 'today' | 'future';
 export type PerceivedEffort = 'easy' | 'ok' | 'too_heavy';

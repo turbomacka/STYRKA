@@ -5,10 +5,10 @@
 import { ENGINE_VERSION, estimateMinutes, isHeavy, roundDownKg, urgencyForSpontaneous, type Experience, type Mode } from '../domain/decision_engine';
 import { heavyPairAllowed } from '../domain/heavyPair';
 import type { ExerciseId } from '../domain/catalog';
-import { CATALOG, CATALOG_VERSION, V1_SLUGS, exercise, impactsAreas, isAvailable, type Area, type EquipmentSlug } from '../domain/catalog';
+import { CATALOG, CATALOG_VERSION, RETIRED_SLUGS, V1_SLUGS, exercise, impactsAreas, isAvailable, type Area, type EquipmentSlug } from '../domain/catalog';
 import { hashOf } from '../domain/hash';
 import { relationBetween, relationsFrom, SUBSTITUTION_CATALOG_VERSION, type SubstitutionRelation } from '../domain/substitutionCatalog';
-import { PLANNER_VERSION, RULESET_VERSION, type Familiarity, type LoadEstimationKind, type PlanSnapshot, type PlanStatus, type PlannedExercise, type PlannerInput, type Readiness, type RelationClass, type Role, type SubstitutionMeta, type WarningCode } from '../domain/model';
+import { PLANNER_VERSION, RULESET_VERSION, type Familiarity, type LoadEstimationKind, type PlanSnapshot, type PlanStatus, type PlannedExercise, type PlannerInput, type Readiness, type RelationClass, type RestrictionRule, type Role, type SubstitutionMeta, type WarningCode } from '../domain/model';
 import { e1rmFromEstimate, prescribe, START_PCT } from '../domain/prescription';
 import { activeSymptoms, capMode, gateFor, hoursSinceExercise, hoursSinceGroup, isBlocked, isLowerSensitive, modeRank, pastWork, ruleTargets } from './history';
 import templatesJson from './planner_templates.json';
@@ -623,7 +623,7 @@ export type ReplacementArgs = {
 /** H (CR §3.2): högsta andel av preliminär e1RM vid första exponering från hjälpskattning. */
 export const FIRST_EXPOSURE_MAX_PCT = 0.6;
 
-const RELATION_CODE: Record<RelationClass, string> = { close_variant: 'SUB_RELATION_CLOSE', same_family: 'SUB_RELATION_FAMILY', complementary: 'SUB_RELATION_COMPLEMENTARY' };
+const RELATION_CODE: Record<RelationClass, string> = { near_variant: 'SUB_RELATION_NEAR_VARIANT', movement_family: 'SUB_RELATION_MOVEMENT_FAMILY', accessory: 'SUB_RELATION_ACCESSORY' };
 const KIND_CODE: Record<LoadEstimationKind, string> = {
   target_observed: 'SUB_TARGET_OBSERVED',
   target_estimated: 'SUB_TARGET_ESTIMATED',
@@ -631,6 +631,15 @@ const KIND_CODE: Record<LoadEstimationKind, string> = {
   population_prior_low_confidence: 'SUB_POPULATION_PRIOR_LOW_CONFIDENCE',
   none: 'SUB_NO_ESTIMATE',
 };
+
+/**
+ * Seed-filens villkor för hjälpskattning: "no active restriction". Tolkas försiktigt: ingen aktiv användarregel
+ * (blockering, parregel, set-/nivågräns eller områdesnotering) som rör käll- eller målövningen eller målövningens
+ * områden. Då används kalibrering i stället – ingen siffra från populationsdata.
+ */
+function priorRestricted(rules: RestrictionRule[], exercises: ExerciseId[], target: ExerciseId): boolean {
+  return rules.some((r) => r.active && (exercises.some((e) => r.exerciseA === e || r.exerciseB === e) || (!!r.area && impactsAreas(target, [r.area]))));
+}
 
 /** Giltig e1RM i källövningen: egen uppskattning, annars senaste föreskrifts e1RM (standardvariant). */
 function sourceE1rm(ctx: Ctx, from: ExerciseId): number | null {
@@ -698,11 +707,12 @@ export function planReplacement(input: PlannerInput, args: ReplacementArgs): Rep
     kind = 'none';
     const lp = relation?.load_prior;
     const srcE1rm = lp?.kind === 'population_ratio' ? sourceE1rm(ctx, from.exerciseId) : null;
-    if (lp?.kind === 'population_ratio' && srcE1rm !== null && !gate.impactedRegion && exercise(to).loadKind === 'external_kg') {
+    const restricted = priorRestricted(input.restrictions, [from.exerciseId, root, to], to);
+    if (lp?.kind === 'population_ratio' && srcE1rm !== null && !gate.impactedRegion && !restricted && exercise(to).loadKind === 'external_kg') {
       if (args.familiarity === 'familiar') {
         const inc = p.incrementKg;
         const tentative = +(lp.ratio * srcE1rm).toFixed(3);
-        const pct = Math.min(START_PCT[experience][it.mode], FIRST_EXPOSURE_MAX_PCT);
+        const pct = Math.min(START_PCT[experience][it.mode], lp.first_exposure_cap, FIRST_EXPOSURE_MAX_PCT);
         const perHand = lp.basis === 'per_hand_total';
         let kg = roundDownKg((tentative * pct) / (perHand ? 2 : 1), inc);
         const maxLoad = settings?.maxLoadKg ?? null;
@@ -775,21 +785,20 @@ export type SubstitutionCandidate = {
   result: ReplacementResult;
 };
 
-const RELATION_RANK: Record<RelationClass, number> = { close_variant: 0, same_family: 1, complementary: 2 };
-const SPEC_RANK = { high: 0, moderate: 1, low: 2 } as const;
+const RELATION_RANK: Record<RelationClass, number> = { near_variant: 0, movement_family: 1, accessory: 2 };
 
 /**
  * Kandidater för "Byt övning" (§2.1 p.2–4): högst 3 prioriterade, tillåtna först; därefter övriga tillåtna
- * och ej tillåtna med skäl. Deterministisk ordning: relation, specificitet, egna data, favorit, katalogordning.
+ * och ej tillåtna med skäl. Deterministisk ordning: relationsklass, egna data, favorit, ordning i seed-filen.
  */
 export function substitutionCandidates(input: PlannerInput, from: PlannedExercise, others: PlannedExercise[], familiarity: Partial<Record<ExerciseId, Familiarity>> = {}): { suggested: SubstitutionCandidate[]; more: SubstitutionCandidate[] } {
   const rels = relationsFrom(from.exerciseId);
-  const targets: Array<{ to: ExerciseId; relation: SubstitutionRelation | null; order: number }> = rels.map((r, i) => ({ to: r.to, relation: r, order: i }));
-  if (from.substitutionFrom && !targets.some((t) => t.to === from.substitutionFrom)) targets.unshift({ to: from.substitutionFrom, relation: null, order: -1 });
+  const targets: Array<{ to: ExerciseId; relation: SubstitutionRelation | null }> = rels.filter((r) => !RETIRED_SLUGS.has(r.to)).map((r) => ({ to: r.to, relation: r }));
+  if (from.substitutionFrom && !targets.some((t) => t.to === from.substitutionFrom)) targets.unshift({ to: from.substitutionFrom, relation: null });
   const ctx = makeCtx(input);
   const ownData = (to: ExerciseId) => ctx.history.some((h) => h.exerciseId === to) || !!settingsFor(ctx, to)?.estimate;
   const all = targets.map((t) => ({ ...t, result: planReplacement(input, { from, to: t.to, others, familiarity: familiarity[t.to] }) }));
-  const score = (x: (typeof all)[number]) => [x.relation ? RELATION_RANK[x.relation.relation] : -1, x.relation ? SPEC_RANK[x.relation.strength_specificity] : -1, ownData(x.to) ? 0 : 1, input.profile.favorites.includes(x.to) ? 0 : 1, x.order];
+  const score = (x: (typeof all)[number]) => [x.relation ? RELATION_RANK[x.relation.relation] : -1, ownData(x.to) ? 0 : 1, input.profile.favorites.includes(x.to) ? 0 : 1, x.relation ? x.relation.order : -1];
   const cmp = (a: (typeof all)[number], b: (typeof all)[number]) => {
     const sa = score(a);
     const sb = score(b);
