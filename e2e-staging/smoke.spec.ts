@@ -57,3 +57,16 @@ test('staging: inloggning, intro, pass med synk till staging-databasen, utan CSP
     await admin.auth.admin.deleteUser(userId);
   }
 });
+
+test('staging: /vetenskap är publik (utan konto), källor visas, inga CSP- eller konsolfel', async ({ page }) => {
+  const problems: string[] = [];
+  page.on('console', (m) => m.type() === 'error' && problems.push(m.text()));
+  page.on('pageerror', (e) => problems.push(e.message));
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Vetenskapen bakom STYRKA' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Vetenskapen bakom STYRKA' })).toBeVisible();
+  await expect(page.locator('#kalla-gullett2009 a[href^="https://doi.org/"]').first()).toBeVisible();
+  await page.goto('/vetenskap#regel-forsta-exponering');
+  await expect(page.locator('#regel-forsta-exponering')).toBeInViewport();
+  expect(problems).toEqual([]);
+});

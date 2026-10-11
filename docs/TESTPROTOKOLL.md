@@ -12,7 +12,7 @@ Miljö: Windows 10, Node 22.13, lokal Supabase (Postgres 17.11, GoTrue 2.197, Po
 | DB/RLS/RPC/demo mot riktig Supabase | `vitest --project db` | **38/38 PASS** (varav 10 nya för migration 004) |
 | E2E | `playwright test` | **70 PASS, 2 SKIP** (WebKit: service worker-offline och Tab-fokus stöds inte av WebKit-emuleringen på Windows). Se not om e-postfördröjning. |
 | Inloggning (del av E2E, alla 3 profiler) | `e2e/auth.spec.ts` | skapa konto + bekräftelse, befintlig e-post, fel lösenord/validering, glömt lösenord via kod och länk, länk öppnad i **annan webbläsare** (bekräftelse och återställning), konto utan lösenord, obekräftad inloggning, byt lösenord, inloggning via e-post utan lösenord |
-| Staging (manuellt) | `npm run test:staging`, `playwright -c playwright.staging.config.ts` | Se RELEASEGRINDAR (körs efter migration 004 i staging) |
+| Staging (manuellt, 2026-10-11 efter migration 004) | `npm run test:staging`, `playwright -c playwright.staging.config.ts` | **6/6** och **4/4** mot styrka-staging (inkl. migration 004 och publik `/vetenskap`) |
 | Lint / typecheck / audit | | 0 fel, 0 sårbarheter (`npm audit`) |
 
 **Not (ärligt redovisat):** I en av tre upprepade körningar av DB-sviten fick testet "10 parallella identiska anrop" en `statement timeout` från Postgres. 60 efterföljande rundor reproducerade det inte. Felet klassas nu som transient (`DB_UNAVAILABLE`) och klientens kö försöker igen med samma eventId, vilket är idempotent – ingen dubblett kan uppstå. Rotorsaken bedöms som I/O-stall i Docker/WSL men är inte bevisad; bör bevakas i staging.

@@ -9,6 +9,7 @@ import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { CATALOG } from '../../src/domain/catalog';
 
 const ref = readFileSync('supabase/.temp/project-ref', 'utf8').trim();
 const url = `https://${ref}.supabase.co`;
@@ -57,9 +58,9 @@ afterAll(async () => {
 });
 
 describe('staging', () => {
-  it('anon: katalogen (17) syns, inga användardata, RPC nekas', async () => {
+  it('anon: katalogen (samma övningar som appen) syns, inga användardata, RPC nekas', async () => {
     const anon = client();
-    expect((await anon.from('exercise_catalog').select('slug')).data?.length).toBe(17);
+    expect(((await anon.from('exercise_catalog').select('slug')).data ?? []).map((r) => r.slug).sort()).toEqual(CATALOG.map((c) => c.slug).sort());
     for (const t of TABLES) expect((await anon.from(t).select('*')).data ?? [], t).toEqual([]);
     expect((await anon.rpc('apply_set_mutation', { event_id: randomUUID(), set_id: randomUUID(), base_revision: null, payload: {} })).error).not.toBeNull();
   });
@@ -94,6 +95,25 @@ describe('staging', () => {
     expect((await A.c.from('symptom_reports').insert({ user_id: A.id, area: 'knee', reaction: 'limping' })).error).not.toBeNull();
     expect((await A.c.from('health_consents').insert({ user_id: A.id, consent_version: 'HC-test', granted_at: new Date().toISOString() })).error).toBeNull();
     expect((await A.c.from('symptom_reports').insert({ user_id: A.id, area: 'knee', reaction: 'limping' })).error).toBeNull();
+  });
+
+  it('migration 004: kalibrering och revisionsposter med ägar-RLS, append-only, perceived_effort via RPC', async () => {
+    const anon = client();
+    for (const t of ['user_exercise_calibrations', 'session_exercise_substitution_events']) expect((await anon.from(t).select('*')).data ?? [], t).toEqual([]);
+    const cal = randomUUID();
+    expect((await A.c.from('user_exercise_calibrations').insert({ id: cal, user_id: A.id, exercise_slug: 'front_squat', familiarity: 'familiar' })).error).toBeNull();
+    const ev = randomUUID();
+    const row = { id: ev, event_id: ev, user_id: A.id, session_id: sess, original_exercise_slug: 'squat', replacement_exercise_slug: 'front_squat', original_session_exercise_id: se, choice_scope: 'today', engine_version: '1.0.0', substitution_catalog_version: 'SUBST/1.0.0', algorithm_rule_version: 'STYRKA-RULES/1.1.0', source_evidence_ids: ['gullett2009'], load_estimation_kind: 'calibration', reason_codes: ['SUB_RELATION_CLOSE'], user_override: false };
+    expect((await A.c.from('session_exercise_substitution_events').insert(row)).error).toBeNull();
+    expect((await A.c.from('session_exercise_substitution_events').update({ user_override: true }).eq('id', ev)).error).not.toBeNull();
+    expect((await A.c.from('session_exercise_substitution_events').delete().eq('id', ev)).error).not.toBeNull();
+    expect((await B.c.from('session_exercise_substitution_events').select('id').eq('id', ev)).data ?? []).toEqual([]);
+    expect((await B.c.from('user_exercise_calibrations').select('id').eq('id', cal)).data ?? []).toEqual([]);
+    expect((await B.c.from('session_exercise_substitution_events').insert({ ...row, id: randomUUID(), event_id: randomUUID(), user_id: B.id })).error).not.toBeNull();
+    const s2 = randomUUID();
+    expect((await rpc(A, randomUUID(), s2, null, { sessionExerciseId: se, ordinal: 2, kind: 'work', status: 'done', actualKg: '40.000', actualReps: 5, occurredAt: new Date().toISOString(), perceivedEffort: 'too_heavy' })).status).toBe('applied');
+    expect((await A.c.from('training_sets').select('perceived_effort').eq('id', s2)).data).toEqual([{ perceived_effort: 'too_heavy' }]);
+    expect(await rpc(A, randomUUID(), s2, 1, { perceivedEffort: 'max' })).toMatchObject({ status: 'rejected', code: 'VALIDATION_ERROR' });
   });
 
   it('kontoradering tar bort kontot (körs även som städning)', async () => {
