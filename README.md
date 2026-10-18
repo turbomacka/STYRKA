@@ -2,7 +2,7 @@
 
 Svensk, mobilförst PWA (React + TypeScript + Vite) som ger träningsförslag för knäböj, bänkpress och marklyft utifrån användarens registrerade träning, tid, utrustning och egna begränsningar. Byggd enligt utvecklingspaketet v2.0 i [spec/](spec/).
 
-Privat kodrepository: [turbomacka/STYRKA](https://github.com/turbomacka/STYRKA), huvudgren `main`. GitHub innehåller källkod, tester, specifikationer och versionshistorik. Miljöfiler, lösenord, nycklar och lokala databaser ingår inte. Publicering av appen på Cloudflare görs separat från uppladdning av koden till GitHub.
+Kodrepository: [turbomacka/STYRKA](https://github.com/turbomacka/STYRKA), huvudgren `main`. GitHub innehåller källkod, tester, specifikationer och versionshistorik. Miljöfiler, lösenord, nycklar och lokala databaser ingår inte. Publicering av appen på Cloudflare görs separat från uppladdning av koden till GitHub.
 
 > **Status:** utvecklingsprodukt för testmiljö. Releasegrind G5 (juridik MDR/GDPR, fackgranskning av träningsregler, staging-pilot) är **inte** godkänd och kan inte godkännas av kod. Se [docs/RELEASEGRINDAR.md](docs/RELEASEGRINDAR.md). Ingen offentlig driftsättning utan produktägarens uttryckliga godkännande.
 
