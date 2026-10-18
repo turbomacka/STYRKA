@@ -34,6 +34,8 @@ export type ProfilePatchResult = { status: 'applied'; revision: number } | { sta
 
 /** Rådata från servern (snake_case-rader) för hydrering av ny enhet. */
 export type ServerSnapshot = {
+  skipEvents?: Record<string, unknown>[];
+  deletedWorkouts?: Array<{ id: string; sequence: number | null }>;
   profile: Record<string, unknown> | null;
   equipment: string[];
   exerciseProfiles: Record<string, unknown>[];
@@ -56,6 +58,8 @@ export type ServerSnapshot = {
 };
 
 export interface SyncTransport {
+  patchExerciseConfiguration(exerciseId: string, configuration: import('../domain/trainingFlow').ExerciseConfiguration): Promise<void>;
+  deleteWorkout(sessionId: string, sequence: number | null): Promise<void>;
   applySetMutation(eventId: string, setId: string, baseRevision: number | null, payload: Record<string, unknown>): Promise<MutationEnvelope>;
   upsert(table: ServerTable, row: Record<string, unknown>, opts?: { immutable?: boolean }): Promise<void>;
   remove(table: ServerTable, id: string, idColumn?: string): Promise<void>;

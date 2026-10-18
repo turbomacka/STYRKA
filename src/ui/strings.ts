@@ -27,7 +27,7 @@ export const T = {
   WARN_TIME_INSUFFICIENT: 'Tiden räcker inte för huvudövningen med full vila. Här är ett kortare alternativ utan tunga set.',
   WARN_EMPTY: 'Det finns inga övningar som passar dina nuvarande begränsningar och rapporterade besvär. Du kan ändra dina begränsningar själv, eller vila i dag.',
   WARN_PAIN: 'Du har angett ont i dag. Avstå övningar som provocerar besvären. Vid kvarstående eller återkommande besvär bör du kontakta vården.',
-  WARN_RECOVERY: 'Du har nyligen tränat samma rörelse. Vi föreslår lättare belastning och ingen ökning den här gången.',
+  WARN_RECOVERY: 'Förslaget är anpassat för återhämtning. Du kan fortfarande ändra vikt och repetitioner.',
   SAVED_LOCAL: 'Sparat på enheten',
   SAVED_QUEUED: 'Sparas när du är uppkopplad',
   SAVED_SYNCED: 'Synkat',
@@ -62,10 +62,13 @@ export const TEMPLATE_SV: Record<string, string> = {
 type Ev = 'E1' | 'E2' | 'H' | 'U';
 /** Skälkod → förklaring och evidensklass (05 §1, §3 p7). H = produktheuristik, inte vetenskapligt validerad tröskel. */
 export const REASONS: Record<string, { text: string; ev: Ev }> = {
+  MULTIPLE_STRENGTH_INPUTS: { text: 'Flera styrkeuppgifter har vägts samman för startvikten.', ev: 'H' },
+  STRENGTH_INPUTS_DISAGREE: { text: 'Styrkeuppgifterna skiljer sig. Den lägre uppskattningen används för en försiktigare start.', ev: 'H' },
   INITIAL_HEURISTIC: { text: 'Startvikten är en försiktig andel av din uppskattade maxstyrka.', ev: 'H' },
   ROUNDED_DOWN_TO_EQUIPMENT: { text: 'Avrundat nedåt till ditt minsta viktsteg.', ev: 'H' },
   CALIBRATION_REQUIRED: { text: 'Vi har ingen uppskattning för övningen. Välj själv en hanterbar vikt.', ev: 'U' },
   CALIBRATED_FROM_USER_WEIGHT: { text: 'Bygger på vikten du själv valde senast.', ev: 'U' },
+  USER_ACCEPTED_CATCH_UP: { text: 'Du valde att prioritera den här övningen efter ett överhoppat moment.', ev: 'U' },
   CALIBRATED_FROM_USER_DURATION: { text: 'Bygger på tiden du klarade senast.', ev: 'U' },
   DERIVED_FROM_OTHER_MODE: { text: 'Härlett nedåt från din arbetsvikt i en tyngre variant av samma övning.', ev: 'H' },
   DOUBLE_PROGRESS_REPS: { text: 'Du klarade alla mål – en repetition till per set, samma vikt.', ev: 'E1' },
@@ -83,7 +86,10 @@ export const REASONS: Record<string, { text: string; ev: Ev }> = {
   PARTIAL_NOT_FAILURE: { text: 'Förra passet avslutades tidigt. Det räknas inte som misslyckande.', ev: 'H' },
   TECHNIQUE_NOT_CONTROLLED: { text: 'Tekniken markerades som dålig. Ingen ökning.', ev: 'U' },
   STEP_EXCEEDS_PROGRESS_CAP: { text: 'Minsta viktsteg är för stort för en försiktig ökning. Mindre viktsteg behövs – du kan ändra själv.', ev: 'H' },
-  RECOVERY_HOLD: { text: 'Kort tid sedan samma rörelse. Ingen ökning den här gången.', ev: 'H' },
+  RECOVERY_HOLD: { text: 'Vi behåller nivån för återhämtning den här gången.', ev: 'H' },
+  RECOVERY_MATCHED_WORK: { text: 'Träningsmängd och ansträngning talar för ett lugnare förslag.', ev: 'H' },
+  RECOVERY_OVERLAPPING_WORK: { text: 'Vi tar hänsyn till överlappande träning.', ev: 'H' },
+  RECOVERY_MODE_REDUCED: { text: 'Lugnare nivå för återhämtning.', ev: 'H' },
   RECOVERY_UNDER_24H: { text: 'Mindre än ett dygn sedan relevant träning.', ev: 'H' },
   RECOVERY_24_TO_48H: { text: '1–2 dygn sedan relevant träning.', ev: 'H' },
   NORMAL_TIME_WINDOW: { text: 'Normalt tidsintervall sedan senaste träning. Ingen extra ökning för vila.', ev: 'H' },
@@ -313,6 +319,6 @@ export function reasonText(code: string): { text: string; ev: Ev } | null {
 export const EV_SV: Record<Ev, string> = {
   E1: 'Stöd i forskningsöversikter (gruppnivå)',
   E2: 'Indirekt stöd',
-  H: 'Produktheuristik – inte vetenskapligt validerad',
+  H: 'Appens antagande – inte vetenskapligt validerat',
   U: 'Ditt eget val',
 };

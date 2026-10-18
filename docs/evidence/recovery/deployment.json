@@ -1,0 +1,106 @@
+{
+  "checkedAt": "2026-10-16T21:54:20.114Z",
+  "url": "https://styrka-staging.homeboard-mh.workers.dev",
+  "version": "f8c2e87b-88b8-4f57-a2a5-87b44e0e41b1",
+  "previousVersion": "eb321258-011e-4b38-ab22-5770e7f1a59e",
+  "deployment": "4dbbddab-a70b-42ae-acde-27f1276c1fc2",
+  "publishedAt": "2026-10-16T14:04:33.154533Z",
+  "trafficPercent": 100,
+  "schemaChanges": false,
+  "ruleSetVersion": "STYRKA-RULES/1.3.0",
+  "methodVersion": "STYRKA-METOD/1.4.0",
+  "recoveryPolicy": "RECOVERY/2.0.0",
+  "assets": [
+    {
+      "file": "index.html",
+      "status": 200,
+      "bytes": 1171,
+      "matchesLocalBuild": true,
+      "sha256": "d86df4ec09830c068d4e03393f555c4569de7202977b9addd9997504d4ea8a8b"
+    },
+    {
+      "file": "sw.js",
+      "status": 200,
+      "bytes": 1526,
+      "matchesLocalBuild": true,
+      "sha256": "033bc70c8e2a2d710984c95c6781e0feaf522074fead377294873da925d6f4ea"
+    },
+    {
+      "file": "manifest.webmanifest",
+      "status": 200,
+      "bytes": 502,
+      "matchesLocalBuild": true,
+      "sha256": "78674f34b80f1bc4ff5bae1385394cad9f7bf04d9337692f814b37a2cb68d5dc"
+    },
+    {
+      "file": "assets/index-4KSDPac8.js",
+      "status": 200,
+      "bytes": 1049018,
+      "matchesLocalBuild": true,
+      "sha256": "e62a2cca7456fb0d9c238e818e75687ae7c83b6099e1333e37cd8afc7d4c276e"
+    },
+    {
+      "file": "assets/index-CqpMTrbJ.css",
+      "status": 200,
+      "bytes": 28829,
+      "matchesLocalBuild": true,
+      "sha256": "dc5802f1850a411d915fa0764c79d3ad4ecd6ec188e2c7d90ec28cd78c5af574"
+    },
+    {
+      "file": "assets/Science-CP-RwS8L.js",
+      "status": 200,
+      "bytes": 9253,
+      "matchesLocalBuild": true,
+      "sha256": "eb14965e2f60c3865aba06599fbbd8220cd0cfc8d614cfaa9a4bf62a4a1bf925"
+    },
+    {
+      "file": "assets/workbox-window.prod.es5-Bd17z0YL.js",
+      "status": 200,
+      "bytes": 5653,
+      "matchesLocalBuild": true,
+      "sha256": "17bcc17d60dc78f927834b880c39649b03af46fd1f5cdbb8c42c5ae2b515dce9"
+    }
+  ],
+  "cspPresent": true,
+  "cspAllowsStagingBackend": true,
+  "localTests": {
+    "unitAndUi": 373,
+    "referenceChecks": 26,
+    "mobileE2e": 8
+  },
+  "stagingTests": {
+    "status": "passed",
+    "browsers": {
+      "passed": 6,
+      "failed": 0,
+      "engines": [
+        "Chromium Pixel 7 emulation",
+        "WebKit iPhone 14 emulation"
+      ],
+      "cases": [
+        "easy work preserves heavy target",
+        "ordinary work caps target at moderate",
+        "maximal work caps target at light"
+      ],
+      "includes": [
+        "sign in and onboarding",
+        "completed effort synced to backend",
+        "offline recommendation",
+        "offline reload",
+        "offline set registration",
+        "no runtime or CSP errors"
+      ],
+      "physicalDevicesVerified": false
+    },
+    "syntheticAccountsCleaned": 6,
+    "cleanupVerified": "Each exact disposable user id returned 404 after deletion."
+  },
+  "completedAt": "2026-10-16T21:56:23.536Z",
+  "buildChecks": {
+    "stagingBuild": "passed",
+    "deployedVersionsPresent": true,
+    "noSecretKeyPattern": true,
+    "noLocalBackend": true,
+    "stagingRecoveryTestLint": "passed"
+  }
+}

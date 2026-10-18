@@ -1,0 +1,114 @@
+{
+  "checkedAt": "2026-10-16T05:57:22.368Z",
+  "url": "https://styrka-staging.homeboard-mh.workers.dev",
+  "version": "eb321258-011e-4b38-ab22-5770e7f1a59e",
+  "previousVersion": "76739015-3025-4447-999f-41adc5bd0b5c",
+  "deployment": "abc8a0f0-3e92-402f-89a0-b7d5f4c1fc8f",
+  "publishedAt": "2026-10-16T05:54:47.379993Z",
+  "trafficPercent": 100,
+  "migration": "20261015161006_set_effort_feedback.sql",
+  "assets": [
+    {
+      "file": "index.html",
+      "status": 200,
+      "bytes": 1171,
+      "matchesLocalBuild": true,
+      "sha256": "f86586f718d6ff10edbb962721bc99e8557bdac4aa566b26dc19ddb5389c06bc"
+    },
+    {
+      "file": "sw.js",
+      "status": 200,
+      "bytes": 1526,
+      "matchesLocalBuild": true,
+      "sha256": "7dcc5babe4fbd1e418e0ec3d6a32f4278511f7bb31e188e9d5b4f95b747be837"
+    },
+    {
+      "file": "manifest.webmanifest",
+      "status": 200,
+      "bytes": 502,
+      "matchesLocalBuild": true,
+      "sha256": "78674f34b80f1bc4ff5bae1385394cad9f7bf04d9337692f814b37a2cb68d5dc"
+    },
+    {
+      "file": "assets/index-CqpMTrbJ.css",
+      "status": 200,
+      "bytes": 28829,
+      "matchesLocalBuild": true,
+      "sha256": "dc5802f1850a411d915fa0764c79d3ad4ecd6ec188e2c7d90ec28cd78c5af574"
+    },
+    {
+      "file": "assets/index-Da-Wwq9B.js",
+      "status": 200,
+      "bytes": 1046053,
+      "matchesLocalBuild": true,
+      "sha256": "564d6e903157d586a1f52c4d8f4940d195e2f9a9a164651645046aa8791d7b73"
+    },
+    {
+      "file": "assets/Science-CL4-YeFm.js",
+      "status": 200,
+      "bytes": 9253,
+      "matchesLocalBuild": true,
+      "sha256": "57d6d3e268edd14231c37029fe6181f24dc8849d5d3f9ca18f3feed34ba3a307"
+    },
+    {
+      "file": "assets/workbox-window.prod.es5-Bd17z0YL.js",
+      "status": 200,
+      "bytes": 5653,
+      "matchesLocalBuild": true,
+      "sha256": "17bcc17d60dc78f927834b880c39649b03af46fd1f5cdbb8c42c5ae2b515dce9"
+    }
+  ],
+  "cspPresent": true,
+  "cspAllowsStagingBackend": true,
+  "stagingTests": {
+    "database": {
+      "passed": 8,
+      "failed": 0
+    },
+    "browsers": {
+      "passedUniqueScenarios": 8,
+      "failedRemaining": 0,
+      "initialRun": {
+        "passed": 7,
+        "failed": 1
+      },
+      "targetedRerun": {
+        "passed": 1,
+        "failed": 0
+      },
+      "engines": [
+        "Chromium Pixel 7 emulation",
+        "WebKit iPhone 14 emulation"
+      ],
+      "physicalDevicesVerified": false,
+      "note": "WebKit reported an access-control network error 32 ms after the deliberate offline switch. All data assertions passed; the isolated integrated test passed unchanged on rerun."
+    }
+  },
+  "advisors": {
+    "newWarnings": 0,
+    "preexistingWarnings": [
+      "anon_security_definer_function_executable: public.rls_auto_enable()",
+      "authenticated_security_definer_function_executable: public.rls_auto_enable()",
+      "auth_leaked_password_protection"
+    ]
+  },
+  "migrationVerified": true,
+  "setRlsEnabled": true,
+  "nestedEffortValidation": true,
+  "localTests": {
+    "unitAndUi": 352,
+    "database": 58,
+    "referenceChecks": 26
+  },
+  "correction": "Reject delayed set snapshots with a lower server revision, preserving acknowledged feedback. Prioritize valid workout maxima over the input reference regardless of reference timestamp.",
+  "intermediateVersions": [
+    "cb733e43-bd33-4f12-aa4f-3992c7d1438a",
+    "4e8a98a8-ee73-42d0-ae5e-d11630e8e0e9"
+  ],
+  "syntheticAccountsCleaned": true,
+  "cleanupVerified": {
+    "effort": 0,
+    "ui": 0,
+    "flow": 0
+  }
+}

@@ -132,5 +132,7 @@ test('Min träningsplan: kommande, genomförda, anteckning, planversioner och ut
   await shot('PLAN-4-utskrift', { fullPage: false });
   await page.emulateMedia({ media: 'screen' });
   await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
-  await expect(page.locator('.plan-row-body')).toHaveCount(0);
+  // Collapsed panels now retain drafts in the DOM, but are invisible and inert.
+  await expect(page.locator('.plan-row-body:visible')).toHaveCount(0);
+  await expect(page.locator('.expandable:not([inert])')).toHaveCount(0);
 });

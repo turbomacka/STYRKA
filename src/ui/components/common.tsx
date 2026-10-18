@@ -176,8 +176,13 @@ export function Segmented<V extends string>({ label, value, options, onChange }:
         {label}
       </span>
       <div className="segmented" role="radiogroup" aria-labelledby={id}>
-        {options.map((o) => (
-          <button key={o.value} type="button" role="radio" aria-checked={value === o.value} onClick={() => onChange(o.value)}>
+        {options.map((o, index) => (
+          <button key={o.value} type="button" role="radio" aria-checked={value === o.value} tabIndex={value === o.value ? 0 : -1} onClick={() => onChange(o.value)} onKeyDown={(e) => {
+            const next = e.key === 'Home' ? 0 : e.key === 'End' ? options.length - 1 : ['ArrowRight', 'ArrowDown'].includes(e.key) ? (index + 1) % options.length : ['ArrowLeft', 'ArrowUp'].includes(e.key) ? (index + options.length - 1) % options.length : null;
+            if (next === null) return;
+            e.preventDefault(); onChange(options[next].value);
+            (e.currentTarget.parentElement?.children[next] as HTMLElement)?.focus();
+          }}>
             {o.label}
           </button>
         ))}
@@ -188,17 +193,42 @@ export function Segmented<V extends string>({ label, value, options, onChange }:
 
 export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  useEffect(() => { close.current = onClose; }, [onClose]);
   const titleId = useId();
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
-    ref.current?.focus();
-    const key = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const dialog = ref.current!;
+    dialog.focus({ preventScroll: true });
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const siblings: Array<[HTMLElement, boolean]> = [];
+    // Isolate siblings along the ancestor path, never the dialog's own ancestor.
+    let branch: HTMLElement = dialog.parentElement!;
+    while (branch.parentElement) {
+      for (const el of branch.parentElement.children) if (el !== branch && el instanceof HTMLElement) {
+        siblings.push([el, el.inert]); el.inert = true;
+      }
+      branch = branch.parentElement;
+      if (branch === document.body) break;
+    }
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); close.current(); return; }
+      if (e.key !== 'Tab') return;
+      const controls = [...dialog.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]')].filter((el) => !el.closest('[inert], [hidden]') && el.getClientRects().length > 0);
+      const first = controls[0], last = controls.at(-1);
+      if (!first) { e.preventDefault(); dialog.focus(); }
+      else if (e.shiftKey && (document.activeElement === first || document.activeElement === dialog)) { e.preventDefault(); last!.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+    };
     document.addEventListener('keydown', key);
     return () => {
       document.removeEventListener('keydown', key);
-      prev?.focus?.();
+      document.body.style.overflow = overflow;
+      for (const [el, inert] of siblings) el.inert = inert;
+      if (prev?.isConnected) prev.focus({ preventScroll: true });
     };
-  }, [onClose]);
+  }, []);
   return (
     <div className="sheet-backdrop" onClick={onClose}>
       <div className="sheet" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={ref} onClick={(e) => e.stopPropagation()}>
@@ -216,11 +246,22 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
   );
 }
 
+/** Keep an opened panel mounted so collapsing never discards an unsaved note. */
+export function Expandable({ open, id, children }: { open: boolean; id: string; children: ReactNode }) {
+  const [visited, setVisited] = useState(open);
+  if (open && !visited) setVisited(true);
+  return <div id={id} className="expandable" data-open={open} inert={!open} aria-hidden={!open}>
+    <div className="expandable-inner">{visited && children}</div>
+  </div>;
+}
+
 export function ToastWithUndo({ message, onUndo, onDone, ms = 6000 }: { message: string; onUndo?: () => void; onDone: () => void; ms?: number }) {
+  const finish = useRef(onDone);
+  useEffect(() => { finish.current = onDone; }, [onDone]);
   useEffect(() => {
-    const t = setTimeout(onDone, ms);
+    const t = setTimeout(() => finish.current(), ms);
     return () => clearTimeout(t);
-  }, [onDone, ms]);
+  }, [message, ms]);
   return (
     <div className="toast" role="status">
       <span>{message}</span>

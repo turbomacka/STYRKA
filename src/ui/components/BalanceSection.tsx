@@ -12,7 +12,7 @@ import { acceptBalanceAdjustment, dismissBalanceSuggestion, getBalanceOverview, 
 import { latestRevision } from '../../application/trainingPlan';
 import { FLAGS, useServices } from '../services';
 import { BAL, TEMPLATE_SV } from '../strings';
-import { Banner, Icon } from './common';
+import { Banner, Expandable, Icon } from './common';
 
 const store = {
   get: () => {
@@ -74,18 +74,20 @@ export function BalanceSection() {
         </span>
         <Icon.Chevron className={`balance-chevron ${open ? 'is-open' : ''}`} />
       </button>
-      {open && o && (
-        <div id={`${id}-body`} className="stack">
+      <Expandable open={open && !!o} id={`${id}-body`}>
+        {o && <div className="stack">
           <p className="small">{BAL.INTRO}</p>
           <Allsidighet o={o} />
+          {!!o.partialWorkSets && <p className="small muted">Dessutom finns {o.partialWorkSets} ofullständiga arbetsset. Utförda sidprestationer finns kvar i historiken; diagrammets arbetsset räknar kompletta set.</p>}
+          {!!o.sidePerformances && <p className="small muted">{o.sidePerformances} separata sidprestationer är registrerade i perioden. Ett komplett sidpar räknas som ett arbetsset.</p>}
           <Styrka o={o} />
           <Belastning o={o} />
           <NastaSteg o={o} online={online} />
           <p className="small muted">
             {BAL.FOOTNOTE} <Link to="/vetenskap#balans">{BAL.METHOD_LINK}</Link>
           </p>
-        </div>
-      )}
+        </div>}
+      </Expandable>
     </section>
   );
 }

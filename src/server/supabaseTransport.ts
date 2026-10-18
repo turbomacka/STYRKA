@@ -35,6 +35,10 @@ const PAGE = 1000;
 export class SupabaseTransport implements SyncTransport {
   constructor(private readonly sb: SupabaseClient) {}
 
+  async patchExerciseConfiguration(exerciseId: string, configuration: import('../domain/trainingFlow').ExerciseConfiguration): Promise<void> {
+    await guard(this.sb.from('session_exercises').update({ configuration }).eq('id', exerciseId).select('id').single());
+  }
+
   async applySetMutation(eventId: string, setId: string, baseRevision: number | null, payload: Record<string, unknown>): Promise<MutationEnvelope> {
     const data = await guard(this.sb.rpc('apply_set_mutation', { event_id: eventId, set_id: setId, base_revision: baseRevision, payload }));
     return data as MutationEnvelope;
@@ -105,6 +109,10 @@ export class SupabaseTransport implements SyncTransport {
     if (r.status !== 'applied') throw new TransportError('FORBIDDEN', 'delete_my_account');
   }
 
+  async deleteWorkout(sessionId: string, sequence: number | null): Promise<void> {
+    await guard(this.sb.rpc('delete_training_session', { p_session_id: sessionId, p_sequence: sequence }));
+  }
+
   private async all(table: string, userId: string, order = 'id'): Promise<Record<string, unknown>[]> {
     const out: Record<string, unknown>[] = [];
     for (let from = 0; ; from += PAGE) {
@@ -142,6 +150,9 @@ export class SupabaseTransport implements SyncTransport {
     const planRevisions = await optional('plan_revisions');
     const notes = await optional('notebook_notes');
     const balanceDecisions = await optional('balance_suggestion_decisions');
-    return { profile, equipment: equipment.map((e) => e.equipment_slug as string), exerciseProfiles, consents, restrictions, symptoms, programs, sessions, sessionExercises, sets, audits, calibrations, substitutionEvents, planRevisions, notes, balanceDecisions };
+    // Fetch last: deletion markers dominate any earlier, non-atomic table reads.
+    const skipEvents = await this.all('exercise_skip_events', userId);
+    const deletedWorkouts = (await this.all('deleted_training_sessions', userId)).map((r) => ({ id: r.id as string, sequence: r.sequence as number | null }));
+    return { profile, equipment: equipment.map((e) => e.equipment_slug as string), exerciseProfiles, consents, restrictions, symptoms, programs, sessions, sessionExercises, sets, audits, calibrations, substitutionEvents, planRevisions, notes, balanceDecisions, deletedWorkouts, skipEvents };
   }
 }

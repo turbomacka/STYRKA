@@ -29,6 +29,7 @@
     "dexie": "4.4.6",
     "dexie-react-hooks": "4.4.0",
     "react": "19.3.0",
+    "react-aria-components": "1.22.1",
     "react-dom": "19.3.0",
     "react-router-dom": "7.18.4",
     "supabase": "2.120.0"

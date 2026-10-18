@@ -1,3 +1,4 @@
+import { TrainingPreferencesControl } from '../components/TrainingFlow';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -5,10 +6,16 @@ import type { Experience } from '../../domain/decision_engine';
 import type { ExerciseId } from '../../domain/catalog';
 import { ALL_EQUIPMENT, EQUIPMENT_LABEL_SV, OFFERED_CATALOG, exercise, type EquipmentSlug } from '../../domain/catalog';
 import { formatKg, parseKg } from '../../domain/units';
-import { patchProfile, removePermanentSubstitution, setActiveEquipmentProfile, setEstimate, updateExerciseSettings } from '../../application/profile';
+import { patchProfile, removePermanentSubstitution, setActiveEquipmentProfile, setStrengthInputs, strengthInputsFromSettings, updateExerciseSettings } from '../../application/profile';
 import { Banner, PageHeader, Segmented, Stepper } from '../components/common';
 import { FLAGS, useServices } from '../services';
 import { EXPERIENCE_SV } from '../strings';
+import type { LocalExerciseSettings } from '../../storage/db';
+import { StrengthInputs, readStrengthDrafts, strengthDraft } from '../components/StrengthInputs';
+import { Appearance } from '../components/Appearance';
+import { LoadSourceChoice } from '../components/LoadSourceChoice';
+import { trainingPreferences } from '../../domain/trainingFlow';
+import '../onboarding.css';
 
 /** S13 Profil: frekvens, minuter, nivå, utrustning, variant. Ändringar gäller endast kommande pass. */
 export function Profile() {
@@ -43,7 +50,7 @@ export function Profile() {
       <div aria-live="polite">{msg && <Banner kind="info">{msg}</Banner>}</div>
       <div className="card stack">
         <Stepper label="Pass per vecka" value={p.plannedSessionsPerWeek} min={1} max={7} onChange={(v) => save({ plannedSessionsPerWeek: v })} />
-        <p className="small muted">Ändrad frekvens startar en ny programversion från i dag. Tidigare pass påverkas inte.</p>
+        <p className="small muted">Ändrat antal pass gäller från i dag. Tidigare pass påverkas inte.</p>
         <Stepper label="Minuter per pass" value={p.minutesPerSession} min={15} max={120} step={5} onChange={(v) => save({ minutesPerSession: v })} format={(v) => `${v} min`} />
         <Segmented label="Erfarenhet" value={p.experience} onChange={(v: Experience) => save({ experience: v })} options={(Object.keys(EXPERIENCE_SV) as Experience[]).map((v) => ({ value: v, label: EXPERIENCE_SV[v] }))} />
         <Segmented label="Vertikalt drag" value={pull} onChange={(v) => save({ substitutions: { ...p.substitutions, lat_pulldown: v === 'lat_pulldown' ? undefined : v } })} options={[{ value: 'lat_pulldown', label: 'Latsdrag' }, { value: 'assisted_pullup', label: 'Assisterade chins' }, { value: 'pullup', label: 'Chins' }]} />
@@ -103,6 +110,9 @@ export function Profile() {
           <li><Link to="/integritet">Integritet</Link></li>
         </ul>
       </nav>
+      <section className="card stack"><h2>Underlag för viktförslag</h2><LoadSourceChoice profile value={p.trainingPreferences?.loadRecommendationSource ?? 'strength_inputs'} onChange={(loadRecommendationSource) => save({ trainingPreferences: trainingPreferences({ ...p.trainingPreferences, loadRecommendationSource }) })} /><p className="small muted">Gäller kommande pass. Sparade styrkeuppgifter och tidigare pass finns kvar.</p></section>
+      <section className="card stack"><h2>Under träningspasset</h2><TrainingPreferencesControl /></section>
+        <Appearance />
       <section className="card" aria-labelledby="om-styrka">
         <h2 id="om-styrka">Om STYRKA</h2>
         <ul className="list">
@@ -125,8 +135,6 @@ export function ExerciseSettingsScreen() {
   const unit = exercise(ex).loadDisplayBasis === 'per_hand_kg' ? 'kg per hantel' : 'kg';
   const [inc, setInc] = useState('');
   const [max, setMax] = useState('');
-  const [est, setEst] = useState('');
-  const [estKind, setEstKind] = useState<'1rm' | '3rm'>('1rm');
   const g = (v: number | null | undefined) => (v == null ? '' : formatKg(v));
   const parse = (v: string) => (v.trim() === '' ? null : parseKg(v));
   return (
@@ -134,7 +142,7 @@ export function ExerciseSettingsScreen() {
       <PageHeader title="Övningar" back={() => nav(-1)} />
       <div className="field">
         <label htmlFor="es-ex">Övning</label>
-        <select id="es-ex" value={ex} onChange={(e) => { setEx(e.target.value as ExerciseId); setInc(''); setMax(''); setEst(''); setMsg(null); }}>
+        <select id="es-ex" value={ex} onChange={(e) => { setEx(e.target.value as ExerciseId); setInc(''); setMax(''); setMsg(null); }}>
           {OFFERED_CATALOG.map((c) => (
             <option key={c.slug} value={c.slug}>{c.nameSv}</option>
           ))}
@@ -167,28 +175,35 @@ export function ExerciseSettingsScreen() {
           </form>
         )}
       </div>
-      {lk === 'external_kg' && (
-        <form className="card stack" onSubmit={async (e) => {
-          e.preventDefault();
-          const p = parseKg(est);
-          if (!p.ok || p.grams <= 0) return setMsg('Ange vikt, t.ex. 100');
-          await setEstimate(ctx, { exerciseId: ex, kind: estKind, grams: p.grams });
-          setEst('');
-          setMsg('Uppskattningen sparad. Påverkar bara nya föreskrifter.');
-        }}>
-          <h2>Uppskattad maxstyrka</h2>
-          <p className="small muted">Nu: {s?.estimateGrams != null ? `${formatKg(s.estimateGrams)} kg (${s.estimateKind?.toUpperCase()})` : 'ingen – kalibrering används'}.</p>
-          <Segmented label="Typ" value={estKind} onChange={setEstKind} options={[{ value: '1rm', label: '1RM' }, { value: '3rm', label: '3RM' }]} />
-          <div className="field">
-            <label htmlFor="es-est">{unit === 'kg' ? 'Kg' : 'Kg per hantel'}</label>
-            <input id="es-est" type="text" inputMode="decimal" value={est} onChange={(e) => setEst(e.target.value)} />
-          </div>
-          <button type="submit" className="btn">Spara uppskattning</button>
-        </form>
-      )}
+      {lk === 'external_kg' && settings !== undefined && <SavedStrengthInputs key={ex} exerciseId={ex} settings={s} unit={unit} />}
       {lk === 'assistance_kg' && (
         <p className="small muted">Assistans räknas aldrig om till skivstångsvikt. Startvärdet väljer du själv första gången.</p>
       )}
     </div>
   );
+}
+
+function SavedStrengthInputs({ exerciseId, settings, unit }: { exerciseId: ExerciseId; settings?: LocalExerciseSettings; unit: string }) {
+  const { ctx } = useServices();
+  const [drafts, setDrafts] = useState(() => strengthInputsFromSettings(settings).map(strengthDraft));
+  const [message, setMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const today = ctx.clock.now().slice(0, 10);
+  const result = readStrengthDrafts(drafts, today);
+  return <form className="card stack" onSubmit={async (event) => {
+    event.preventDefault();
+    if (result.error) return;
+    setBusy(true);
+    try {
+      await setStrengthInputs(ctx, exerciseId, result.inputs);
+      setMessage('Styrkeuppgifterna sparade. Tidigare pass ändras inte.');
+    } catch { setMessage('Kunde inte spara uppgifterna. Försök igen.'); }
+    finally { setBusy(false); }
+  }}>
+    <h2>Styrkeuppgifter (frivilligt)</h2>
+    <p className="small muted">Ett värde räcker. Fler uppgifter sparas var för sig och kan hjälpa oss att föreslå en startvikt. Ta bort alla och spara om du vill välja startvikt själv.</p>
+    <StrengthInputs drafts={drafts} onChange={(next) => { setDrafts(next); setMessage(null); }} today={today} unit={unit} />
+    <button type="submit" className="btn primary block" disabled={busy || !!result.error}>Spara styrkeuppgifter</button>
+    <div role="status">{message && <p>{message}</p>}</div>
+  </form>;
 }

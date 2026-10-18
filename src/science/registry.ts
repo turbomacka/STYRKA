@@ -90,11 +90,11 @@ export const CLASSIFICATION_SV: Record<Classification, string> = {
   empirical_group_means_not_individual: 'Gruppmedelvärden – inte en individuell faktor',
   empirical_group_mean_not_individual: 'Gruppmedelvärde – inte en individuell faktor',
   recommendation_plus_biomechanics: 'Klinisk riktlinje och biomekanisk studie',
-  product_heuristic_unvalidated: 'Produktregel / ännu inte validerad tröskel',
+  product_heuristic_unvalidated: 'Appens antagande – inte vetenskapligt validerat',
   regulatory_guidance: 'Myndighetsvägledning',
 };
 
-export const HEURISTIC_LABEL = 'Produktregel / ännu inte validerad tröskel';
+export const HEURISTIC_LABEL = 'Appens antagande – inte vetenskapligt validerat';
 
 export const ruleAnchor = (ruleId: string) => `regel-${ruleId}`;
 export const claimAnchor = (claimId: string) => `pastaende-${claimId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;

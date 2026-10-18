@@ -91,7 +91,8 @@ test('tangentbord: starta pass och logga set utan mus; skärmläsarstatus annons
   await page.keyboard.press('Enter');
   await expect(page.getByRole('button', { name: 'Set 1 utfört. Ändra eller ångra' })).toBeVisible();
   const live = page.locator('[aria-live="polite"].visually-hidden');
-  await expect(live).toHaveText(/Set 1 sparat/);
+  await expect(page.getByRole('status').filter({ hasText: 'Set 1 registrerat på enheten' })).toHaveCount(1);
+  await expect(live).toHaveText('');
 });
 
 test.describe('mörkt läge', () => {

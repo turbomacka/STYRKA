@@ -1,0 +1,150 @@
+[
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\domain\\balance.ts",
+    "Hash": "BF386F4DF2478DDF6D6FF6295C012EAE4350DF4ED4CA0A4AFE8BCBC658E111CF"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\domain\\catalog.ts",
+    "Hash": "D7588AA22F3FD596C68EF751D377DDA86691537458D19C53882EA87E3242FA0F"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\domain\\decision_engine.ts",
+    "Hash": "A7D13B490078DD813A1F6EA87B82AA45E18CC78A39563FCD3CFABC41B923FAE2"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\domain\\hash.ts",
+    "Hash": "54723486818692EC3896EC2F08AC9DD71B63E69F25763434BEEEF9E4E0EC1DC9"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\domain\\heavyPair.ts",
+    "Hash": "56D28E47DC2B04FD7CB971F87943DD70AEBDC65A5A600E241C5D5C9666D4ACBE"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\domain\\model.ts",
+    "Hash": "4906C9D30E68FA0690AA179B8701B9B437B4BBFB760068408D97EF528F96B951"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\domain\\prescription.ts",
+    "Hash": "7040768589237F97950AB869DC4834A40D4CEEE058CFB9689476BEDA5DD7B44D"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\domain\\strengthInputs.ts",
+    "Hash": "1EF2F1025F335B0FDF034BF61C2A49E1BCE4187F87CDE2F5CD67A7E42738B58F"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\domain\\substitutionCatalog.ts",
+    "Hash": "FC41B6B78F65F39D8B3C0B65E6846D2ED253C6F12E6895E222ECE43AC9A5F9A4"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\domain\\units.ts",
+    "Hash": "0EF52ADB37A4A3C038D7BD63F2E388AEF68A7D56E4C9137BD8135CEBA7DD4F2E"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\application\\balance.ts",
+    "Hash": "A949F8605FDEB0E7FF707C22BBE5E180CC43B970B370C98F4BD35AFE149F937D"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\application\\context.ts",
+    "Hash": "7F20C50B3E79A19F915D2950C3DB55D433751019DBEEDC654C547B77843F3676"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\application\\deleteWorkout.ts",
+    "Hash": "7895BB4A53BA8C15583186727594C8AB28FA6D5225DBD357E427166714DC7BCA"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\application\\history.ts",
+    "Hash": "9EF703ED2411DC449E2B8510483FA7FCFB3B527439B8E9F5664BE859E04E447D"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\application\\plannerInput.ts",
+    "Hash": "8FAF6067E2F1A394647E722BD1A579DD1D661ECEF6595C55B31FEAD153D850ED"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\application\\privacy.ts",
+    "Hash": "08EC4FE25AF3B501744CFF7D62ABCCF325C6ECA8C504E06416387EF0C5D5B9E6"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\application\\profile.ts",
+    "Hash": "96257E67EF3F60B638111A2BB4755AACFB3658148414E1F92F8261EF14F023B9"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\application\\skippedExercises.ts",
+    "Hash": "518CDD5B76171EB32E740662243BEA36BE065543D05F64C38C10D34A22F495E9"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\application\\skipState.ts",
+    "Hash": "D900FC7C3A3E1246B238FD9020473AC4E4013BE4CA7A148E3EB7F1C1C1C921EC"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\application\\sync.ts",
+    "Hash": "A793EDEAAF2393CCD288AB83F9DE00E1AEFEA4FFF655F762B168E0A0A6DEB679"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\application\\training.ts",
+    "Hash": "7ABEADF70034A114F2A4359301F95DB9116EEC25D4516F66664CE8D9E0D2FE4F"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\application\\trainingPlan.ts",
+    "Hash": "98493275F4B0600F0E26EF50800BA8FD0005580F5AE9F0E9328D68E61B50ABD3"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\planner\\history.ts",
+    "Hash": "53C34EC4700FBF42C54D1B0A61F03ADC862A836AF333A43A98161070B6304485"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\planner\\planner_templates.json",
+    "Hash": "1553EE88C8764561031FAE17744DC99561944A6A5AC42844BE5A56B290950260"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\planner\\planner.ts",
+    "Hash": "A78EC003F2B60076BC1C3701B52E2FA42B4E1D68654DA8D8D88673BF51113991"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\planner\\replacement_seed.json",
+    "Hash": "EB036C34E4115C659711F33778A8D4BE03C418DCC6CB268E76CCC8C2ED0DC046"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\src\\storage\\db.ts",
+    "Hash": "41EC4879835530B6385680AE3801EF43E58EB3253D40EAA1710E1B7D21C71758"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\supabase\\migrations\\20261010000001_schema.sql",
+    "Hash": "24B5781FB541218E57A03DAB84EAF157A9F9FE0461E80F9FEFF5E024BD1C0D8E"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\supabase\\migrations\\20261010000002_seed_catalog.sql",
+    "Hash": "E79850A1C1863D373C2CA7D4274694BD952247461BBCCBE69582EF2590A732C2"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\supabase\\migrations\\20261010000003_app_extensions.sql",
+    "Hash": "481D69E24A82A5895C5D45AB9B86317070B4379249E24B736D4A5CECE411A074"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\supabase\\migrations\\20261011000004_substitution.sql",
+    "Hash": "012C0E7BD54D1464565A6A3116CFC77A665C13BE81C7C8DDF46F8C26F5A5B58D"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\supabase\\migrations\\20261011000005_substitution_seed.sql",
+    "Hash": "3F0B811B7FB499372419B6FD6B84DF57A1A945241C80B4F208E0DA09A41691EC"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\supabase\\migrations\\20261011000006_training_plan.sql",
+    "Hash": "37C37D3FACBFC2C432FC5C5E6597DC7A1327F04AAD9E08A8F79AB8D5FAB975C7"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\supabase\\migrations\\20261011234444_delete_training_session.sql",
+    "Hash": "23396AF1C5E3B15A86FFB6FD28564C705151760835AFBF32FFFBF3E0D20428C8"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\supabase\\migrations\\20261012000007_balance_decisions.sql",
+    "Hash": "0AD3DEAB0B431E420C9F15317B4D9DE564FA392F2AE7457F8631B1C90DAE2FF0"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\supabase\\migrations\\20261012084242_exercise_skip_events.sql",
+    "Hash": "678982C6F16F16991619043ED759FB5656FAC22C3B2305BA8D13685B0E90A1D2"
+  },
+  {
+    "Path": "D:\\Projekt\\STYRKA\\styrka-app\\supabase\\migrations\\20261012123334_independent_strength_inputs.sql",
+    "Hash": "9E1CA956D662C44651C5B6288A356944757C6381CCF207187A4105116FBCB8A9"
+  }
+]

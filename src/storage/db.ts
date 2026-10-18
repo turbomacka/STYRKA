@@ -4,6 +4,7 @@
  * pålitliga långsiktiga backup (03 §5.2, R11).
  */
 import Dexie, { type Table } from 'dexie';
+import type { StrengthInput } from '../domain/strengthInputs';
 import type { Experience, Mode } from '../domain/decision_engine';
 import type { ExerciseId } from '../domain/catalog';
 import type { Area, EquipmentSlug } from '../domain/catalog';
@@ -12,6 +13,7 @@ import type { ChoiceScope, Familiarity, LoadEstimationKind, PerceivedEffort, Pla
 export type SyncState = 'local' | 'queued' | 'synced' | 'conflict' | 'failed';
 
 export type LocalProfile = {
+  trainingPreferences?: import('../domain/trainingFlow').TrainingPreferences;
   userId: string;
   plannedSessionsPerWeek: number;
   minutesPerSession: number;
@@ -44,6 +46,8 @@ export type LocalExerciseSettings = {
   estimateRir: number | null;
   estimateMeasured: boolean;
   estimateTestedAt: string | null;
+  /** Absent on legacy profiles; [] means explicitly cleared. No index/schema upgrade needed. */
+  strengthInputs?: StrengthInput[];
   maxLoadGrams: number | null;
   machineMinGrams: number | null;
   machineMaxGrams: number | null;
@@ -115,6 +119,7 @@ export type LocalSession = {
 };
 
 export type LocalSessionExercise = {
+  configuration?: import('../domain/trainingFlow').ExerciseConfiguration;
   id: string;
   sessionId: string;
   exerciseId: ExerciseId;
@@ -134,6 +139,7 @@ export type LocalSessionExercise = {
 };
 
 export type LocalSet = {
+  detail?: import('../domain/trainingFlow').SetDetail;
   id: string;
   sessionId: string;
   sessionExerciseId: string;
@@ -157,7 +163,7 @@ export type LocalSet = {
   createQueued: boolean;
   /** Manuell avvikelse från rekommendation (02 §1 p4) – loggas separat. */
   manualOverride: boolean;
-  /** Frivilligt enkelt svar vid kalibrering: lätt / lagom / för tungt. */
+  /** Frivillig setkänsla för bilaterala/äldre set; sidors svar lagras i detail. */
   perceivedEffort?: PerceivedEffort | null;
   syncState: SyncState;
   updatedAt: string;
@@ -248,7 +254,18 @@ export type LocalBalanceDecision = {
 
 export type LocalAudit = { id: string; sessionId: string; engineVersion: string; inputsHash: string; reasonCodes: string[]; snapshot: PlanSnapshot; generatedAt: string; syncState: SyncState };
 
+export type SkipReason = 'time' | 'equipment' | 'discomfort' | 'other';
+/** Append-only choices; a total order gives every device the same effective decision. */
+export type LocalSkipEvent = {
+  id: string; sessionId: string; sessionExerciseId: string; reason: SkipReason;
+  action: 'skipped' | 'accepted' | 'dismissed';
+  programId: string | null; targetRotationIndex: number | null; replacesExerciseId: ExerciseId | null;
+  createdAt: string; syncState: SyncState;
+};
+
 export type OutboxOp =
+  | { type: 'exerciseConfig'; exerciseId: string; configuration: import('../domain/trainingFlow').ExerciseConfiguration }
+  | { type: 'deleteWorkout'; sessionId: string; sequence: number | null }
   | { type: 'set'; setId: string; create: boolean; payload: Record<string, unknown>; baseRevision?: number | null }
   | { type: 'upsert'; table: ServerTable; row: Record<string, unknown>; immutable?: boolean }
   | { type: 'delete'; table: ServerTable; id: string; idColumn?: string }
@@ -257,7 +274,7 @@ export type OutboxOp =
   | { type: 'rpc'; name: 'erase_health_data' }
   | { type: 'note'; noteId: string; row: Record<string, unknown>; baseRevision?: number };
 
-export type ServerTable = 'profiles' | 'user_exercise_profiles' | 'health_consents' | 'restriction_rules' | 'programs' | 'training_sessions' | 'session_exercises' | 'symptom_reports' | 'recommendation_audits' | 'user_exercise_calibrations' | 'session_exercise_substitution_events' | 'plan_revisions' | 'notebook_notes' | 'balance_suggestion_decisions';
+export type ServerTable = 'exercise_skip_events' | 'profiles' | 'user_exercise_profiles' | 'health_consents' | 'restriction_rules' | 'programs' | 'training_sessions' | 'session_exercises' | 'symptom_reports' | 'recommendation_audits' | 'user_exercise_calibrations' | 'session_exercise_substitution_events' | 'plan_revisions' | 'notebook_notes' | 'balance_suggestion_decisions';
 
 export type OutboxEntry = {
   seq?: number;
@@ -302,6 +319,7 @@ export class StyrkaDB extends Dexie {
   planRevisions!: Table<LocalPlanRevision, string>;
   notes!: Table<LocalNote, string>;
   balanceDecisions!: Table<LocalBalanceDecision, string>;
+  skipEvents!: Table<LocalSkipEvent, string>;
 
   constructor(name: string) {
     super(name);
@@ -335,6 +353,7 @@ export class StyrkaDB extends Dexie {
     this.version(4).stores({
       balanceDecisions: 'id, candidateKey, basisKey',
     });
+    this.version(5).stores({ skipEvents: 'id, sessionId, sessionExerciseId, createdAt' });
   }
 }
 

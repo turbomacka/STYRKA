@@ -1,11 +1,27 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { LoadDisplayBasis, LoadKind } from '../../domain/catalog';
 import type { PerceivedEffort, Technique } from '../../domain/model';
+import { EffortFeedback } from './EffortFeedback';
 import { formatKg, parseIntInRange, parseKg } from '../../domain/units';
 import type { LocalSet, SyncState } from '../../storage/db';
 import type { SetValues } from '../../application/training';
-import { SUB, T } from '../strings';
+import { T } from '../strings';
 import { Icon, SaveStateChip } from './common';
+import { confirmSetHaptic, refinedDesign } from '../design';
+
+function useValueFeedback(value: string) {
+  const ref = useRef<HTMLInputElement>(null);
+  const previous = useRef(value);
+  useEffect(() => {
+    if (previous.current === value) return;
+    previous.current = value;
+    if (!refinedDesign || !ref.current?.animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const ms = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--motion-release')) || 120;
+    const animation = ref.current.animate([{ opacity: .75 }, { opacity: 1 }], { duration: ms });
+    return () => animation.cancel();
+  }, [value]);
+  return ref;
+}
 
 export function kgLabel(grams: number | null, lk: LoadKind, basis?: LoadDisplayBasis): string {
   if (lk === 'duration_sec' || lk === 'reps_only') return '';
@@ -23,10 +39,10 @@ export function kgSpoken(grams: number | null, lk: LoadKind, basis?: LoadDisplay
 }
 
 /** Viktfält: inputMode=decimal, accepterar 102,5 och 102.5, synlig kommaknapp, ± utrustningssteg (10 §1). */
-export function EditableKg({ id, value, onChange, stepGrams, label, autoFocus }: { id: string; value: string; onChange: (v: string) => void; stepGrams: number; label: string; autoFocus?: boolean }) {
+export function EditableKg({ id, value, onChange, stepGrams, label, autoFocus, unit = "kg" }: { id: string; value: string; onChange: (v: string) => void; stepGrams: number; label: string; autoFocus?: boolean; unit?: "kg" | "level" }) {
   const parsed = value === '' ? null : parseKg(value);
-  const err = parsed && !parsed.ok ? (parsed.error === 'TOO_LARGE' ? 'Högst 500 kg.' : parsed.error === 'TOO_PRECISE' ? 'Högst tre decimaler.' : 'Ange vikt som t.ex. 82,5') : null;
-  const ref = useRef<HTMLInputElement>(null);
+  const err = parsed && !parsed.ok ? (parsed.error === 'TOO_LARGE' ? `Högst 500 ${unit === 'level' ? 'nivåer' : 'kg'}.` : parsed.error === 'TOO_PRECISE' ? 'Högst tre decimaler.' : 'Ange vikt som t.ex. 82,5') : null;
+  const ref = useValueFeedback(value);
   const bump = (dir: 1 | -1) => {
     const cur = parsed && parsed.ok ? parsed.grams : 0;
     const next = Math.max(0, Math.min(500_000, cur + dir * stepGrams));
@@ -36,7 +52,7 @@ export function EditableKg({ id, value, onChange, stepGrams, label, autoFocus }:
     <div className="field">
       <label htmlFor={id}>{label}</label>
       <div className="kg-input">
-        <button type="button" className="btn icon" aria-label={`Minska ${formatKg(stepGrams)} kilo`} onClick={() => bump(-1)}>
+        <button type="button" className="btn icon" aria-label={`Minska ${formatKg(stepGrams)} ${unit === 'level' ? 'nivåer' : 'kilo'}`} onClick={() => bump(-1)}>
           <Icon.Minus />
         </button>
         <input ref={ref} id={id} type="text" inputMode="decimal" autoComplete="off" enterKeyHint="done" value={value} aria-invalid={!!err} aria-describedby={err ? `${id}-err` : undefined} onChange={(e) => onChange(e.target.value)} autoFocus={autoFocus} className="num" />
@@ -51,7 +67,7 @@ export function EditableKg({ id, value, onChange, stepGrams, label, autoFocus }:
         >
           ,
         </button>
-        <button type="button" className="btn icon" aria-label={`Öka ${formatKg(stepGrams)} kilo`} onClick={() => bump(1)}>
+        <button type="button" className="btn icon" aria-label={`Öka ${formatKg(stepGrams)} ${unit === 'level' ? 'nivåer' : 'kilo'}`} onClick={() => bump(1)}>
           <Icon.Plus />
         </button>
       </div>
@@ -65,6 +81,7 @@ export function EditableKg({ id, value, onChange, stepGrams, label, autoFocus }:
 }
 
 export function EditableReps({ id, value, onChange, label, max = 50, autoFocus }: { id: string; value: string; onChange: (v: string) => void; label: string; max?: number; autoFocus?: boolean }) {
+  const ref = useValueFeedback(value);
   const parsed = value === '' ? null : parseIntInRange(value, 0, max);
   const err = parsed && !parsed.ok ? `Ange ett heltal 0–${max}.` : null;
   const cur = parsed && parsed.ok ? parsed.value : 0;
@@ -75,7 +92,7 @@ export function EditableReps({ id, value, onChange, label, max = 50, autoFocus }
         <button type="button" className="btn icon" aria-label={`Minska ${label.toLowerCase()}`} onClick={() => onChange(String(Math.max(0, cur - 1)))}>
           <Icon.Minus />
         </button>
-        <input id={id} type="text" inputMode="numeric" pattern="[0-9]*" autoComplete="off" enterKeyHint="done" value={value} aria-invalid={!!err} aria-describedby={err ? `${id}-err` : undefined} onChange={(e) => onChange(e.target.value)} autoFocus={autoFocus} className="num" />
+        <input ref={ref} id={id} type="text" inputMode="numeric" pattern="[0-9]*" autoComplete="off" enterKeyHint="done" value={value} aria-invalid={!!err} aria-describedby={err ? `${id}-err` : undefined} onChange={(e) => onChange(e.target.value)} autoFocus={autoFocus} className="num" />
         <button type="button" className="btn icon" aria-label={`Öka ${label.toLowerCase()}`} onClick={() => onChange(String(Math.min(max, cur + 1)))}>
           <Icon.Plus />
         </button>
@@ -102,9 +119,10 @@ export type SetRowProps = {
   onUndo: () => Promise<void>;
   /** Lastbas (t.ex. per hantel) – visas endast när den är definierad (katalog 2.0.0). */
   loadBasis?: LoadDisplayBasis;
-  /** Kalibrering för nybörjare: fråga "Hur kändes setet?" (lätt/lagom/för tungt) efter utfört set. */
+  loadUnit?: 'kg' | 'level';
+  /** Optional descriptive feedback after a saved working set, including legacy records. */
   effortPrompt?: boolean;
-  onRate?: (e: PerceivedEffort) => Promise<void>;
+  onRate?: (e: PerceivedEffort | null) => Promise<void>;
 };
 
 type Draft = { kg: string; reps: string; secs: string; rir: string; technique: Technique };
@@ -120,12 +138,16 @@ function draftFrom(s: LocalSet, done: boolean): Draft {
  * S08 setrad: `Set 2 | 80 kg | 5 reps | [Klart]`. Förifyllt set sparas med ETT tryck.
  * Vikt och reps är individuellt tryckbara och öppnar numeriskt tangentbord.
  */
-export function SetRow({ set, displayNo, loadKind, stepGrams, online, showRir, failed, onLog, onEdit, onUndo, loadBasis, effortPrompt, onRate }: SetRowProps) {
+export function SetRow({ set, displayNo, loadKind, stepGrams, online, showRir, failed, onLog, onEdit, onUndo, loadBasis, effortPrompt, onRate, loadUnit = 'kg' }: SetRowProps) {
   const done = set.status === 'done';
   const [editing, setEditing] = useState<null | 'kg' | 'reps' | 'edit'>(null);
   const [draft, setDraft] = useState<Draft>(() => draftFrom(set, done));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef(false);
+  const committed = useRef(false);
+  const [feedback, setFeedback] = useState(false);
+  useEffect(() => { if (!done) { committed.current = false; setFeedback(false); } }, [done]);
   const uid = useId();
   useEffect(() => {
     if (!editing) setDraft(draftFrom(set, done));
@@ -156,47 +178,56 @@ export function SetRow({ set, displayNo, loadKind, stepGrams, online, showRir, f
       if (!p.ok) return null;
       out.actualReps = p.value;
     }
-    if (draft.rir !== '') out.rir = Number(draft.rir);
+    if (draft.rir !== '' || done) out.rir = draft.rir !== '' ? Number(draft.rir) : null;
     out.technique = draft.technique;
     return out;
   }
 
   async function submit(kind: 'log' | 'edit') {
+    if (inFlight.current || (kind === 'log' && (committed.current || done))) return;
     const v = values();
     if (!v) {
       setEditing(editing ?? 'kg');
       setError(needsKg && draft.kg.trim() === '' ? 'Ange vikten du använde.' : 'Kontrollera värdena.');
       return;
     }
+    inFlight.current = true;
     setBusy(true);
+    setFeedback(false);
     setError(null);
     try {
-      if (kind === 'log') await onLog(v);
-      else await onEdit(v);
+      if (kind === 'log') {
+        await onLog(v);
+        committed.current = true;
+        setFeedback(true);
+        confirmSetHaptic();
+      } else await onEdit(v);
       setEditing(null);
     } catch {
       setError(T.WARN_UNSAVED);
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   }
 
   const shownGrams = done ? set.actualGrams : set.targetGrams;
-  const kgText = kgLabel(shownGrams, loadKind);
+  const spokenLoad = (g: number | null) => loadUnit === 'level' ? (g === null ? 'välj nivå' : `${formatKg(g)} nivå`) : kgSpoken(g, loadKind, loadBasis);
+  const kgText = loadUnit === 'level' ? 'Välj nivå' : kgLabel(shownGrams, loadKind);
   const repsText = isDuration ? `${(done ? set.actualSeconds : set.targetSeconds) ?? '–'}` : `${(done ? set.actualReps : set.targetReps) ?? '–'}`;
   const unit = isDuration ? 's' : 'reps';
   const spokenReps = isDuration ? `${repsText} sekunder` : `${repsText} repetitioner`;
   const statusSpoken = done ? 'utfört' : set.status === 'skipped' ? 'överhoppat' : 'planerat';
 
   return (
-    <li className={`set-row ${done ? 'done' : ''}`} aria-label={`Set ${displayNo}, ${hasKg ? kgSpoken(done ? set.actualGrams : set.targetGrams, loadKind, loadBasis) + ', ' : ''}${spokenReps}, ${statusSpoken}`}>
+    <li className={`set-row ${done ? 'done' : ''}`} data-feedback={feedback ? 'saved' : undefined} aria-label={`Set ${displayNo}, ${hasKg ? spokenLoad(done ? set.actualGrams : set.targetGrams) + ', ' : ''}${spokenReps}, ${statusSpoken}`}>
       <span className="set-no num">Set {displayNo}</span>
       {hasKg ? (
-        <button type="button" className="val num" aria-label={`Vikt set ${displayNo}: ${kgSpoken(done ? set.actualGrams : set.targetGrams, loadKind, loadBasis)}. Ändra`} onClick={() => setEditing(done ? 'edit' : 'kg')}>
-          {loadBasis === 'per_hand_kg' && loadKind === 'external_kg' && shownGrams !== null ? (
+        <button type="button" className="val num" aria-label={`Vikt set ${displayNo}: ${spokenLoad(done ? set.actualGrams : set.targetGrams)}. Ändra`} onClick={() => setEditing(done ? 'edit' : 'kg')}>
+          {shownGrams !== null && !(loadKind === 'bodyweight_plus_kg' && shownGrams === 0) ? (
             <>
-              {formatKg(shownGrams)}
-              <span className="unit">kg/hantel</span>
+              <span className="set-value">{loadKind === 'bodyweight_plus_kg' ? '+' : ''}{formatKg(shownGrams)}</span>{' '}
+              <span className="unit">{loadUnit === 'level' ? 'nivå' : loadBasis === 'per_hand_kg' ? 'kg/hantel' : 'kg'}</span>
             </>
           ) : (
             kgText
@@ -207,7 +238,7 @@ export function SetRow({ set, displayNo, loadKind, stepGrams, online, showRir, f
         <span />
       )}
       <button type="button" className="val num" aria-label={`${isDuration ? 'Tid' : 'Repetitioner'} set ${displayNo}: ${spokenReps}. Ändra`} onClick={() => setEditing(done ? 'edit' : 'reps')}>
-        {repsText}
+        <span className="set-value">{repsText}</span>
         <span className="unit">{unit}</span>
       </button>
       {done ? (
@@ -215,21 +246,12 @@ export function SetRow({ set, displayNo, loadKind, stepGrams, online, showRir, f
           <Icon.Check /> <span className="visually-hidden">Utfört</span>
         </button>
       ) : (
-        <button type="button" className="btn primary log" disabled={busy} onClick={() => submit('log')} aria-label={`${T.CTA_LOG}, set ${displayNo}`}>
-          {T.CTA_LOG}
+        <button type="button" className="btn primary log" disabled={busy} aria-busy={busy} onClick={() => submit('log')} aria-label={`${T.CTA_LOG}, set ${displayNo}`}>
+          {busy ? 'Sparar…' : T.CTA_LOG}
         </button>
       )}
       {done && effortPrompt && onRate && (
-        <div className="set-effort" role="group" aria-label={`${SUB.EFFORT_Q} Set ${displayNo}`}>
-          <span className="small">{SUB.EFFORT_Q}</span>
-          <div className="segmented">
-            {(['easy', 'ok', 'too_heavy'] as const).map((e) => (
-              <button key={e} type="button" aria-pressed={set.perceivedEffort === e} disabled={busy} onClick={() => void onRate(e).catch(() => setError(T.WARN_UNSAVED))}>
-                {SUB.EFFORT[e]}
-              </button>
-            ))}
-          </div>
-        </div>
+        <div className="set-effort"><EffortFeedback value={set.perceivedEffort ?? null} label={`Set ${displayNo}`} onRate={onRate} /></div>
       )}
       <div className="set-status">
         <SaveStateChip state={failed ? 'failed_local' : done || set.createQueued ? (set.syncState as SyncState) : null} online={online} />
@@ -242,11 +264,11 @@ export function SetRow({ set, displayNo, loadKind, stepGrams, online, showRir, f
       </div>
       {editing && (
         <div className="editor stack">
-          {hasKg && <EditableKg id={`${uid}-kg`} label={loadKind === 'assistance_kg' ? 'Assistans (kg) – lägre = tyngre' : loadKind === 'bodyweight_plus_kg' ? 'Extra vikt (kg), tomt = kroppsvikt' : loadBasis === 'per_hand_kg' ? 'Vikt (kg per hantel)' : 'Vikt (kg)'} value={draft.kg} stepGrams={stepGrams} onChange={(kg) => setDraft({ ...draft, kg })} autoFocus={editing === 'kg'} />}
+          {hasKg && <EditableKg id={`${uid}-kg`} unit={loadUnit} label={loadUnit === 'level' ? 'Belastningsnivå' : loadKind === 'assistance_kg' ? 'Assistans (kg) – lägre = tyngre' : loadKind === 'bodyweight_plus_kg' ? 'Extra vikt (kg), tomt = kroppsvikt' : loadBasis === 'per_hand_kg' ? 'Vikt (kg per hantel)' : 'Vikt (kg)'} value={draft.kg} stepGrams={stepGrams} onChange={(kg) => setDraft({ ...draft, kg, ...(done ? { rir: '' } : {}) })} autoFocus={editing === 'kg'} />}
           {isDuration ? (
-            <EditableReps id={`${uid}-s`} label="Sekunder" max={900} value={draft.secs} onChange={(secs) => setDraft({ ...draft, secs })} autoFocus={editing === 'reps'} />
+            <EditableReps id={`${uid}-s`} label="Sekunder" max={900} value={draft.secs} onChange={(secs) => setDraft({ ...draft, secs, ...(done ? { rir: '' } : {}) })} autoFocus={editing === 'reps'} />
           ) : (
-            <EditableReps id={`${uid}-r`} label="Repetitioner" value={draft.reps} onChange={(reps) => setDraft({ ...draft, reps })} autoFocus={editing === 'reps'} />
+            <EditableReps id={`${uid}-r`} label="Repetitioner" value={draft.reps} onChange={(reps) => setDraft({ ...draft, reps, ...(done ? { rir: '' } : {}) })} autoFocus={editing === 'reps'} />
           )}
           {showRir && (
             <div className="field">
@@ -275,7 +297,10 @@ export function SetRow({ set, displayNo, loadKind, stepGrams, online, showRir, f
                 <button
                   type="button"
                   className="btn grow"
+                  disabled={busy}
                   onClick={async () => {
+                    if (inFlight.current) return;
+                    inFlight.current = true;
                     setBusy(true);
                     try {
                       await onUndo();
@@ -283,6 +308,7 @@ export function SetRow({ set, displayNo, loadKind, stepGrams, online, showRir, f
                     } catch {
                       setError(T.WARN_UNSAVED);
                     } finally {
+                      inFlight.current = false;
                       setBusy(false);
                     }
                   }}

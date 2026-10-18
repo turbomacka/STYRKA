@@ -7,16 +7,18 @@
  * Genomförda pass och set läses ur befintliga tabeller och ändras aldrig härifrån.
  */
 import type { ExerciseId, LoadDisplayBasis, LoadKind } from '../domain/catalog';
-import { CATALOG_VERSION } from '../domain/catalog';
+import { exercise, CATALOG_VERSION } from '../domain/catalog';
 import { ENGINE_VERSION, type Mode } from '../domain/decision_engine';
 import { hashOf, uuidFromSeed } from '../domain/hash';
-import { PLANNER_VERSION, RULESET_VERSION, type PlanStatus, type PlannerInput, type Role, type WarningCode } from '../domain/model';
+import { PLANNER_VERSION, RULESET_VERSION, type PlanStatus, type PlannerInput, type PlanSnapshot, type Role, type WarningCode } from '../domain/model';
 import { SUBSTITUTION_CATALOG_VERSION } from '../domain/substitutionCatalog';
 import { planRegular, TEMPLATE_VERSION } from '../planner/planner';
 import type { LocalNote, LocalPlanRevision, LocalSession, LocalSessionExercise, LocalSet } from '../storage/db';
 import { noteRow, planRevisionRow } from '../server/mapping';
 import { AppError, outbox, type AppContext } from './context';
 import { buildPlannerInput } from './plannerInput';
+import { deletedWorkouts } from './deleteWorkout';
+import { comparisonKey, defaultConfiguration } from '../domain/trainingFlow';
 
 /** Standardhorisont och val (§3.3). Lagrad horisont per revision; längre visning beräknas utan ny revision. */
 export const PLAN_HORIZONS = [12, 36, 72] as const;
@@ -50,6 +52,7 @@ export type PlanSlotExercise = {
 };
 
 export type PlanSlot = {
+  catchUp?: PlanSnapshot['catchUp'];
   slotSequence: number;
   plannedSlotId: string;
   programId: string | null;
@@ -94,7 +97,15 @@ export async function ordinarySequence(ctx: AppContext): Promise<Map<string, num
     }
   }
   counted.sort((a, b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id));
-  return new Map(counted.map((c, i) => [c.id, i + 1]));
+  const deleted = (await deletedWorkouts(db)).filter((d) => d.sequence !== null);
+  const reserved = new Set(deleted.map((d) => d.sequence));
+  const result = new Map(deleted.map((d) => [d.id, d.sequence!]));
+  let sequence = 1;
+  for (const c of counted) {
+    while (reserved.has(sequence)) sequence++;
+    result.set(c.id, sequence++);
+  }
+  return result;
 }
 
 type PlanInputs = { input: PlannerInput; programId: string | null; rotationIndex: number; frequency: number; baseSequence: number; parts: Record<string, string>; inputsHash: string };
@@ -114,6 +125,7 @@ async function planInputs(ctx: AppContext): Promise<PlanInputs> {
   const extras = sessions.filter((s) => s.kind === 'extra' && FINISHED.has(s.status)).map((s) => `${s.id}|${s.countsAsPlannedAt ?? ''}`).sort();
   const { substitutions, equipmentProfiles, ...profileRest } = input.profile;
   const parts: Record<string, string> = {
+    ...(input.catchUp ? { catchUp: hashOf(input.catchUp) } : {}),
     ordinary: hashOf([...seq.keys()].sort()),
     counted: hashOf(sessions.filter((s) => s.countsAsPlannedAt).map((s) => s.id).sort()),
     extra: hashOf(extras),
@@ -135,6 +147,7 @@ function computeSlots(ctx: AppContext, pi: PlanInputs, count: number, offset = 0
     const plan = planRegular({ ...pi.input, rotationIndex: pi.rotationIndex + k });
     const sequence = pi.baseSequence + k;
     out.push({
+      ...(plan.catchUp ? { catchUp: plan.catchUp } : {}),
       slotSequence: sequence,
       plannedSlotId: slotId(ctx.userId, sequence),
       programId: pi.programId,
@@ -165,8 +178,9 @@ function computeSlots(ctx: AppContext, pi: PlanInputs, count: number, offset = 0
   return out;
 }
 
-const CHANGE_ORDER = ['SESSION_COMPLETED', 'EXTRA_COUNTED_AS_PLANNED', 'EXTRA_SESSION_COMPLETED', 'SUBSTITUTION_CHANGED', 'PROFILE_CHANGED', 'RESTRICTION_CHANGED', 'SYMPTOM_CHANGED', 'EXERCISE_SETTINGS_CHANGED', 'ALGORITHM_VERSION_CHANGED', 'HISTORY_CHANGED'] as const;
+const CHANGE_ORDER = ['SESSION_COMPLETED', 'EXTRA_COUNTED_AS_PLANNED', 'EXTRA_SESSION_COMPLETED', 'CATCH_UP_CHANGED', 'SUBSTITUTION_CHANGED', 'PROFILE_CHANGED', 'RESTRICTION_CHANGED', 'SYMPTOM_CHANGED', 'EXERCISE_SETTINGS_CHANGED', 'ALGORITHM_VERSION_CHANGED', 'HISTORY_CHANGED'] as const;
 const PART_CHANGE: Record<string, (typeof CHANGE_ORDER)[number]> = {
+  catchUp: 'CATCH_UP_CHANGED',
   ordinary: 'SESSION_COMPLETED',
   counted: 'EXTRA_COUNTED_AS_PLANNED',
   extra: 'EXTRA_SESSION_COMPLETED',
@@ -182,6 +196,7 @@ const PART_CHANGE: Record<string, (typeof CHANGE_ORDER)[number]> = {
 const ALWAYS_REVISE = new Set(['SESSION_COMPLETED', 'EXTRA_COUNTED_AS_PLANNED', 'EXTRA_SESSION_COMPLETED', 'SUBSTITUTION_CHANGED', 'PROFILE_CHANGED', 'RESTRICTION_CHANGED', 'SYMPTOM_CHANGED', 'ALGORITHM_VERSION_CHANGED']);
 
 export const CHANGE_TYPE_SV: Record<string, string> = {
+  CATCH_UP_CHANGED: 'Val efter överhoppad övning ändrat',
   INITIAL: 'Första planen',
   SESSION_COMPLETED: 'Ordinarie pass genomfört',
   EXTRA_COUNTED_AS_PLANNED: 'Spontanpass räknat som ordinarie',
@@ -199,6 +214,10 @@ const slotShape = (s: PlanSlot) => JSON.stringify([s.templateKey, s.estimatedMin
 
 function summarize(changeTypes: string[], prev: LocalPlanRevision | null, slots: PlanSlot[]): string {
   const parts: string[] = [];
+  if (changeTypes.includes('CATCH_UP_CHANGED')) {
+    const c = slots[0]?.catchUp;
+    parts.push(c ? `${exercise(c.exerciseId).nameSv} prioriteras i nästa pass efter ditt val. ${exercise(c.replacesExerciseId).nameSv} utgår ur det passet.` : 'Grundplanen används utan den tidigare prioriteringen.');
+  }
   const base = slots[0]?.slotSequence ?? 1;
   if (changeTypes.includes('SESSION_COMPLETED') || changeTypes.includes('EXTRA_COUNTED_AS_PLANNED')) parts.push(`Planen gäller nu från pass ${base}.`);
   if (prev) {
@@ -284,7 +303,7 @@ async function refreshFuturePlanNow(ctx: AppContext, opts: RefreshOptions = {}):
     inputParts: pi.parts,
     contentHash,
     engineVersion: ENGINE_VERSION,
-    plannerVersion: PLANNER_VERSION,
+    plannerVersion: pi.input.catchUp ? 'STYRKA-PLANNER/1.1.0' : PLANNER_VERSION,
     rulesetVersion: RULESET_VERSION,
     catalogVersion: CATALOG_VERSION,
     substitutionCatalogVersion: SUBSTITUTION_CATALOG_VERSION,
@@ -379,18 +398,20 @@ export async function getWorkoutDetail(ctx: AppContext, sessionId: string): Prom
   return {
     session,
     exercises: exs
-      .map((e) => ({ sessionExercise: e, replaced: !!e.replacedById, sets: sets.filter((x) => x.sessionExerciseId === e.id).sort((a, b) => a.ordinal - b.ordinal) }))
-      .filter((x) => !x.replaced || x.sets.some((s) => s.status === 'done')),
+      .map((e) => ({ sessionExercise: e, replaced: !!e.replacedById, sets: sets.filter((x) => x.sessionExerciseId === e.id).sort((a, b) => (a.kind === b.kind ? a.ordinal - b.ordinal : a.kind === 'warmup' ? -1 : 1)) }))
+      .filter((x) => !x.replaced || x.sets.some((s) => s.status === 'done' || s.detail?.performances.some((p) => p.status === 'done'))),
   };
 }
 
 /** Senast verifierade arbetsvikt (referens, aldrig prognos – §4 p.2). */
 export async function lastPerformed(ctx: AppContext, exerciseId: ExerciseId, variantKey = 'default'): Promise<{ grams: number | null; reps: number | null; seconds: number | null; at: string } | null> {
   const { db } = ctx;
-  const exIds = new Set((await db.sessionExercises.where('exerciseId').equals(exerciseId).toArray()).filter((e) => e.variantKey === variantKey).map((e) => e.id));
+  const exIds = new Set((await db.sessionExercises.where('exerciseId').equals(exerciseId).toArray()).filter((e) => variantKey.startsWith('flow:') || e.variantKey === variantKey).map((e) => e.id));
   const sets = (await db.sets.where('exerciseId').equals(exerciseId).toArray()).filter((s) => exIds.has(s.sessionExerciseId) && s.status === 'done' && !s.deleted && s.kind === 'work' && s.occurredAt);
-  if (!sets.length) return null;
-  const last = sets.sort((a, b) => (b.occurredAt ?? '').localeCompare(a.occurredAt ?? ''))[0];
+  const key = variantKey.startsWith('flow:') ? variantKey.slice(5) : comparisonKey(exerciseId, defaultConfiguration(exerciseId));
+  const comparable = sets.filter((s) => !s.detail ? !variantKey.startsWith('flow:') : s.detail.performances.every((p) => p.status === 'done' && p.comparisonKey === key && p.equipment.unit === 'kg' && p.equipment.basis !== 'independent'));
+  if (!comparable.length) return null;
+  const last = comparable.sort((a, b) => (b.occurredAt ?? '').localeCompare(a.occurredAt ?? ''))[0];
   return { grams: last.actualGrams, reps: last.actualReps, seconds: last.actualSeconds, at: last.occurredAt! };
 }
 
@@ -415,7 +436,8 @@ export async function saveNote(ctx: AppContext, target: NoteTarget, body: string
   if (target.targetType === 'session' && !(await db.sessions.get(target.sessionId))) throw new AppError('NOT_FOUND');
   const id = noteIdFor(ctx.userId, target);
   let out!: LocalNote;
-  await db.transaction('rw', [db.notes, db.outbox], async () => {
+  await db.transaction('rw', [db.notes, db.outbox, db.sessions], async () => {
+    if (target.targetType === 'session' && !(await db.sessions.get(target.sessionId))) throw new AppError('NOT_FOUND');
     const cur = await db.notes.get(id);
     if (cur && cur.body === body) {
       out = cur;

@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { exercise } from '../../domain/catalog';
-import type { PlanSnapshot } from '../../domain/model';
 import { activeSession, previewNext } from '../../application/training';
 import { EmptyState, Icon, OfflineBanner, Warnings } from '../components/common';
 import { prescriptionText } from '../components/widgets';
 import { useServices } from '../services';
 import { T, TEMPLATE_SV } from '../strings';
+import { CatchUpCard } from '../components/CatchUpCard';
 
 export function SyncLink() {
   const { syncStatus, online } = useServices();
@@ -29,18 +28,12 @@ export function Today() {
   const { ctx, online } = useServices();
   const nav = useNavigate();
   const active = useLiveQuery(() => activeSession(ctx), [ctx]);
-  const changeKey = useLiveQuery(async () => `${await ctx.db.sessions.count()}|${await ctx.db.restrictions.count()}|${await ctx.db.symptoms.count()}|${(await ctx.db.programs.toArray()).map((p) => p.rotationIndex).join()}|${(await ctx.db.profile.get(ctx.userId))?.revision}|${JSON.stringify((await ctx.db.profile.get(ctx.userId)) ?? {})}`, [ctx]);
-  const [plan, setPlan] = useState<PlanSnapshot | null>(null);
-  const [error, setError] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    previewNext(ctx)
-      .then((p) => alive && (setPlan(p), setError(false)))
-      .catch(() => alive && setError(true));
-    return () => {
-      alive = false;
-    };
-  }, [ctx, changeKey]);
+  const preview = useLiveQuery(async () => {
+    try { return { plan: await previewNext(ctx), error: false }; }
+    catch { return { plan: null, error: true }; }
+  }, [ctx]);
+  const plan = preview?.plan ?? null;
+  const error = preview?.error ?? false;
 
   return (
     <div className="page stack">
@@ -49,6 +42,7 @@ export function Today() {
         <SyncLink />
       </div>
       <OfflineBanner online={online} />
+      {!active && <CatchUpCard />}
       {active ? (
         <div className="card hero stack">
           <p className="label">Pågående pass</p>

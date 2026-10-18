@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Mode } from '../../domain/decision_engine';
 import type { ExerciseId } from '../../domain/catalog';
 import { ALL_AREAS, AREA_LABEL_SV, CATALOG, OFFERED_CATALOG, V1_SLUGS, exercise, isAvailable, type Area, type EquipmentSlug } from '../../domain/catalog';
@@ -12,10 +13,18 @@ import { Icon, LoadConfidence, ReasonPopover, Sheet } from './common';
 
 export function prescriptionText(p: PlannedExercise): string {
   // Lastbas och "per sida" visas endast för övningar med definierad semantik (katalog 2.0.0); äldre data tolkas inte om.
-  const perSide = exercise(p.exerciseId).unilateral && exercise(p.exerciseId).catalogSince !== '1.0.0' ? ' per sida' : '';
-  const perHand = p.loadBasis === 'per_hand_kg' ? ' per hantel' : '';
+  const mode = p.configuration?.executionMode;
+  const perSide = mode ? (mode === 'sequential' || mode === 'alternating' ? ' per sida' : mode === 'single_side' ? ` · ${p.configuration!.startingSide === 'right' ? 'höger' : 'vänster'}` : '') : exercise(p.exerciseId).unilateral && exercise(p.exerciseId).catalogSince !== '1.0.0' ? ' per sida' : '';
+  const equipment = p.configuration?.equipment;
+  const perHand = equipment ? equipment.measurement === 'per_dumbbell' ? ' per hantel' : equipment.basis === 'per_stack' ? ' per stapel' : equipment.basis === 'per_handle' ? ' per handtag' : '' : p.loadBasis === 'per_hand_kg' ? ' per hantel' : '';
   const reps = p.loadKind === 'duration_sec' ? `${p.targetSeconds ?? '?'} s` : `${p.reps} reps${perSide}`;
-  const suggestion = p.calibrationSuggestionKg != null ? ` · osäkert förslag ${formatKg(Math.round(p.calibrationSuggestionKg * 1000))} kg${perHand}` : ' · välj vikt';
+  if (equipment && (equipment.unit === 'level' || equipment.basis === 'independent')) {
+    const value = p.targetLoadValue;
+    const unit = equipment.unit === 'level' ? 'nivå' : 'kg';
+    const load = value == null ? 'välj belastning' : `${value.toLocaleString('sv-SE')} ${unit}${equipment.basis === 'independent' ? ` + ${p.targetSecondLoadValue?.toLocaleString('sv-SE') ?? '?'} ${unit} · separata staplar` : ''}`;
+    return `${p.sets} × ${reps} · ${load}`;
+  }
+  const suggestion = p.calibrationSuggestionKg != null ? ` · osäkert förslag ${formatKg(Math.round(p.calibrationSuggestionKg * 1000))} kg${perHand}` : ' · välj startvikt';
   const kg = p.loadKind === 'duration_sec' || p.loadKind === 'reps_only' ? '' : p.kg === null ? suggestion : p.loadKind === 'assistance_kg' ? ` · ${formatKg(Math.round(p.kg * 1000))} kg assistans` : p.loadKind === 'bodyweight_plus_kg' ? (p.kg === 0 ? ' · kroppsvikt' : ` · +${formatKg(Math.round(p.kg * 1000))} kg`) : ` · ${formatKg(Math.round(p.kg * 1000))} kg${perHand}`;
   return `${p.sets} × ${reps}${kg}`;
 }
@@ -279,7 +288,7 @@ export function ConsentPanel({ granted, onChange }: { granted: boolean; onChange
         <input id={id} type="checkbox" checked={granted} onChange={(e) => onChange(e.target.checked)} />
         <span>Jag samtycker till att STYRKA sparar hälsorelaterade uppgifter som jag själv anger.</span>
       </label>
-      <p className="small muted">Utkast till samtyckestext – kräver juridisk granskning före extern pilot.</p>
+      <p className="small"><Link to="/integritet">Läs hur dina uppgifter hanteras</Link></p>
     </div>
   );
 }

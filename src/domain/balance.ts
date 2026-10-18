@@ -156,6 +156,8 @@ export type BalanceInsight = {
 export type BalanceSuggestion = BalanceInsight & { candidateKey: string; basisKey: string; patternId: MainPattern; planned: number; matched: number; plannedTaskIds: string[] };
 
 export type BalanceOverview = {
+  partialWorkSets?: number;
+  sidePerformances?: number;
   asOf: string;
   timezone: string;
   patternPolicyVersion: string;

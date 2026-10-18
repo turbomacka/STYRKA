@@ -65,7 +65,7 @@ test('byte före start (hjälpskattning, Använd framöver) och under passet (ka
   await expect(page.getByText(/Ingen tillförlitlig vikt ännu/).first()).toBeVisible();
   await expect(page.getByText(/Testa inte maximal vikt/)).toBeVisible();
 
-  // Kontrollerat första set med egen vikt; "För tungt" ⇒ nästa set ett viktsteg lättare (2 kg per hantel).
+  // "Tungt" describes effort, not failure: preserve the user's successful calibration load.
   await page.getByRole('button', { name: /^Vikt set 1/ }).click();
   await page.getByLabel('Vikt (kg per hantel)').fill('20');
   await page.getByRole('listitem', { name: /^Set 1,/ }).getByRole('button', { name: 'Klart', exact: true }).click();
@@ -73,10 +73,10 @@ test('byte före start (hjälpskattning, Använd framöver) och under passet (ka
   await expect(page.getByRole('button', { name: /^Vikt set 1: 20 kilo per hantel/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /^Vikt set 2: 20 kilo per hantel/ })).toBeVisible();
   const effort = page.getByRole('group', { name: /Hur kändes setet\? Set 1/ });
-  await effort.getByRole('button', { name: 'För tungt' }).click();
-  await expect(effort.getByRole('button', { name: 'För tungt' })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByRole('button', { name: /^Vikt set 2: 18 kilo per hantel/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /^Vikt set 2/ })).toHaveText(/18\s*kg\/hantel/);
+  await effort.getByRole('button', { name: 'Tungt', exact: true }).click();
+  await expect(effort).toContainText('Känsla: Tungt');
+  await expect(page.getByRole('button', { name: /^Vikt set 2: 20 kilo per hantel/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Vikt set 2/ })).toHaveText(/20\s*kg\/hantel/);
   await shot('SUB-4-kalibrering-per-hantel');
   await axe(page, 'pass-kalibrering');
 

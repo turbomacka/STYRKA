@@ -3,12 +3,15 @@ import type { ExerciseId } from '../domain/catalog';
 import type { HistorySet, PerformedExercise, PlannerInput, RestrictionRule, SymptomReport, UserExerciseSettings } from '../domain/model';
 import { gramsToKg } from '../domain/units';
 import type { LocalExerciseSettings, LocalProfile, StyrkaDB } from '../storage/db';
+import { acceptedCatchUp } from './skipState';
+import { resolveStrengthInputs } from '../domain/strengthInputs';
+import { effectiveRir } from '../domain/effort';
 
 const kg = (g: number | null) => (g === null ? null : gramsToKg(g));
 
 export function toUserSettings(s: LocalExerciseSettings): UserExerciseSettings {
   const estimate =
-    s.estimateKind && s.estimateGrams !== null
+    s.strengthInputs !== undefined ? resolveStrengthInputs(s.strengthInputs).estimate : s.estimateKind && s.estimateGrams !== null
       ? { kind: s.estimateKind, kg: gramsToKg(s.estimateGrams), reps: s.estimateReps ?? undefined, rir: s.estimateRir, measured: s.estimateMeasured, testedAt: s.estimateTestedAt ?? undefined }
       : null;
   return { exerciseId: s.exerciseId, experience: s.experience, incrementKg: kg(s.incrementGrams), estimate, maxLoadKg: kg(s.maxLoadGrams), machineMinKg: kg(s.machineMinGrams), machineMaxKg: kg(s.machineMaxGrams) };
@@ -38,6 +41,7 @@ export async function buildHistory(db: StyrkaDB): Promise<PerformedExercise[]> {
     const sess = bySession.get(e.sessionId)!;
     const own = (setsByEx.get(e.id) ?? []).sort((a, b) => a.ordinal - b.ordinal);
     const hs: HistorySet[] = own.map((s) => ({
+      ...(s.detail ? { detail: s.detail } : {}),
       kind: s.kind,
       status: s.status,
       plannedKg: kg(s.targetGrams),
@@ -46,13 +50,13 @@ export async function buildHistory(db: StyrkaDB): Promise<PerformedExercise[]> {
       actualReps: s.actualReps,
       plannedSeconds: s.targetSeconds,
       actualSeconds: s.actualSeconds,
-      rir: s.rir,
+      rir: effectiveRir(s.rir, s.perceivedEffort),
       technique: s.technique,
       occurredAt: s.occurredAt,
       // Endast när svar finns, så att indata (och inputsHash) är oförändrade för befintlig historik.
       ...(s.perceivedEffort ? { perceivedEffort: s.perceivedEffort } : {}),
     }));
-    const doneTimes = own.filter((s) => s.kind === 'work' && s.status === 'done' && s.occurredAt).map((s) => s.occurredAt as string);
+    const doneTimes = own.filter((s) => s.kind === 'work' && ['done','partial'].includes(s.status) && s.occurredAt).map((s) => s.occurredAt as string);
     if (!doneTimes.length) continue;
     const whenUtc = doneTimes.sort().at(-1)!;
     out.push({ sessionId: sess.id, sessionKind: sess.kind, sessionStatus: sess.status, exerciseId: e.exerciseId, plan: e.snapshot, sets: hs, whenUtc });
@@ -73,7 +77,9 @@ export async function buildPlannerInput(db: StyrkaDB, userId: string, nowUtc: st
     : [];
   const settings = (await db.exerciseSettings.toArray()).map(toUserSettings).sort((a, b) => a.exerciseId.localeCompare(b.exerciseId));
   const history = (await buildHistory(db)).sort((a, b) => a.whenUtc.localeCompare(b.whenUtc) || a.sessionId.localeCompare(b.sessionId) || a.exerciseId.localeCompare(b.exerciseId));
+  const catchUp = await acceptedCatchUp(db, program?.id ?? null, program?.rotationIndex ?? 0);
   return {
+    ...(catchUp ? { catchUp } : {}),
     nowUtc,
     profile: plannerProfile(profile),
     exerciseSettings: settings,
@@ -87,6 +93,7 @@ export async function buildPlannerInput(db: StyrkaDB, userId: string, nowUtc: st
 
 export function plannerProfile(p: LocalProfile): PlannerInput['profile'] {
   return {
+    ...(p.trainingPreferences ? { trainingPreferences: p.trainingPreferences } : {}),
     plannedSessionsPerWeek: p.plannedSessionsPerWeek,
     minutesPerSession: p.minutesPerSession,
     experience: p.experience,

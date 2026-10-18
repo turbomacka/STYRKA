@@ -1,10 +1,10 @@
 # Demo: två oberoende konton, 36 pass vardera och spontanpass
 
-Genererad av `tests/db/demo_two_users.test.ts` mot lokal Supabase (2026-10-11). Simulerad klocka; alla data syntetiska.
+Genererad av `tests/db/demo_two_users.test.ts` mot lokal Supabase (2026-10-18). Simulerad klocka; alla data syntetiska.
 
 ## Konton
-- **A** (`78a37be0-aa16-46e2-b256-68437be14e3f`): 2 pass/vecka, 60 min, medelvan, **latsdrag**, RIR anges.
-- **B** (`76f6d98b-3816-44fc-98f4-8a45bb6634cc`): 3 pass/vecka, 45 min, novis, **assisterade chins** (eget variantval), `block_pair_heavy(squat, deadlift)`, inga RIR, offline under pass 5–8.
+- **A** (`75cd81fd-dc48-46a3-8e0a-382c251bb360`): 2 pass/vecka, 60 min, medelvan, **latsdrag**, RIR anges.
+- **B** (`4f74fc87-efd9-48e2-b6a8-0db7b7d8e633`): 3 pass/vecka, 45 min, novis, **assisterade chins** (eget variantval), `block_pair_heavy(squat, deadlift)`, inga RIR, offline under pass 5–8.
 
 ## Verifierat i databasen
 - A: extra: 1, planned: 36 · utförda set på server = lokalt = 387
@@ -21,9 +21,9 @@ Genererad av `tests/db/demo_two_users.test.ts` mot lokal Supabase (2026-10-11). 
 
 **Spontanpass (30 min, dagsform bra) ~28 h före:** Knäböj heavy 3×7 @ 95 kg; Bänkpress moderate 2×7 @ 70 kg; Latsdrag moderate 2×8 @ 65 kg; Sidolyft i kabel light 1×12 @ 12 kg
 
-**Nästa ordinarie (C) efter spontanpass:** Marklyft light 2×12 @ 90 kg; Knäböj light 2×8 @ 72,5 kg; Militärpress moderate 3×10 @ 37,5 kg; Latsdrag moderate 2×8 @ 65 kg; Sidolyft i kabel light 2×12 @ 12 kg
+**Nästa ordinarie (C) efter spontanpass:** Marklyft heavy 2×5 @ 125 kg; Knäböj light 2×8 @ 72,5 kg; Militärpress moderate 3×10 @ 37,5 kg; Latsdrag moderate 2×9 @ 65 kg; Sidolyft i kabel light 2×12 @ 12 kg
 
-Skälkoder efter: TEMPLATE_C, RECENT_LOWER_HEAVY, HEAVY_DOWNGRADED_TO_LIGHT, RECOVERY_HOLD, RECOVERY_24_TO_48H
+Skälkoder efter: TEMPLATE_C, DOUBLE_PROGRESS_WEIGHT, NORMAL_TIME_WINDOW, RECOVERY_HOLD, RECOVERY_24_TO_48H, RECOVERY_MATCHED_WORK, STEP_EXCEEDS_PROGRESS_CAP, DOUBLE_PROGRESS_REPS, NO_RELEVANT_HISTORY
 
 Rotationen oförändrad: ja. Rekommendationen ändrad: ja.
 
@@ -51,22 +51,22 @@ Rotationen oförändrad: ja. Rekommendationen ändrad: ja.
 | 19 | 2026-05-04 | A | completed | Knäböj heavy 3×6 @ 95 kg; Bänkpress moderate 3×6 @ 70 kg; Latsdrag moderate 2×6 @ 65 kg; Sidolyft i kabel light 2×12 @ 12 kg |
 | 20 | 2026-05-08 | B | completed | Bänkpress heavy 3×6 @ 77,5 kg; Marklyft light 2×12 @ 90 kg; Latsdrag moderate 2×7 @ 65 kg; Bicepscurl light 2×12 @ 18 kg; Triceps pushdown light 2×8 @ 25 kg |
 | 0 | 2026-05-10 | Spontan | completed | Knäböj heavy 3×7 @ 95 kg; Bänkpress moderate 2×7 @ 70 kg; Latsdrag moderate 2×8 @ 65 kg; Sidolyft i kabel light 1×12 @ 12 kg |
-| 21 | 2026-05-11 | C | completed | Marklyft light 2×12 @ 90 kg; Knäböj light 2×8 @ 72,5 kg; Militärpress moderate 3×10 @ 37,5 kg; Latsdrag moderate 2×8 @ 65 kg; Sidolyft i kabel light 2×12 @ 12 kg |
-| 22 | 2026-05-15 | A | completed | Knäböj heavy 3×5 @ 97,5 kg; Bänkpress moderate 3×8 @ 70 kg; Latsdrag moderate 2×8 @ 65 kg; Sidolyft i kabel light 2×12 @ 12 kg |
-| 23 | 2026-05-18 | B | completed | Bänkpress heavy 3×7 @ 77,5 kg; Marklyft light 2×12 @ 90 kg; Latsdrag moderate 2×9 @ 65 kg; Bicepscurl light 2×12 @ 18 kg; Triceps pushdown light 2×9 @ 25 kg |
-| 24 | 2026-05-22 | C | completed | Marklyft heavy 2×5 @ 125 kg; Knäböj light 2×8 @ 72,5 kg; Militärpress moderate 3×10 @ 37,5 kg; Latsdrag moderate 2×10 @ 65 kg; Sidolyft i kabel light 2×12 @ 12 kg |
-| 25 | 2026-05-25 | A | completed | Knäböj heavy 3×6 @ 97,5 kg; Bänkpress moderate 3×9 @ 70 kg; Latsdrag moderate 2×6 @ 67,5 kg; Sidolyft i kabel light 2×12 @ 12 kg |
-| 26 | 2026-05-29 | B | completed | Bänkpress heavy 3×5 @ 80 kg; Marklyft light 2×12 @ 90 kg; Latsdrag moderate 2×7 @ 67,5 kg; Bicepscurl light 2×12 @ 18 kg; Triceps pushdown light 2×10 @ 25 kg |
-| 27 | 2026-06-01 | C | completed | Marklyft heavy 2×6 @ 125 kg; Knäböj light 2×9 @ 72,5 kg; Militärpress moderate 3×10 @ 37,5 kg; Latsdrag moderate 2×8 @ 67,5 kg; Sidolyft i kabel light 2×12 @ 12 kg |
-| 28 | 2026-06-05 | A | completed | Knäböj heavy 3×7 @ 97,5 kg; Bänkpress moderate 3×10 @ 70 kg; Latsdrag moderate 2×9 @ 67,5 kg; Sidolyft i kabel light 2×12 @ 12 kg |
-| 29 | 2026-06-08 | B | completed | Bänkpress heavy 3×6 @ 80 kg; Marklyft light 2×12 @ 90 kg; Latsdrag moderate 2×9 @ 67,5 kg; Bicepscurl light 2×12 @ 18 kg; Triceps pushdown light 2×11 @ 25 kg |
-| 30 | 2026-06-12 | C | completed | Marklyft heavy 2×7 @ 125 kg; Knäböj light 2×10 @ 72,5 kg; Militärpress moderate 3×10 @ 37,5 kg; Latsdrag moderate 2×10 @ 67,5 kg; Sidolyft i kabel light 2×12 @ 12 kg |
-| 31 | 2026-06-15 | A | completed | Knäböj heavy 3×7 @ 97,5 kg; Bänkpress moderate 3×10 @ 70 kg; Latsdrag moderate 2×6 @ 70 kg; Sidolyft i kabel light 2×12 @ 12 kg |
-| 32 | 2026-06-19 | B | completed | Bänkpress heavy 3×7 @ 80 kg; Marklyft light 2×12 @ 90 kg; Latsdrag moderate 2×7 @ 70 kg; Bicepscurl light 2×12 @ 18 kg; Triceps pushdown light 2×12 @ 25 kg |
-| 33 | 2026-06-22 | C | completed | Marklyft heavy 2×5 @ 130 kg; Knäböj light 2×11 @ 72,5 kg; Militärpress moderate 3×10 @ 37,5 kg; Latsdrag moderate 2×8 @ 70 kg; Sidolyft i kabel light 2×12 @ 12 kg |
-| 34 | 2026-06-26 | A | completed | Knäböj heavy 3×5 @ 100 kg; Bänkpress moderate 3×6 @ 72,5 kg; Latsdrag moderate 2×9 @ 70 kg; Sidolyft i kabel light 2×12 @ 12 kg |
-| 35 | 2026-06-29 | B | completed | Bänkpress heavy 3×5 @ 82,5 kg; Marklyft light 2×12 @ 90 kg; Latsdrag moderate 2×10 @ 70 kg; Bicepscurl light 2×12 @ 18 kg; Triceps pushdown light 2×8 @ 26 kg |
-| 36 | 2026-07-03 | C | completed | Marklyft heavy 2×6 @ 130 kg; Knäböj light 2×12 @ 72,5 kg; Militärpress moderate 3×10 @ 37,5 kg; Latsdrag moderate 2×10 @ 70 kg; Sidolyft i kabel light 2×12 @ 12 kg |
+| 21 | 2026-05-11 | C | completed | Marklyft heavy 2×5 @ 125 kg; Knäböj light 2×8 @ 72,5 kg; Militärpress moderate 3×10 @ 37,5 kg; Latsdrag moderate 2×9 @ 65 kg; Sidolyft i kabel light 2×12 @ 12 kg |
+| 22 | 2026-05-15 | A | completed | Knäböj heavy 3×5 @ 97,5 kg; Bänkpress moderate 3×8 @ 70 kg; Latsdrag moderate 2×9 @ 65 kg; Sidolyft i kabel light 2×12 @ 12 kg |
+| 23 | 2026-05-18 | B | completed | Bänkpress heavy 3×7 @ 77,5 kg; Marklyft light 2×12 @ 90 kg; Latsdrag moderate 2×10 @ 65 kg; Bicepscurl light 2×12 @ 18 kg; Triceps pushdown light 2×9 @ 25 kg |
+| 24 | 2026-05-22 | C | completed | Marklyft heavy 2×5 @ 125 kg; Knäböj light 2×8 @ 72,5 kg; Militärpress moderate 3×10 @ 37,5 kg; Latsdrag moderate 2×6 @ 67,5 kg; Sidolyft i kabel light 2×12 @ 12 kg |
+| 25 | 2026-05-25 | A | completed | Knäböj heavy 3×6 @ 97,5 kg; Bänkpress moderate 3×9 @ 70 kg; Latsdrag moderate 2×7 @ 67,5 kg; Sidolyft i kabel light 2×12 @ 12 kg |
+| 26 | 2026-05-29 | B | completed | Bänkpress heavy 3×5 @ 80 kg; Marklyft light 2×12 @ 90 kg; Latsdrag moderate 2×8 @ 67,5 kg; Bicepscurl light 2×12 @ 18 kg; Triceps pushdown light 2×10 @ 25 kg |
+| 27 | 2026-06-01 | C | completed | Marklyft heavy 2×6 @ 125 kg; Knäböj light 2×9 @ 72,5 kg; Militärpress moderate 3×10 @ 37,5 kg; Latsdrag moderate 2×9 @ 67,5 kg; Sidolyft i kabel light 2×12 @ 12 kg |
+| 28 | 2026-06-05 | A | completed | Knäböj heavy 3×7 @ 97,5 kg; Bänkpress moderate 3×10 @ 70 kg; Latsdrag moderate 2×10 @ 67,5 kg; Sidolyft i kabel light 2×12 @ 12 kg |
+| 29 | 2026-06-08 | B | completed | Bänkpress heavy 3×6 @ 80 kg; Marklyft light 2×12 @ 90 kg; Latsdrag moderate 2×10 @ 67,5 kg; Bicepscurl light 2×12 @ 18 kg; Triceps pushdown light 2×11 @ 25 kg |
+| 30 | 2026-06-12 | C | completed | Marklyft heavy 2×7 @ 125 kg; Knäböj light 2×10 @ 72,5 kg; Militärpress moderate 3×10 @ 37,5 kg; Latsdrag moderate 2×6 @ 70 kg; Sidolyft i kabel light 2×12 @ 12 kg |
+| 31 | 2026-06-15 | A | completed | Knäböj heavy 3×7 @ 97,5 kg; Bänkpress moderate 3×10 @ 70 kg; Latsdrag moderate 2×7 @ 70 kg; Sidolyft i kabel light 2×12 @ 12 kg |
+| 32 | 2026-06-19 | B | completed | Bänkpress heavy 3×7 @ 80 kg; Marklyft light 2×12 @ 90 kg; Latsdrag moderate 2×8 @ 70 kg; Bicepscurl light 2×12 @ 18 kg; Triceps pushdown light 2×12 @ 25 kg |
+| 33 | 2026-06-22 | C | completed | Marklyft heavy 2×5 @ 130 kg; Knäböj light 2×11 @ 72,5 kg; Militärpress moderate 3×10 @ 37,5 kg; Latsdrag moderate 2×9 @ 70 kg; Sidolyft i kabel light 2×12 @ 12 kg |
+| 34 | 2026-06-26 | A | completed | Knäböj heavy 3×5 @ 100 kg; Bänkpress moderate 3×6 @ 72,5 kg; Latsdrag moderate 2×10 @ 70 kg; Sidolyft i kabel light 2×12 @ 12 kg |
+| 35 | 2026-06-29 | B | completed | Bänkpress heavy 3×5 @ 82,5 kg; Marklyft light 2×12 @ 90 kg; Latsdrag moderate 2×6 @ 72,5 kg; Bicepscurl light 2×12 @ 18 kg; Triceps pushdown light 2×8 @ 26 kg |
+| 36 | 2026-07-03 | C | completed | Marklyft heavy 2×6 @ 130 kg; Knäböj light 2×12 @ 72,5 kg; Militärpress moderate 3×10 @ 37,5 kg; Latsdrag moderate 2×6 @ 72,5 kg; Sidolyft i kabel light 2×12 @ 12 kg |
 
 ## Passlogg B
 | # | Datum | Mall | Status | Föreskrift |

@@ -3,6 +3,8 @@ import type { ExerciseId } from '../domain/catalog';
 import { exercise, impactsAreas, isRelevantFor, type Area } from '../domain/catalog';
 import type { PerformedExercise, RestrictionRule, SymptomReport } from '../domain/model';
 import { hasWork, type GateInput } from '../domain/prescription';
+import { assessRecovery } from '../domain/recoveryPolicy';
+import type { ExerciseConfiguration } from '../domain/trainingFlow';
 
 export const HOUR_MS = 3_600_000;
 
@@ -58,17 +60,20 @@ export function symptomFor(ex: ExerciseId, active: SymptomReport[]): { state: Sy
 
 /**
  * Grindens timmar (02 §6): omstart (>13 dygn sedan samma övning) dominerar lastberäkningen;
- * annars gäller relevant gruppexponering <48 h; annars samma övning.
+ * annars används den aktuella mängd-/ansträngningsbedömningen. En utgången korttidsbegränsning
+ * skickas som null till referensmotorn, inte som påhittade timmar. Långt uppehåll och symtom bevaras.
  */
-export function gateFor(ex: ExerciseId, history: PerformedExercise[], active: SymptomReport[], nowUtc: string): GateInput & { groupHours: number | null } {
+export function gateFor(ex: ExerciseId, history: PerformedExercise[], active: SymptomReport[], nowUtc: string, configuration?: ExerciseConfiguration): GateInput & { groupHours: number | null; recovery: ReturnType<typeof assessRecovery> } {
   const exHours = hoursSinceExercise(history, ex, nowUtc);
   const groupHours = hoursSinceGroup(history, ex, nowUtc);
+  const recovery = assessRecovery(ex, history, nowUtc, configuration);
+  const sym = symptomFor(ex, active);
   let hours: number | null;
   if (exHours !== null && exHours > 312) hours = exHours;
-  else if (groupHours !== null && groupHours < 48) hours = groupHours;
-  else hours = exHours;
-  const sym = symptomFor(ex, active);
-  return { hoursSinceRelevant: hours, relevantSymptoms: sym.state, impactedRegion: sym.impacted, groupHours };
+  else if (recovery.activeHours !== null) hours = recovery.activeHours;
+  else if (sym.impacted) hours = exHours ?? groupHours;
+  else hours = exHours !== null && exHours >= 48 ? exHours : null;
+  return { hoursSinceRelevant: hours, relevantSymptoms: sym.state, impactedRegion: sym.impacted, groupHours, recovery };
 }
 
 export function ruleTargets(rule: RestrictionRule, ex: ExerciseId): boolean {

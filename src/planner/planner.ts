@@ -1,8 +1,12 @@
+import { recoveryMode } from '../domain/recoveryPolicy';
+import { comparableHistory } from '../domain/comparableTraining';
+import { configuredPrescription } from '../domain/configuredPrescription';
+import { comparisonKey } from '../domain/trainingFlow';
 /**
  * Deterministisk schemagenerator enligt 08 §2 och 02 §7–9.
  * Ren funktion: ingen Date.now, ingen slump, ingen I/O. Samma input + version ⇒ samma output.
  */
-import { ENGINE_VERSION, estimateMinutes, isHeavy, roundDownKg, urgencyForSpontaneous, type Experience, type Mode } from '../domain/decision_engine';
+import { ENGINE_VERSION, estimateMinutes, isHeavy, roundDownKg, type Experience, type Mode } from '../domain/decision_engine';
 import { heavyPairAllowed } from '../domain/heavyPair';
 import type { ExerciseId } from '../domain/catalog';
 import { CATALOG, CATALOG_VERSION, RETIRED_SLUGS, V1_SLUGS, exercise, impactsAreas, isAvailable, type Area, type EquipmentSlug } from '../domain/catalog';
@@ -10,7 +14,7 @@ import { hashOf } from '../domain/hash';
 import { relationBetween, relationsFrom, SUBSTITUTION_CATALOG_VERSION, type SubstitutionRelation } from '../domain/substitutionCatalog';
 import { PLANNER_VERSION, RULESET_VERSION, type Familiarity, type LoadEstimationKind, type PlanSnapshot, type PlanStatus, type PlannedExercise, type PlannerInput, type Readiness, type RelationClass, type RestrictionRule, type Role, type SubstitutionMeta, type WarningCode } from '../domain/model';
 import { e1rmFromEstimate, prescribe, START_PCT } from '../domain/prescription';
-import { activeSymptoms, capMode, gateFor, hoursSinceExercise, hoursSinceGroup, isBlocked, isLowerSensitive, modeRank, pastWork, ruleTargets } from './history';
+import { activeSymptoms, capMode, gateFor, hoursSinceExercise, isBlocked, isLowerSensitive, modeRank, pastWork, ruleTargets } from './history';
 import templatesJson from './planner_templates.json';
 
 type TemplateEntry = [string, string, number];
@@ -80,7 +84,8 @@ function experienceFor(ctx: Ctx, slug: ExerciseId): Experience {
 }
 
 function settingsFor(ctx: Ctx, slug: ExerciseId) {
-  return ctx.input.exerciseSettings.find((s) => s.exerciseId === slug) ?? null;
+  const s = ctx.input.exerciseSettings.find((s) => s.exerciseId === slug) ?? null;
+  return s && ctx.input.profile.trainingPreferences?.loadRecommendationSource === 'performed_sets' ? { ...s, estimate: null } : s;
 }
 
 function remove(ctx: Ctx, items: Item[], i: number, reason: string): void {
@@ -154,18 +159,19 @@ function applyUserRules(ctx: Ctx, items: Item[]): void {
   }
 }
 
-/** 08 §2 steg 5: review_required tas bort; tung övning vid relevant arbete <48 h blir lätt. */
+/** 08 §2 steg 5: review_required tas bort; nivån anpassas efter faktiskt arbete, ansträngning och rörelseöverlapp. */
 function applyRecovery(ctx: Ctx, items: Item[]): void {
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
-    const g = gateFor(it.slug, ctx.history, ctx.active, ctx.input.nowUtc);
+    const g = gateFor(it.slug, ctx.history, ctx.active, ctx.input.nowUtc, ctx.input.profile.trainingPreferences?.exerciseDefaults[it.slug]);
     if (g.impactedRegion && ['persistent', 'limping', 'swelling'].includes(g.relevantSymptoms)) {
       remove(ctx, items, i--, 'SYMPTOM_REVIEW_REQUIRED');
       continue;
     }
-    if (it.mode === 'heavy' && g.groupHours !== null && g.groupHours < 48) {
-      it.mode = 'light';
-      it.reasons.push(exercise(it.slug).recoveryGroup === 'lower' ? 'RECENT_LOWER_HEAVY' : 'RECENT_PATTERN_WORK', 'HEAVY_DOWNGRADED_TO_LIGHT');
+    const mode = recoveryMode(it.mode, g.recovery);
+    if (mode !== it.mode) {
+      it.mode = mode;
+      it.reasons.push('RECOVERY_MODE_REDUCED');
     }
   }
 }
@@ -222,23 +228,27 @@ function heavyList(ps: PlannedExercise[]) {
 
 /** Aktiv maskinprofil för en övning (CR §2.3). Endast maskin-/kabelövningar kan ha annan än 'default'. */
 export function activeVariant(profile: PlannerInput['profile'], slug: ExerciseId): string {
+  const c = profile.trainingPreferences?.exerciseDefaults[slug];
+  if (c) return `flow:${comparisonKey(slug, c)}`;
   return (exercise(slug).requiresEquipmentProfile ? profile.equipmentProfiles?.[slug] : undefined) ?? 'default';
 }
-
 const variantOf = (p: PlannedExercise) => p.variantKey ?? 'default';
+
 
 /** Historik och inställningar för en övning och redskapsvariant. Uppskattning gäller bara standardvarianten. */
 function variantData(ctx: Ctx, slug: ExerciseId, variantKey: string) {
-  const history = ctx.history.filter((h) => h.exerciseId === slug && variantOf(h.plan) === variantKey);
+  const configuration = ctx.input.profile.trainingPreferences?.exerciseDefaults[slug];
+  const history = comparableHistory(ctx.history, slug, configuration, variantKey);
   const s = settingsFor(ctx, slug);
   const settings = s && variantKey !== 'default' ? { ...s, estimate: null } : s;
   return { history, settings };
 }
 
 function prescribeItem(ctx: Ctx, it: Item, variantKey = activeVariant(ctx.input.profile, it.slug)): PlannedExercise {
-  const gate = gateFor(it.slug, ctx.history, ctx.active, ctx.input.nowUtc);
+  const gate = gateFor(it.slug, ctx.history, ctx.active, ctx.input.nowUtc, ctx.input.profile.trainingPreferences?.exerciseDefaults[it.slug]);
   const { history, settings } = variantData(ctx, it.slug, variantKey);
   const p = prescribe({
+    performedSetsOnly: ctx.input.profile.trainingPreferences?.loadRecommendationSource === 'performed_sets',
     exerciseId: it.slug,
     mode: it.mode,
     sets: it.sets,
@@ -249,8 +259,10 @@ function prescribeItem(ctx: Ctx, it: Item, variantKey = activeVariant(ctx.input.
     gate,
     bodyweightKg: ctx.input.profile.bodyweightKg,
   });
-  const withVariant = exercise(it.slug).requiresEquipmentProfile && variantKey !== 'default' ? { variantKey } : {};
-  return { ...p, ...withVariant, reasons: [...it.reasons, ...p.reasons], substitutionFrom: it.substitutionFrom, substitutionReason: it.substitutionReason, acceptedByUserAt: it.acceptedByUserAt };
+  const configuration = ctx.input.profile.trainingPreferences?.exerciseDefaults[it.slug];
+  const withVariant = { ...(variantKey !== 'default' ? { variantKey } : {}), ...(configuration ? { configuration } : {}) };
+  const adapted = configuration ? configuredPrescription(p, ctx.history, configuration) : p;
+  return { ...adapted, ...withVariant, reasons: [...it.reasons, ...adapted.reasons], substitutionFrom: it.substitutionFrom, substitutionReason: it.substitutionReason, acceptedByUserAt: it.acceptedByUserAt };
 }
 
 /** 08 §2 steg 6–7: efter viktberäkning kan relativ last ≥75 % e1RM göra en övning tung (02 §2). */
@@ -352,7 +364,7 @@ function warningsFor(exs: PlannedExercise[], ctx: Ctx): WarningCode[] {
   const w: WarningCode[] = [];
   if (exs.some((e) => e.calibration)) w.push('WARN_CAL');
   if (ctx.removed.some((r) => r.reason === 'SYMPTOM_REVIEW_REQUIRED') || ctx.active.some((s) => ['persistent', 'limping', 'swelling'].includes(s.reaction))) w.push('WARN_REVIEW');
-  if (exs.some((e) => e.reasons.includes('HEAVY_DOWNGRADED_TO_LIGHT') || e.state === 'caution')) w.push('WARN_RECOVERY');
+  if (exs.some((e) => e.reasons.includes('RECOVERY_MODE_REDUCED') || e.reasons.includes('HEAVY_DOWNGRADED_TO_LIGHT') || e.state === 'caution')) w.push('WARN_RECOVERY');
   return w;
 }
 
@@ -444,6 +456,17 @@ export function planRegular(input: PlannerInput): PlanSnapshot {
   }
   const templateCount = items.length;
   applySubstitutions(ctx, items);
+  const catchUp = input.catchUp?.targetRotationIndex === input.rotationIndex ? input.catchUp : undefined;
+  if (catchUp && !items.some((i) => i.slug === catchUp.exerciseId) && isAvailable(catchUp.exerciseId, ctx.equipment)) {
+    const index = items.findIndex((i) => i.slug === catchUp.replacesExerciseId && i.role !== 'main' && !exercise(i.slug).priorityLift);
+    if (index >= 0) {
+      const original = items[index];
+      let sets = Math.min(4, Math.max(1, catchUp.sets));
+      if (experienceFor(ctx, catchUp.exerciseId) === 'novice') sets = Math.min(sets, NOVICE_MAX_SETS);
+      if (catchUp.exerciseId === 'deadlift' && catchUp.mode === 'heavy') sets = Math.min(sets, DEADLIFT_HEAVY_MAX_SETS);
+      items[index] = { ...original, slug: catchUp.exerciseId, templateSlug: catchUp.exerciseId, mode: catchUp.mode, sets, reasons: ['USER_ACCEPTED_CATCH_UP'], substitutionFrom: catchUp.substitutionFrom ?? null, substitutionReason: catchUp.substitutionFrom ? 'USER_ACCEPTED_CATCH_UP' : null };
+    }
+  }
   applyUserRules(ctx, items);
   applyRecovery(ctx, items);
   applyLowerSensitivity(ctx, items);
@@ -474,7 +497,18 @@ export function planRegular(input: PlannerInput): PlanSnapshot {
     if (status === 'ok') status = 'no_full_schedule';
   }
   if (!exs.length && !warnings.includes('WARN_EMPTY')) warnings.push('WARN_EMPTY');
-  return finalize(ctx, { kind: 'planned', templateKey: key, rotationIndex: input.rotationIndex, readiness: null }, exs, exs.length ? status : 'empty', warnings);
+  const result = finalize(ctx, { kind: 'planned', templateKey: key, rotationIndex: input.rotationIndex, readiness: null }, exs, exs.length ? status : 'empty', warnings);
+  if (catchUp) {
+    const original = planRegular({ ...input, catchUp: undefined });
+    const main = original.exercises.find((e) => e.role === 'main');
+    const preservedMain = !main || result.exercises.some((e) => e.exerciseId === main.exerciseId && e.mode === main.mode && e.sets === main.sets);
+    const preservedOthers = original.exercises.filter((e) => e.exerciseId !== catchUp.replacesExerciseId).every((e) => result.exercises.some((r) => r.exerciseId === e.exerciseId && r.mode === e.mode && r.sets === e.sets));
+    // A changed situation must fall back to the normal plan, not silently drop more work or the requested exercise.
+    if (!preservedMain || !preservedOthers || result.exercises.length !== original.exercises.length || result.status === 'empty' || result.status === 'time_insufficient' || !result.exercises.some((e) => e.exerciseId === catchUp.exerciseId && e.reasons.includes('USER_ACCEPTED_CATCH_UP'))) return original;
+    result.catchUp = { sourceExerciseId: catchUp.sourceExerciseId, exerciseId: catchUp.exerciseId, replacesExerciseId: catchUp.replacesExerciseId, reason: catchUp.reason, decisionId: catchUp.decisionId };
+    result.plannerVersion = 'STYRKA-PLANNER/1.1.0';
+  }
+  return result;
 }
 
 export type ExtraOptions = { minutes: number; readiness: Readiness; painAreas?: Area[] };
@@ -490,7 +524,7 @@ export function planExtra(input: PlannerInput, opts: ExtraOptions): PlanSnapshot
   if (opts.readiness === 'tired') ctx.reasons.push('READINESS_TIRED');
   if (opts.readiness === 'pain') ctx.reasons.push('READINESS_PAIN');
 
-  type Cand = { slug: ExerciseId; recent48: boolean; recentHeavy48: boolean; exposure7d: number; score: number; order: number };
+  type Cand = { slug: ExerciseId; recoveryLimited: boolean; exposure7d: number; score: number; order: number };
   const cands: Cand[] = [];
   // Urval: version 1-katalogen (oförändrat beteende) plus övningar som användaren permanent valt som ersättare.
   const chosenTargets = new Set(Object.values(input.profile.substitutions).filter((x): x is ExerciseId => !!x));
@@ -501,7 +535,7 @@ export function planExtra(input: PlannerInput, opts: ExtraOptions): PlanSnapshot
       ctx.removed.push({ exerciseId: slug, reason: 'USER_RESTRICTION' });
       return;
     }
-    const g = gateFor(slug, ctx.history, ctx.active, now);
+    const g = gateFor(slug, ctx.history, ctx.active, now, ctx.input.profile.trainingPreferences?.exerciseDefaults[slug]);
     if (g.impactedRegion && ['persistent', 'limping', 'swelling'].includes(g.relevantSymptoms)) {
       ctx.removed.push({ exerciseId: slug, reason: 'SYMPTOM_REVIEW_REQUIRED' });
       return;
@@ -510,8 +544,6 @@ export function planExtra(input: PlannerInput, opts: ExtraOptions): PlanSnapshot
       ctx.removed.push({ exerciseId: slug, reason: 'READINESS_PAIN_AREA' });
       return;
     }
-    const groupH = hoursSinceGroup(ctx.history, slug, now);
-    const heavyH = hoursSinceGroup(ctx.history, slug, now, { heavyOnly: true });
     const sevenDays = ctx.history.filter((h) => (Date.parse(now) - Date.parse(h.whenUtc)) / 3_600_000 <= 168 && (h.exerciseId === slug || (ex.recoveryGroup !== 'own' && exercise(h.exerciseId).recoveryGroup === ex.recoveryGroup)));
     const exposure7d = sevenDays.reduce((n, h) => n + h.sets.filter((s) => s.kind === 'work' && s.status === 'done').length, 0);
     const fav = input.profile.favorites.includes(slug) ? 1 : 0;
@@ -521,15 +553,14 @@ export function planExtra(input: PlannerInput, opts: ExtraOptions): PlanSnapshot
     const chosenVariantPenalty = Object.entries(input.profile.substitutions).some(([from, to]) => from === slug && to !== slug) ? 1 : 0;
     cands.push({
       slug,
-      recent48: groupH !== null && groupH < 48,
-      recentHeavy48: heavyH !== null && heavyH < 48,
+      recoveryLimited: g.recovery.modeCap !== null,
       exposure7d,
       score: fav * 6 + goal * 4 + overdue * 5 - exposure7d - chosenVariantPenalty * 20 - (ex.bonus ? 3 : 0),
       order,
     });
   });
-  // Sortering: utan relevant belastning senaste 48 h först (08 §3), sedan prioritet/favorit och minst exponering, sist katalogordning.
-  cands.sort((a, b) => Number(a.recent48) - Number(b.recent48) || b.score - a.score || a.order - b.order);
+  // Sortering: utan aktuell återhämtningsbegränsning först (08 §3), sedan prioritet/favorit och minst exponering, sist katalogordning.
+  cands.sort((a, b) => Number(a.recoveryLimited) - Number(b.recoveryLimited) || b.score - a.score || a.order - b.order);
 
   const items: Item[] = [];
   const usedGroups = new Set<string>();
@@ -544,20 +575,15 @@ export function planExtra(input: PlannerInput, opts: ExtraOptions): PlanSnapshot
     const ex = exercise(pick.slug);
     const idx = items.length;
     const reasons: string[] = ['EXTRA_SESSION'];
-    if (!pick.recent48) reasons.push('LEAST_RECENT_PATTERN');
+    if (!pick.recoveryLimited) reasons.push('LEAST_RECENT_PATTERN');
     if (input.profile.favorites.includes(pick.slug)) reasons.push('PREFERRED_MOVEMENT');
     let mode: Mode;
     if (ex.timeKind === 'isolation') mode = 'light';
     else if (idx === 0) {
-      const heavyH = hoursSinceGroup(ctx.history, pick.slug, now, { heavyOnly: true });
-      const sym = gateFor(pick.slug, ctx.history, ctx.active, now);
-      const u = urgencyForSpontaneous({ minutes: opts.minutes, lastHeavyRelevantHours: heavyH, symptom: sym.impactedRegion ? sym.relevantSymptoms : 'none' });
-      if (opts.readiness === 'good' && u.allowHeavy && !pick.recent48) mode = 'heavy';
+      if (opts.readiness === 'good' && !pick.recoveryLimited) mode = 'heavy';
       else if (opts.readiness === 'tired' || opts.readiness === 'pain') mode = 'light';
-      else mode = pick.recent48 ? 'light' : 'moderate';
-      if (!u.allowHeavy) reasons.push(u.reason === 'RECENT_HEAVY_PATTERN' && ex.recoveryGroup === 'lower' ? 'RECENT_LOWER_HEAVY' : u.reason);
-    } else mode = opts.readiness === 'tired' || opts.readiness === 'pain' || pick.recent48 ? 'light' : 'moderate';
-    if (pick.recent48 && ex.timeKind !== 'isolation') reasons.push(ex.recoveryGroup === 'lower' && pick.recentHeavy48 ? 'RECENT_LOWER_HEAVY' : 'RECENT_PATTERN_WORK');
+      else mode = 'moderate';
+    } else mode = opts.readiness === 'tired' || opts.readiness === 'pain' ? 'light' : 'moderate';
     const exp = experienceFor(ctx, pick.slug);
     let sets = mode === 'heavy' ? (exp === 'novice' ? 2 : 3) : 2;
     if (opts.readiness === 'tired') sets = Math.min(sets, 2);
@@ -643,6 +669,8 @@ function priorRestricted(rules: RestrictionRule[], exercises: ExerciseId[], targ
 
 /** Giltig e1RM i källövningen: egen uppskattning, annars senaste föreskrifts e1RM (standardvariant). */
 function sourceE1rm(ctx: Ctx, from: ExerciseId): number | null {
+  // No population ratios or inherited estimated maxima in the explicitly observed-only mode.
+  if (ctx.input.profile.trainingPreferences?.loadRecommendationSource === 'performed_sets') return null;
   const s = settingsFor(ctx, from);
   if (s?.estimate) {
     const e = e1rmFromEstimate(s.estimate);
@@ -666,7 +694,7 @@ export function planReplacement(input: PlannerInput, args: ReplacementArgs): Rep
   if (!sameExercise && !relation && !revert) return fail('NOT_IN_CATALOG');
   if (!isAvailable(to, ctx.equipment)) return fail('EQUIPMENT_UNAVAILABLE', relation);
   if (isBlocked(to, input.restrictions)) return fail('USER_BLOCK_EXERCISE', relation);
-  const gate = gateFor(to, ctx.history, ctx.active, input.nowUtc);
+  const gate = gateFor(to, ctx.history, ctx.active, input.nowUtc, input.profile.trainingPreferences?.exerciseDefaults[to]);
   if (gate.impactedRegion && ['persistent', 'limping', 'swelling'].includes(gate.relevantSymptoms)) return fail('SYMPTOM_REVIEW_REQUIRED', relation);
   const variantKey = args.variantKey ?? activeVariant(input.profile, to);
   if (args.others.some((o) => o.exerciseId === to && variantOf(o) === variantKey)) return fail('ALREADY_IN_SESSION', relation);
@@ -676,9 +704,10 @@ export function planReplacement(input: PlannerInput, args: ReplacementArgs): Rep
   const items = [it];
   applyUserRules(ctx, items);
   if (!items.length) return fail('USER_BLOCK_EXERCISE', relation);
-  if (it.mode === 'heavy' && gate.groupHours !== null && gate.groupHours < 48) {
-    it.mode = 'light';
-    it.reasons.push(exercise(to).recoveryGroup === 'lower' ? 'RECENT_LOWER_HEAVY' : 'RECENT_PATTERN_WORK', 'HEAVY_DOWNGRADED_TO_LIGHT');
+  const recoveredMode = recoveryMode(it.mode, gate.recovery);
+  if (recoveredMode !== it.mode) {
+    it.mode = recoveredMode;
+    it.reasons.push('RECOVERY_MODE_REDUCED');
   }
   const pairs = pairRules(ctx);
   const othersHeavy = heavyList(args.others);
@@ -693,7 +722,7 @@ export function planReplacement(input: PlannerInput, args: ReplacementArgs): Rep
   const { history, settings } = variantData(ctx, to, variantKey);
   const experience = experienceFor(ctx, to);
   const hasHistory = history.some((h) => h.sets.some((s) => s.kind === 'work' && s.status === 'done'));
-  let p = prescribe({ exerciseId: to, mode: it.mode, sets: it.sets, role: it.role, experience, settings, history, gate, bodyweightKg: input.profile.bodyweightKg });
+  let p = prescribe({ performedSetsOnly: input.profile.trainingPreferences?.loadRecommendationSource === 'performed_sets', exerciseId: to, mode: it.mode, sets: it.sets, role: it.role, experience, settings, history, gate, bodyweightKg: input.profile.bodyweightKg });
   let kind: LoadEstimationKind;
   let needsFamiliarity = false;
   let requiresConfirmation = false;

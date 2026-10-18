@@ -30,6 +30,7 @@ export type ExportBundle = {
   planRevisions: unknown[];
   /** Tillägg ÄA-BAL-001: dina beslut om balansförslag. */
   balanceDecisions: unknown[];
+  skippedExerciseDecisions: unknown[];
 };
 
 const strip = <T extends { syncState?: unknown }>(x: T) => {
@@ -84,6 +85,7 @@ export async function exportJson(ctx: AppContext): Promise<ExportBundle> {
     notebookNotes: notes.filter((n) => n.body.length > 0).map(strip),
     planRevisions: revisions.sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(strip),
     balanceDecisions: balanceDecisions.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)).map(strip),
+    skippedExerciseDecisions: (await db.skipEvents.toArray()).map(strip),
   };
 }
 
@@ -98,12 +100,12 @@ export async function exportCsv(ctx: AppContext): Promise<string> {
   const sessions = new Map((await db.sessions.toArray()).map((s) => [s.id, s]));
   const exs = new Map((await db.sessionExercises.toArray()).map((e) => [e.id, e]));
   const sets = (await db.sets.toArray()).filter((s) => s.status !== 'planned' || s.createQueued);
-  const header = ['session_id', 'session_kind', 'session_status', 'started_at', 'exercise', 'exercise_sv', 'mode', 'set_ordinal', 'set_kind', 'set_status', 'target_kg', 'target_reps', 'target_seconds', 'actual_kg', 'actual_reps', 'actual_seconds', 'rir', 'technique', 'occurred_at', 'manual_override', 'deleted', 'engine_version', 'recommendation_reasons', 'load_basis', 'perceived_effort', 'substituted_from'];
+  const header = ['session_id', 'session_kind', 'session_status', 'started_at', 'exercise', 'exercise_sv', 'mode', 'set_ordinal', 'set_kind', 'set_status', 'target_kg', 'target_reps', 'target_seconds', 'actual_kg', 'actual_reps', 'actual_seconds', 'rir', 'technique', 'occurred_at', 'manual_override', 'deleted', 'engine_version', 'recommendation_reasons', 'load_basis', 'perceived_effort', 'substituted_from', 'execution_mode', 'side_performances_json', 'rest_records_json', 'equipment_configuration_json'];
   const rows = sets
     .map((s) => {
       const se = exs.get(s.sessionExerciseId);
       const sess = sessions.get(s.sessionId);
-      return [s.sessionId, sess?.kind, sess?.status, sess?.startedAt, s.exerciseId, exercise(s.exerciseId).nameSv, se?.mode, s.ordinal, s.kind, s.status, s.targetGrams === null ? '' : gramsToDecimalString(s.targetGrams), s.targetReps, s.targetSeconds, s.actualGrams === null ? '' : gramsToDecimalString(s.actualGrams), s.actualReps, s.actualSeconds, s.rir, s.technique, s.occurredAt, s.manualOverride, s.deleted, se?.snapshot.engineVersion, se?.snapshot.reasons.join('|'), se?.snapshot.loadBasis ?? '', s.perceivedEffort ?? '', se?.snapshot.substitutionFrom ?? ''];
+      return [s.sessionId, sess?.kind, sess?.status, sess?.startedAt, s.exerciseId, exercise(s.exerciseId).nameSv, se?.mode, s.ordinal, s.kind, s.status, s.targetGrams === null ? '' : gramsToDecimalString(s.targetGrams), s.targetReps, s.targetSeconds, s.actualGrams === null ? '' : gramsToDecimalString(s.actualGrams), s.actualReps, s.actualSeconds, s.rir, s.technique, s.occurredAt, s.manualOverride, s.deleted, se?.snapshot.engineVersion, se?.snapshot.reasons.join('|'), se?.snapshot.loadBasis ?? '', s.perceivedEffort ?? '', se?.snapshot.substitutionFrom ?? '', s.detail?.configuration.executionMode ?? '', s.detail ? JSON.stringify(s.detail.performances) : '', s.detail ? JSON.stringify(s.detail.rests) : '', s.detail ? JSON.stringify(s.detail.configuration.equipment) : ''];
     })
     .sort((a, b) => String(a[3]).localeCompare(String(b[3])) || String(a[4]).localeCompare(String(b[4])) || Number(a[7]) - Number(b[7]));
   return [header, ...rows].map((r) => r.map(csvCell).join(';')).join('\n');
@@ -112,11 +114,13 @@ export async function exportCsv(ctx: AppContext): Promise<string> {
 /** Radera hälsorelaterade uppgifter (symtom, begränsningar, samtycke) lokalt + på servern atomiskt. */
 export async function eraseHealthData(ctx: AppContext): Promise<void> {
   const { db } = ctx;
-  await db.transaction('rw', [db.symptoms, db.restrictions, db.consents, db.outbox, db.notes, db.conflicts], async () => {
+  await db.transaction('rw', [db.symptoms, db.restrictions, db.consents, db.outbox, db.notes, db.conflicts, db.skipEvents], async () => {
     // Köade men osända hälsoposter ska aldrig nå servern efter radering. Anteckningar (fri text) räknas hit (ÄA-PLAN-001 PL27).
     const noteIds = await db.notes.toCollection().primaryKeys();
     const ids = new Set([...(await db.symptoms.toCollection().primaryKeys()), ...(await db.restrictions.toCollection().primaryKeys()), ...noteIds, `consent:${ctx.userId}`]);
     for (const id of noteIds) await db.conflicts.delete(`note:${id}`);
+    for (const id of await db.skipEvents.toCollection().primaryKeys()) ids.add(id);
+    await db.skipEvents.clear();
     await db.notes.clear();
     for (const e of await db.outbox.toArray()) if (ids.has(e.recordId)) await db.outbox.delete(e.seq!);
     await db.symptoms.clear();

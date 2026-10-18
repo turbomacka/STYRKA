@@ -1,236 +1,193 @@
-import { useId, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { Experience } from '../../domain/decision_engine';
-import type { ExerciseId } from '../../domain/catalog';
-import { ALL_EQUIPMENT, EQUIPMENT_LABEL_SV, exercise, type EquipmentSlug } from '../../domain/catalog';
-import { formatKg, parseKg } from '../../domain/units';
-import { completeOnboarding, DEFAULT_PROFILE, GYM_STANDARD, type EstimateInput, type NewRestriction } from '../../application/profile';
+import { ALL_EQUIPMENT, EQUIPMENT_LABEL_SV, exercise } from '../../domain/catalog';
+import { completeOnboarding, GYM_STANDARD } from '../../application/profile';
+import { INTRO_LIFTS, loadOnboardingDraft, saveOnboardingDraft, validIntroPage, type IntroPage, type IntroStrengthDraft, type OnboardingDraft } from '../../application/onboardingDraft';
+import { readStrengthDrafts, STRENGTH_LABELS } from '../components/StrengthInputs';
+import { IntroStrengthEntry } from '../components/IntroStrengthEntry';
+import { LoadSourceChoice } from '../components/LoadSourceChoice';
 import { Banner, Segmented, Stepper } from '../components/common';
 import { ConsentPanel, RestrictionPicker } from '../components/widgets';
 import { useServices } from '../services';
 import { EXPERIENCE_SV } from '../strings';
+import '../onboarding.css';
 
-type EstKind = 'none' | '1rm' | '3rm' | 'submax';
-type EstDraft = { kind: EstKind; kg: string; reps: string; rir: string };
-const LIFTS: ExerciseId[] = ['squat', 'bench_press', 'deadlift'];
-
-/** S02–S05: fyra korta steg, endast det nödvändiga är obligatoriskt; maxlyft krävs aldrig (41). */
 export function Onboarding({ onDone }: { onDone: () => void }) {
   const { ctx } = useServices();
-  const [step, setStep] = useState(1);
-  const [adult, setAdult] = useState(false);
-  const [freq, setFreq] = useState(DEFAULT_PROFILE.plannedSessionsPerWeek);
-  const [minutes, setMinutes] = useState(DEFAULT_PROFILE.minutesPerSession);
-  const [exp, setExp] = useState<Experience>(DEFAULT_PROFILE.experience);
-  const [equipment, setEquipment] = useState<EquipmentSlug[]>(GYM_STANDARD);
-  const [goals, setGoals] = useState<Record<string, number>>({ squat: 1, bench_press: 1, deadlift: 1 });
-  const [pull, setPull] = useState<'lat_pulldown' | 'assisted_pullup' | 'pullup'>('lat_pulldown');
-  const [est, setEst] = useState<Record<string, EstDraft>>(Object.fromEntries(LIFTS.map((l) => [l, { kind: 'none', kg: '', reps: '', rir: '' }])));
-  const [consent, setConsent] = useState(false);
-  const [rules, setRules] = useState<NewRestriction[]>([]);
-  const [adding, setAdding] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [draft, setDraft] = useState<OnboardingDraft>();
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let active = true;
+    loadOnboardingDraft(ctx).then((d) => { if (active) { setDraft(d); setError(false); } }).catch(() => { if (active) setError(true); });
+    return () => { active = false; };
+  }, [ctx, attempt]);
+  if (!draft) return <main className="shell"><div className="page stack">{error ? <><Banner kind="danger">Kunde inte läsa ditt utkast. Dina uppgifter har inte ändrats.</Banner><button className="btn" onClick={() => setAttempt(attempt + 1)}>Försök igen</button></> : <p role="status">Öppnar introduktionen…</p>}</div></main>;
+  return <IntroWizard key={ctx.userId} initial={draft} onDone={onDone} />;
+}
+
+function IntroWizard({ initial, onDone }: { initial: OnboardingDraft; onDone: () => void }) {
+  const { ctx } = useServices();
+  const [draft, setDraft] = useState(initial);
+  const current = useRef(initial);
+  const writes = useRef<Promise<void>>(Promise.resolve());
+  const lock = useRef(false);
+  const [search, setSearch] = useSearchParams();
+  const rawPage = search.get('intro');
+  const page = validIntroPage(rawPage) ? rawPage : initial.page;
   const [busy, setBusy] = useState(false);
-  const uid = useId();
+  const [error, setError] = useState<string | null>(null);
+  const [attempted, setAttempted] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [customEquipment, setCustomEquipment] = useState(!GYM_STANDARD.every((e) => initial.equipment.includes(e)) || initial.equipment.length !== GYM_STANDARD.length);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const today = ctx.clock.now().slice(0, 10);
+  const entryPage = page.startsWith('entry-');
+  const liftPage = page.startsWith('lift-') || entryPage;
+  const liftIndex = liftPage ? Number(page.split('-')[1]) : 0;
+  const lift = INTRO_LIFTS[liftIndex];
+  const kind = entryPage ? page.split('-')[2] as IntroStrengthDraft['kind'] : null;
+  const entry: IntroStrengthDraft | null = kind ? draft.entries[lift]?.[kind] ?? { kind, kg: '', reps: '', rir: '', testedAt: '', measured: false } : null;
+  const chapter = page === 'training' ? 1 : page === 'equipment' ? 2 : page === 'adaptation' ? 4 : 3;
+  const standardEquipment = GYM_STANDARD.every((e) => draft.equipment.includes(e)) && draft.equipment.length === GYM_STANDARD.length;
 
-  const estError = (d: EstDraft): string | null => {
-    if (d.kind === 'none') return null;
-    const p = parseKg(d.kg);
-    if (!p.ok || p.grams <= 0) return 'Ange vikt, t.ex. 82,5';
-    if (d.kind === 'submax' && !/^[1-8]$/.test(d.reps)) return 'Ange 1–8 repetitioner';
-    return null;
-  };
+  useEffect(() => {
+    if (!validIntroPage(rawPage)) setSearch({ intro: initial.page }, { replace: true });
+  }, [initial.page, rawPage, setSearch]);
+  useEffect(() => {
+    heading.current?.focus({ preventScroll: true });
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [page]);
 
-  async function finish() {
-    setBusy(true);
-    setError(null);
-    try {
-      const estimates: EstimateInput[] = LIFTS.filter((l) => est[l].kind !== 'none').map((l) => {
-        const d = est[l];
-        const p = parseKg(d.kg);
-        return { exerciseId: l, kind: d.kind as '1rm' | '3rm' | 'submax', grams: p.ok ? p.grams : 0, reps: d.kind === 'submax' ? Number(d.reps) : null, rir: d.kind === 'submax' && d.rir !== '' ? Number(d.rir) : null };
-      });
-      await completeOnboarding(ctx, {
-        adultConfirmed: adult,
-        plannedSessionsPerWeek: freq,
-        minutesPerSession: minutes,
-        experience: exp,
-        equipment,
-        goals,
-        substitutions: pull === 'lat_pulldown' ? {} : { lat_pulldown: pull },
-        estimates,
-        healthConsent: consent,
-        restrictions: rules.filter((r) => consent || !r.area),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Stockholm',
-      });
-      onDone();
-    } catch (e) {
-      setError((e as { code?: string }).code === 'LOCAL_SAVE_FAILED' ? 'Kunde inte spara på enheten. Försök igen.' : 'Något i uppgifterna behöver rättas.');
-    } finally {
-      setBusy(false);
-    }
+  function persist(next: OnboardingDraft): Promise<void> {
+    // Serialize typing and navigation: stale writes cannot overwrite newer fields.
+    const task = writes.current.catch(() => undefined).then(() => saveOnboardingDraft(ctx, next));
+    writes.current = task;
+    task.catch(() => setError('Kunde inte spara på enheten. Behåll sidan öppen och försök igen.'));
+    return task;
   }
-
-  const canNext = step === 1 ? adult : step === 2 ? equipment.length > 0 : step === 3 ? LIFTS.every((l) => !estError(est[l])) : true;
-
-  return (
-    <main className="shell">
-      <div className="page full stack">
-        <p className="label" aria-live="polite">
-          Intro {step}/4
-        </p>
-        <div className="progress" aria-hidden="true">
-          <div style={{ width: `${step * 25}%` }} />
+  function change(patch: Partial<OnboardingDraft>) {
+    const next = { ...current.current, ...patch, page };
+    current.current = next; setDraft(next);
+    void persist(next).catch(() => undefined);
+  }
+  async function go(nextPage: IntroPage, patch: Partial<OnboardingDraft> = {}) {
+    const previousLocation = window.location.href;
+    const next = { ...current.current, ...patch, page: nextPage };
+    await persist(next);
+    current.current = next; setDraft(next); setAttempted(false);
+    // A browser back action during a pending disk write takes precedence over our navigation.
+    if (window.location.href === previousLocation) setSearch({ intro: nextPage });
+  }
+  async function run(fn: () => Promise<void>) {
+    if (lock.current) return;
+    lock.current = true; setBusy(true); setError(null);
+    try { await fn(); } catch { setError('Kunde inte spara på enheten. Dina uppgifter finns kvar här. Försök igen.'); }
+    finally { lock.current = false; setBusy(false); }
+  }
+  function nextLift(): IntroPage { return liftIndex < 2 ? `lift-${liftIndex + 1}` : 'summary'; }
+  async function saveEntry(addMore = false) {
+    if (!entry || readStrengthDrafts([entry], today).error) {
+      setAttempted(true);
+      requestAnimationFrame(() => document.querySelector<HTMLInputElement>('.intro-entry input[aria-invalid="true"]')?.focus());
+      return;
+    }
+    const saved = [...(draft.saved[lift] ?? []).filter((d) => d.kind !== entry.kind), entry];
+    await go(addMore ? `lift-${liftIndex}` : nextLift(), { saved: { ...draft.saved, [lift]: saved }, visited: [...new Set([...draft.visited, lift])] });
+  }
+  async function finish() {
+    await persist(current.current);
+    const strengthInputs = INTRO_LIFTS.map((exerciseId) => {
+      const result = readStrengthDrafts(draft.saved[exerciseId] ?? [], today);
+      if (result.error) throw new Error(result.error);
+      return { exerciseId, inputs: result.inputs };
+    });
+    await completeOnboarding(ctx, { adultConfirmed: draft.adult, plannedSessionsPerWeek: draft.frequency, minutesPerSession: draft.minutes,
+      experience: draft.experience, equipment: draft.equipment, goals: draft.goals,
+      substitutions: draft.pull === 'lat_pulldown' ? {} : { lat_pulldown: draft.pull }, estimates: [], strengthInputs,
+      loadRecommendationSource: draft.source, healthConsent: draft.consent, restrictions: draft.rules.filter((r) => draft.consent || !r.area),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Stockholm' });
+    onDone();
+  }
+  function back(): IntroPage {
+    if (page === 'equipment') return 'training';
+    if (page === 'source') return 'equipment';
+    if (entryPage) return `lift-${liftIndex}`;
+    if (liftPage) return liftIndex ? `lift-${liftIndex - 1}` : 'source';
+    if (page === 'summary') return 'lift-2';
+    return draft.source === 'performed_sets' ? 'source' : 'summary';
+  }
+  async function next() {
+    if (page === 'training') return go('equipment');
+    if (page === 'equipment') return go('source');
+    if (page === 'source') return go(draft.source === 'performed_sets' ? 'adaptation' : 'lift-0');
+    if (entryPage) return saveEntry();
+    if (liftPage) return go(nextLift(), { visited: [...new Set([...draft.visited, lift])] });
+    if (page === 'summary') return go('adaptation');
+    return finish();
+  }
+  const title = page === 'training' ? 'Hur vill du träna?' : page === 'equipment' ? 'Var tränar du?' : page === 'source' ? 'Hur vill du hitta dina startvikter?' : page === 'summary' ? 'Din startpunkt' : page === 'adaptation' ? 'Något att anpassa?' : exercise(lift).nameSv;
+  const canContinue = page === 'training' ? draft.adult : page === 'equipment' ? draft.equipment.length > 0 : page === 'adaptation' ? draft.adult && draft.equipment.length > 0 && !adding : true;
+  return <main className="shell intro-shell">
+    <div className="page full stack intro-page" aria-busy={busy}>
+      <header className="intro-progress">
+        <p className="label">Intro {chapter}/4</p>
+        <ol aria-label="Introduktionens steg">{['Träning', 'Utrustning', 'Styrka', 'Anpassning'].map((label, i) => <li key={label} aria-current={chapter === i + 1 ? 'step' : undefined} className={chapter > i + 1 ? 'past' : ''}><span aria-hidden="true" /><span>{label}</span></li>)}</ol>
+      </header>
+      <section className="stack intro-content" aria-labelledby="intro-title" inert={busy}>
+        {liftPage && <ol className="intro-lifts" aria-label="Styrkeuppgifter">{INTRO_LIFTS.map((id, i) => <li key={id} aria-current={i === liftIndex ? 'step' : undefined}><span aria-hidden="true">{draft.saved[id]?.length ? '✓' : draft.visited.includes(id) ? '–' : i + 1}</span><span>{exercise(id).nameSv}<span className="visually-hidden">{draft.saved[id]?.length ? ', sparad uppgift' : draft.visited.includes(id) ? ', kan fyllas i senare' : ''}</span></span></li>)}</ol>}
+        <h1 ref={heading} id="intro-title" tabIndex={-1}>{title}</h1>
+        {page === 'training' && <>
+          <div className="card stack">
+            <Stepper label="Pass per vecka" value={draft.frequency} min={1} max={7} onChange={(frequency) => change({ frequency })} />
+            <Stepper label="Minuter per pass" value={draft.minutes} min={15} max={120} step={5} onChange={(minutes) => change({ minutes })} format={(v) => `${v} min`} />
+            <Segmented label="Erfarenhet av styrketräning" value={draft.experience} onChange={(experience: Experience) => change({ experience })} options={(Object.keys(EXPERIENCE_SV) as Experience[]).map((v) => ({ value: v, label: EXPERIENCE_SV[v] }))} />
+          </div>
+          <label className="check"><input type="checkbox" checked={draft.adult} onChange={(e) => change({ adult: e.target.checked })} /><span>Jag bekräftar att jag är vuxen (18 år eller äldre).</span></label>
+        </>}
+        {page === 'equipment' && <>
+          <div className="card row spread wrap"><div><strong>{standardEquipment ? 'Standardgym' : 'Min utrustning'}</strong><p className="small muted">{standardEquipment ? 'Skivstång, hantlar, kabel och maskiner' : `${draft.equipment.length} typer valda`}</p></div><button className="btn" onClick={() => setCustomEquipment(!customEquipment)}>{customEquipment ? 'Dölj val' : 'Ändra utrustning'}</button></div>
+          {customEquipment && <fieldset className="card"><legend>Tillgänglig utrustning</legend>{ALL_EQUIPMENT.map((e) => <label key={e} className="check"><input type="checkbox" checked={draft.equipment.includes(e)} onChange={(ev) => change({ equipment: ev.target.checked ? [...draft.equipment, e] : draft.equipment.filter((x) => x !== e) })} /><span>{EQUIPMENT_LABEL_SV[e]}</span></label>)}</fieldset>}
+          <details className="intro-details"><summary>Anpassa upplägget <span className="muted">· valfritt</span></summary><div className="stack">
+            <p className="small muted">Prioritet: 0 = ingen, 3 = högst.</p>
+            {INTRO_LIFTS.map((l) => <Stepper key={l} label={exercise(l).nameSv} value={draft.goals[l]} min={0} max={3} onChange={(v) => change({ goals: { ...draft.goals, [l]: v } })} />)}
+            <Segmented label="Vertikalt drag" value={draft.pull} onChange={(pull: OnboardingDraft['pull']) => change({ pull })} options={[{ value: 'lat_pulldown', label: 'Latsdrag' }, { value: 'assisted_pullup', label: 'Assisterade chins' }, { value: 'pullup', label: 'Chins' }]} />
+          </div></details>
+        </>}
+        {page === 'source' && <><p className="muted">Det här är en startpunkt. Du kan ändra senare.</p><LoadSourceChoice value={draft.source} onChange={(source) => change({ source })} /></>}
+        {liftPage && !entryPage && <>
+          <p className="muted">Välj en uppgift du känner till. En räcker.</p>
+          <div className="stack">{(['submax', '1rm', '3rm'] as const).map((k) => {
+            const saved = draft.saved[lift]?.find((d) => d.kind === k);
+            return <button key={k} className="btn intro-kind" disabled={busy} onClick={() => run(() => go(`entry-${liftIndex}-${k}`))}><span>{STRENGTH_LABELS[k]}{saved && <span className="small muted">{saved.kg.replace('.', ',')} kg{saved.kind === 'submax' ? ` × ${saved.reps}` : ''} · sparat på enheten</span>}</span><span aria-hidden="true">{saved ? '✓' : '›'}</span></button>;
+          })}</div>
+        </>}
+        {entry && <><h2>{STRENGTH_LABELS[entry.kind]}</h2><IntroStrengthEntry key={page} draft={entry} onChange={(value) => change({ entries: { ...draft.entries, [lift]: { ...draft.entries[lift], [value.kind]: value } } })} today={today} attempted={attempted} /></>}
+        {page === 'summary' && <><p className="muted">Du kan ändra uppgifterna senare i Profil.</p><ul className="list card">{INTRO_LIFTS.map((id, i) => <li key={id} className="row spread"><span><strong>{exercise(id).nameSv}</strong><span className="small muted intro-line">{draft.saved[id]?.length ? `✓ ${draft.saved[id]!.length} ${draft.saved[id]!.length === 1 ? 'uppgift sparad' : 'uppgifter sparade'}` : 'Kan fyllas i senare'}</span></span><button className="btn ghost" aria-label={`Ändra ${exercise(id).nameSv}`} onClick={() => run(() => go(`lift-${i}`))}>Ändra</button></li>)}</ul></>}
+        {page === 'adaptation' && <>
+          <p className="muted">Valfritt. Du kan alltid ändra i Profil.</p>
+          {draft.rules.length > 0 && <ul className="list card">{draft.rules.map((r, i) => <li key={i} className="row spread"><span>{r.kind === 'block_exercise' ? 'Undvik' : r.kind === 'limit_sets' ? `Högst ${r.maxSets} set` : r.kind === 'limit_mode' ? `Högst ${r.maxMode === 'light' ? 'lätt' : 'medel'}` : r.kind === 'block_pair_heavy' ? 'Inte tungt tillsammans:' : 'Notering:'} {r.exerciseA ? exercise(r.exerciseA).nameSv : 'valt område'}{r.exerciseB ? ` + ${exercise(r.exerciseB).nameSv}` : ''}</span><button className="btn ghost" onClick={() => change({ rules: draft.rules.filter((_, j) => j !== i) })}>Ta bort</button></li>)}</ul>}
+          {(adding || draft.consent) && <ConsentPanel granted={draft.consent} onChange={(consent) => change({ consent, rules: consent ? draft.rules : draft.rules.filter((r) => !r.area) })} />}
+          {adding ? <RestrictionPicker consent={draft.consent} onCancel={() => setAdding(false)} onSave={async (r) => {
+            if (r.area && !draft.consent) throw new Error('PRIVACY_CONSENT_REQUIRED');
+            if (r.kind === 'block_pair_heavy' && (!r.exerciseA || !r.exerciseB || r.exerciseA === r.exerciseB)) throw new Error('VALIDATION_ERROR');
+            if (['block_exercise', 'limit_sets', 'limit_mode'].includes(r.kind) && !r.exerciseA && !r.area) throw new Error('VALIDATION_ERROR');
+            const next = { ...current.current, rules: [...draft.rules, r] };
+            await persist(next); current.current = next; setDraft(next); setAdding(false);
+          }} /> : <button className="btn block" onClick={() => setAdding(true)}>Lägg till anpassning</button>}
+          <div className="intro-plan-note"><strong>{draft.frequency} pass i veckan · {draft.minutes} min</strong><p className="small muted">{draft.source === 'performed_sets' ? 'Din plan är redo att skapas. Välj startvikter på gymmet.' : 'Din plan utgår från dina val och tillgängliga styrkeuppgifter.'}</p></div>
+        </>}
+      </section>
+      {error && <Banner kind="danger">{error}</Banner>}
+      <footer className="intro-footer stack">
+        {entryPage && <button className="btn block" disabled={busy} onClick={() => run(() => saveEntry(true))}>Spara och lägg till en uppgift</button>}
+        <div className="row">
+          {page !== 'training' && <button className="btn big" disabled={busy} onClick={() => run(() => go(back()))}>Tillbaka</button>}
+          <button className="btn primary big grow" disabled={busy || !canContinue} onClick={() => run(next)}>{busy ? 'Sparar…' : page === 'adaptation' ? 'Skapa min plan' : liftPage && !entryPage && !draft.saved[lift]?.length ? 'Fyll i senare' : 'Fortsätt'}</button>
         </div>
-        {step === 1 && (
-          <section className="stack" aria-labelledby={`${uid}-h1`}>
-            <h1 id={`${uid}-h1`}>Hur vill du träna?</h1>
-            <div className="card stack">
-              <Stepper label="Pass per vecka" value={freq} min={1} max={7} onChange={setFreq} />
-              <Stepper label="Minuter per pass" value={minutes} min={15} max={120} step={5} onChange={setMinutes} format={(v) => `${v} min`} />
-              <Segmented label="Erfarenhet av styrketräning" value={exp} onChange={setExp} options={(Object.keys(EXPERIENCE_SV) as Experience[]).map((v) => ({ value: v, label: EXPERIENCE_SV[v] }))} />
-            </div>
-            <label className="check card">
-              <input type="checkbox" checked={adult} onChange={(e) => setAdult(e.target.checked)} />
-              <span>Jag bekräftar att jag är vuxen (18 år eller äldre).</span>
-            </label>
-          </section>
-        )}
-        {step === 2 && (
-          <section className="stack" aria-labelledby={`${uid}-h2`}>
-            <h1 id={`${uid}-h2`}>Utrustning och prioriteringar</h1>
-            <fieldset className="card">
-              <legend className="label">Tillgänglig utrustning (förvalt: standardgym)</legend>
-              {ALL_EQUIPMENT.map((e) => (
-                <label key={e} className="check">
-                  <input type="checkbox" checked={equipment.includes(e)} onChange={(ev) => setEquipment(ev.target.checked ? [...equipment, e] : equipment.filter((x) => x !== e))} />
-                  <span>{EQUIPMENT_LABEL_SV[e]}</span>
-                </label>
-              ))}
-            </fieldset>
-            <div className="card stack">
-              <span className="label">Prioritet för huvudlyften (0 = ingen, 3 = högst)</span>
-              {LIFTS.map((l) => (
-                <Stepper key={l} label={exercise(l).nameSv} value={goals[l]} min={0} max={3} onChange={(v) => setGoals({ ...goals, [l]: v })} />
-              ))}
-            </div>
-            <div className="card">
-              <Segmented label="Vertikalt drag" value={pull} onChange={setPull} options={[{ value: 'lat_pulldown', label: 'Latsdrag' }, { value: 'assisted_pullup', label: 'Assisterade chins' }, { value: 'pullup', label: 'Chins' }]} />
-            </div>
-          </section>
-        )}
-        {step === 3 && (
-          <section className="stack" aria-labelledby={`${uid}-h3`}>
-            <h1 id={`${uid}-h3`}>Nuvarande styrka</h1>
-            <p className="muted">Inga maxlyft krävs. Vet du inte – välj kalibrering, så hittar vi en lämplig vikt tillsammans i gymmet.</p>
-            {LIFTS.map((l) => {
-              const d = est[l];
-              const err = estError(d);
-              const set = (patch: Partial<EstDraft>) => setEst({ ...est, [l]: { ...d, ...patch } });
-              const p = parseKg(d.kg);
-              const e1 = p.ok && d.kind === '3rm' ? formatKg(Math.round(p.grams * 1.1)) : null;
-              return (
-                <div key={l} className="card stack">
-                  <h2>{exercise(l).nameSv}</h2>
-                  <Segmented label="Uppgift" value={d.kind} onChange={(kind) => set({ kind })} options={[{ value: 'none', label: 'Kalibrera' }, { value: '1rm', label: '1RM' }, { value: '3rm', label: '3RM' }, { value: 'submax', label: 'Set' }]} />
-                  {d.kind !== 'none' && (
-                    <div className="field">
-                      <label htmlFor={`${uid}-${l}-kg`}>{d.kind === 'submax' ? 'Vikt i ett nyligen utfört set (kg)' : d.kind === '3rm' ? 'Max för tre tekniskt godkända reps (kg)' : 'Max för en repetition (kg)'}</label>
-                      <input id={`${uid}-${l}-kg`} type="text" inputMode="decimal" value={d.kg} onChange={(e) => set({ kg: e.target.value })} aria-invalid={!!err} />
-                    </div>
-                  )}
-                  {d.kind === 'submax' && (
-                    <div className="row">
-                      <div className="field grow">
-                        <label htmlFor={`${uid}-${l}-r`}>Reps (1–8)</label>
-                        <input id={`${uid}-${l}-r`} type="text" inputMode="numeric" value={d.reps} onChange={(e) => set({ reps: e.target.value })} />
-                      </div>
-                      <div className="field grow">
-                        <label htmlFor={`${uid}-${l}-rir`}>Reps kvar (0–3)</label>
-                        <select id={`${uid}-${l}-rir`} value={d.rir} onChange={(e) => set({ rir: e.target.value })}>
-                          <option value="">Vet inte</option>
-                          {[0, 1, 2, 3].map((n) => (
-                            <option key={n}>{n}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                  {err && d.kg !== '' && (
-                    <p className="error-text" role="alert">
-                      {err}
-                    </p>
-                  )}
-                  <p className="small muted">
-                    {d.kind === 'none' && 'Säkerhet: okänd – du väljer själv vikten första gången.'}
-                    {d.kind === '1rm' && 'Säkerhet: medel (om inte nyligen uppmätt).'}
-                    {d.kind === '3rm' && `Säkerhet: medel. Uppskattad maxstyrka ≈ ${e1 ?? '–'} kg (alltid ungefärlig).`}
-                    {d.kind === 'submax' && (d.rir === '' ? 'Utan reps kvar används setet bara som arbetsvikt, inte som uppskattning.' : 'Säkerhet: låg.')}
-                  </p>
-                </div>
-              );
-            })}
-          </section>
-        )}
-        {step === 4 && (
-          <section className="stack" aria-labelledby={`${uid}-h4`}>
-            <h1 id={`${uid}-h4`}>Begränsningar (frivilligt)</h1>
-            <p className="muted">Hoppa gärna över. Du kan alltid lägga till eller ändra senare under Profil.</p>
-            <ConsentPanel granted={consent} onChange={setConsent} />
-            {rules.length > 0 && (
-              <ul className="list card">
-                {rules.map((r, i) => (
-                  <li key={i} className="row spread">
-                    <span>
-                      {r.kind === 'block_exercise' && `Föreslå aldrig ${r.exerciseA ? exercise(r.exerciseA).nameSv : 'övningar i området'}`}
-                      {r.kind === 'block_pair_heavy' && `Aldrig tung ${exercise(r.exerciseA!).nameSv} + tung ${exercise(r.exerciseB!).nameSv}`}
-                      {r.kind === 'limit_sets' && `Högst ${r.maxSets} set ${r.exerciseA ? exercise(r.exerciseA).nameSv : ''}`}
-                      {r.kind === 'limit_mode' && `Högst ${r.maxMode === 'light' ? 'lätt' : 'medel'} ${r.exerciseA ? exercise(r.exerciseA).nameSv : ''}`}
-                      {r.kind === 'region_note' && 'Notering om problemområde'}
-                    </span>
-                    <button type="button" className="btn ghost" onClick={() => setRules(rules.filter((_, j) => j !== i))}>
-                      Ta bort
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {adding ? (
-              <RestrictionPicker
-                consent={consent}
-                onCancel={() => setAdding(false)}
-                onSave={async (r) => {
-                  if (r.area && !consent) throw Object.assign(new Error(), { code: 'PRIVACY_CONSENT_REQUIRED' });
-                  if (r.kind === 'block_pair_heavy' && (!r.exerciseA || !r.exerciseB || r.exerciseA === r.exerciseB)) throw new Error();
-                  if ((r.kind === 'block_exercise' || r.kind === 'limit_sets' || r.kind === 'limit_mode') && !r.exerciseA && !r.area) throw new Error();
-                  setRules([...rules, r]);
-                  setAdding(false);
-                }}
-              />
-            ) : (
-              <button type="button" className="btn block" onClick={() => setAdding(true)}>
-                Lägg till regel
-              </button>
-            )}
-            {error && <Banner kind="danger">{error}</Banner>}
-          </section>
-        )}
-        <div className="bottom-cta row">
-          {step > 1 && (
-            <button type="button" className="btn big grow" onClick={() => setStep(step - 1)}>
-              Tillbaka
-            </button>
-          )}
-          {step < 4 ? (
-            <button type="button" className="btn primary big grow" disabled={!canNext} onClick={() => setStep(step + 1)}>
-              Nästa
-            </button>
-          ) : (
-            <button type="button" className="btn primary big grow" disabled={busy} onClick={finish}>
-              {rules.length || consent ? 'Klar' : 'Hoppa över och börja'}
-            </button>
-          )}
-        </div>
-      </div>
-    </main>
-  );
+        {entryPage && <button className="btn ghost block" disabled={busy} onClick={() => run(() => go(nextLift(), { visited: [...new Set([...draft.visited, lift])] }))}>Fyll i senare</button>}
+      </footer>
+    </div>
+  </main>;
 }

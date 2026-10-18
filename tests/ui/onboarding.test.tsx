@@ -1,0 +1,32 @@
+import 'fake-indexeddb/auto';
+import { fireEvent, render, screen, waitFor, cleanup } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { afterEach, expect, it, vi } from 'vitest';
+import { harness, type Harness } from '../unit/appHarness';
+import { newOnboardingDraft, saveOnboardingDraft } from '../../src/application/onboardingDraft';
+import { Onboarding } from '../../src/ui/screens/Onboarding';
+
+let h: Harness;
+vi.mock('../../src/ui/services', () => ({ useServices: () => ({ ctx: h.ctx }) }));
+afterEach(async () => { cleanup(); vi.restoreAllMocks(); h.sync.dispose(); await h.db.delete(); });
+it('failed local commit keeps the field and screen; only a successful retry advances and confirms', async () => {
+  h = harness();
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+  const draft = newOnboardingDraft(h.ctx.userId);
+  draft.page = 'entry-0-1rm';
+  draft.entries.squat = { '1rm': { kind: '1rm', kg: '82,5', reps: '', rir: '', testedAt: '', measured: false } };
+  await saveOnboardingDraft(h.ctx, draft);
+  render(<MemoryRouter><Onboarding onDone={() => undefined} /></MemoryRouter>);
+  await screen.findByLabelText('Vikt (kg)');
+  const write = vi.spyOn(h.db.meta, 'put').mockRejectedValueOnce(new Error('QuotaExceeded'));
+  fireEvent.click(screen.getByRole('button', { name: 'Fortsätt' }));
+  expect((await screen.findByRole('alert')).textContent).toContain('Kunde inte spara');
+  expect(screen.getByRole('heading', { name: 'Knäböj' })).toBeTruthy();
+  expect((screen.getByLabelText('Vikt (kg)') as HTMLInputElement).value).toBe('82,5');
+  expect((await h.db.meta.get('onboarding-draft-v1'))?.value).toEqual(draft);
+  fireEvent.click(screen.getByRole('button', { name: 'Fortsätt' }));
+  await screen.findByRole('heading', { name: 'Bänkpress' });
+  await waitFor(() => expect(write).toHaveBeenCalledTimes(2));
+  const saved = (await h.db.meta.get('onboarding-draft-v1'))?.value as typeof draft;
+  expect(saved.saved.squat?.[0].kg).toBe('82,5');
+});

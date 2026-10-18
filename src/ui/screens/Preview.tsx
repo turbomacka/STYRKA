@@ -10,6 +10,7 @@ import { LiftCard } from '../components/widgets';
 import { FLAGS, useServices } from '../services';
 import { T, TEMPLATE_SV, reasonText } from '../strings';
 import { exercise } from '../../domain/catalog';
+import { CatchUpExplanation } from '../components/CatchUpCard';
 
 export type PreviewState = { kind: 'extra'; minutes: number; readiness: 'good' | 'normal' | 'tired' | 'pain'; painAreas?: string[] } | null;
 
@@ -64,6 +65,12 @@ export function Preview() {
       const s = await startSession(ctx, plan);
       nav(`/pass/${s.id}`, { replace: true });
     } catch (e) {
+      if ((e as { field?: string }).field === 'CATCH_UP_CHANGED') {
+        setErr('Förslaget har ändrats. Kontrollera den uppdaterade förhandsvisningen innan du startar.');
+        todaySwaps.current = [];
+        setPlan(applyLoadFlag(await previewNext(ctx, minutes ?? undefined)));
+        return;
+      }
       const code = (e as { code?: string }).code;
       setErr(code === 'INVALID_STATE' ? 'Du har redan ett pågående pass.' : code === 'LOCAL_SAVE_FAILED' ? 'Kunde inte spara på enheten. Kontrollera lagringsutrymmet och försök igen.' : 'Passet kunde inte startas.');
     } finally {
@@ -84,6 +91,7 @@ export function Preview() {
         <>
           <p className="num muted">Uppskattad tid: cirka {Math.round(plan.estimatedMinutes)} min inklusive uppvärmning och vila.</p>
           <Warnings codes={plan.warnings} />
+          {plan.catchUp && <div className="card"><CatchUpExplanation change={plan.catchUp} /></div>}
           {plan.exercises.length === 0 ? (
             <EmptyState title="Inget pass att föreslå">
               <p>{T.WARN_EMPTY}</p>

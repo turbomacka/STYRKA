@@ -34,7 +34,7 @@ export function authErrorMessage(err: AuthErr, ctx: AuthContext): string {
     case 'email_address_invalid':
       return 'E-postadressen ser inte giltig ut.';
     case 'email_address_not_authorized':
-      return 'Testmiljön kan ännu inte skicka mejl till den här adressen. Kontakta den som driver testet.';
+      return 'Vi kan inte skicka mejl till den här adressen just nu. Försök igen senare.';
     case 'signup_disabled':
     case 'email_provider_disabled':
       return 'Det går inte att skapa nya konton just nu.';

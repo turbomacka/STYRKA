@@ -20,7 +20,7 @@ import {
 const SECTIONS: Array<{ id: string; key: Section | 'E'; title: string }> = [
   { id: 'a-forskningen', key: 'A', title: 'A. Vad forskningen ger stöd för' },
   { id: 'b-rekommendationer', key: 'B', title: 'B. Hur rekommendationerna fungerar' },
-  { id: 'c-produktregler', key: 'C', title: 'C. Var forskningen upphör och produktval börjar' },
+  { id: 'c-produktregler', key: 'C', title: 'C. Appens egna antaganden' },
   { id: 'd-begransningar', key: 'D', title: 'D. Begränsningar och säkerhet' },
   { id: 'balans', key: 'E', title: 'Så fungerar Balans' },
   { id: 'e-kallor', key: 'E', title: 'E. Källförteckning' },
@@ -53,7 +53,7 @@ function ClaimCard({ c }: { c: EvidenceClaim }) {
         <dt>Källor</dt>
         <dd>
           {c.source_ids.length === 0 ? (
-            'Ingen – produktregel'
+            'Ingen direkt forskningskälla – ett antagande i appen'
           ) : (
             <ul className="science-inline">
               {c.source_ids.map((id) => {
@@ -88,8 +88,6 @@ function ClaimCard({ c }: { c: EvidenceClaim }) {
             </dd>
           </>
         )}
-        <dt>Regel-id i registret</dt>
-        <dd>{c.register_rule_ids.join(', ')}</dd>
         <dt>Senast granskad</dt>
         <dd>{c.last_reviewed_at}</dd>
       </dl>
@@ -112,8 +110,6 @@ function RuleCard({ r }: { r: MethodRule }) {
         <dd>{r.value_sv}</dd>
         <dt>Skäl</dt>
         <dd>{r.rationale_sv}</dd>
-        <dt>Regelversion</dt>
-        <dd>{EVIDENCE.ruleSetVersion}</dd>
       </dl>
     </article>
   );
@@ -177,28 +173,14 @@ export function Science({ backTo, backLabel }: { backTo: string; backLabel: stri
         <header className="stack">
           <h1>Vetenskapen bakom STYRKA</h1>
           <p>
-            Här ser du vilka källor, forskningsresultat, produktregler och antaganden som STYRKA:s träningsförslag bygger på. STYRKA är regelstyrt: samma uppgifter och samma regelversion ger alltid samma förslag. Dina egna data påverkar förslagen, men att träningen är fullständigt optimerad för just dig är inte bevisat.
+            Här kan du läsa om forskningen bakom träningsförslagen och hur STYRKA använder dina uppgifter. Du ser också vilka beräkningar som bygger på antaganden och vad appen inte kan bedöma.
           </p>
           <dl className="science-dl small card">
-            <dt>Algoritmversion</dt>
-            <dd>STYRKA-ENGINE {EVIDENCE.engineVersion}</dd>
-            <dt>Metodversion</dt>
-            <dd>{EVIDENCE.methodVersion}</dd>
-            <dt>Regelversion</dt>
-            <dd>{EVIDENCE.ruleSetVersion}</dd>
-            <dt>Substitutionskatalog</dt>
-            <dd>{EVIDENCE.substitutionCatalogVersion}</dd>
-            <dt>Senaste sakliga uppdatering</dt>
+            <dt>Senast uppdaterad</dt>
             <dd>{EVIDENCE.lastSubstantiveUpdate}</dd>
-            <dt>Evidensregister</dt>
-            <dd>
-              Schema {EVIDENCE.sourceRegister.schema_version}, granskat {EVIDENCE.sourceRegister.reviewed_at}
-            </dd>
-            <dt>Kontroll</dt>
-            <dd>{EVIDENCE.verificationNote}</dd>
           </dl>
           <p className="small">
-            <strong>{EVIDENCE.sourceRegister.warning_sv}</strong>
+            <strong>Forskningen ger vägledning, men visar inte att STYRKA:s förslag är optimala eller medicinskt säkra för just dig.</strong>
           </p>
         </header>
 
@@ -226,7 +208,7 @@ export function Science({ backTo, backLabel }: { backTo: string; backLabel: stri
           title={SECTIONS[0].title}
           intro={
             <p className="muted">
-              Forskningsresultat på gruppnivå, med klickbar källa per påstående. Registret innehåller inga källor som anger exakta vilotider eller antal timmar mellan pass – sådana värden i STYRKA är produktregler (se B och C).
+              Resultaten beskriver grupper och kan inte förutsäga exakt vad som passar dig. Du kan öppna källan till varje påstående. Appens exakta vilotider och antal timmar mellan pass bygger på egna antaganden, inte direkt på de här studierna.
             </p>
           }
         >
@@ -290,7 +272,7 @@ export function Science({ backTo, backLabel }: { backTo: string; backLabel: stri
           title="Så fungerar Balans"
           intro={
             <p className="muted">
-              Balans under Utveckling beskriver hur din träning är fördelad. Den är ingen diagnos, inget betyg och ingen skaderiskberäkning. Mönsterpolicy {EVIDENCE.balanceMethod.patternPolicyVersion}, beslutsregler {EVIDENCE.balanceMethod.decisionPolicyVersion}.
+              Balans under Utveckling beskriver hur din träning är fördelad. Den är ingen diagnos, inget betyg och ingen skaderiskberäkning.
             </p>
           }
         >
@@ -331,12 +313,6 @@ export function Science({ backTo, backLabel }: { backTo: string; backLabel: stri
                   {s.doi && !s.public_url.includes(s.doi) ? <> (DOI {s.doi})</> : null}
                 </p>
                 <dl className="science-dl small">
-                  {s.added_in && (
-                    <>
-                      <dt>Tillägg</dt>
-                      <dd>{s.added_in} (utanför produktägarens ursprungliga register)</dd>
-                    </>
-                  )}
                   <dt>Studietyp</dt>
                   <dd>{s.design}</dd>
                   <dt>Population</dt>

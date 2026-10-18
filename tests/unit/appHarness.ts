@@ -10,6 +10,11 @@ import { completeOnboarding, GYM_STANDARD, type OnboardingInput } from '../../sr
 
 /** In-memory server med samma semantik som `private.apply_set_mutation` (för snabba enhetstester). */
 export class FakeServer implements SyncTransport {
+  async patchExerciseConfiguration(exerciseId: string, configuration: import('../../src/domain/trainingFlow').ExerciseConfiguration): Promise<void> {
+    this.check();
+    const row = this.table('session_exercises').get(exerciseId);
+    if (row) this.table('session_exercises').set(exerciseId, { ...row, configuration });
+  }
   online = true;
   /** Utför nästa skrivning men tappa svaret (nätet bryts före ack). */
   dropNextAck = 0;
@@ -76,6 +81,19 @@ export class FakeServer implements SyncTransport {
     this.check();
     this.table(table).delete(id);
   }
+  async deleteWorkout(sessionId: string, sequence: number | null): Promise<void> {
+    this.check();
+    const ledger = this.table('deleted_training_sessions');
+    if (!ledger.has(sessionId)) ledger.set(sessionId, { id: sessionId, sequence });
+    const exIds = new Set([...this.table('session_exercises').values()].filter((e) => e.session_id === sessionId).map((e) => e.id));
+    for (const [id, s] of this.sets) if (exIds.has(s.sessionExerciseId)) this.sets.delete(id);
+    for (const table of ['session_exercises', 'recommendation_audits', 'notebook_notes', 'session_exercise_substitution_events', 'exercise_skip_events']) {
+      for (const [id, r] of this.table(table)) if (r.session_id === sessionId) this.table(table).delete(id);
+    }
+    this.table('training_sessions').delete(sessionId);
+    for (const r of this.table('symptom_reports').values()) if (r.session_id === sessionId) r.session_id = null;
+    this.maybeDrop();
+  }
   async patchProfile(userId: string, base: number, patch: Record<string, unknown>): Promise<ProfilePatchResult> {
     this.check();
     const cur = this.profiles.get(userId);
@@ -115,6 +133,7 @@ export class FakeServer implements SyncTransport {
     this.table('symptom_reports').clear();
     this.table('restriction_rules').clear();
     this.table('notebook_notes').clear();
+    this.table('exercise_skip_events').clear();
   }
   async deleteAccount(): Promise<void> {
     this.check();
@@ -144,8 +163,11 @@ export class FakeServer implements SyncTransport {
       deleted_at: s.deleted ? 'x' : null,
       revision: s.revision,
       perceived_effort: s.perceivedEffort ?? null,
+      detail: s.detail ?? null,
     }));
     return {
+      skipEvents: rows('exercise_skip_events'),
+      deletedWorkouts: rows('deleted_training_sessions') as Array<{ id: string; sequence: number | null }>,
       profile: this.profiles.get(userId) ?? null,
       equipment: this.equipment.get(userId) ?? [],
       exerciseProfiles: rows('user_exercise_profiles'),

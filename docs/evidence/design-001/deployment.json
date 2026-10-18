@@ -1,0 +1,52 @@
+{
+  "checkedAt": "2026-10-13T11:14:09.310Z",
+  "url": "https://styrka-staging.homeboard-mh.workers.dev",
+  "version": "27653f8a-3b72-4b64-bfcc-8ce95e7caba7",
+  "previousVersion": "51d6b72c-e126-415f-a7f3-128582e36caf",
+  "assets": [
+    {
+      "file": "index.html",
+      "status": 200,
+      "matchesLocalBuild": true,
+      "sha256": "348faec14be266d373f6a480d2c27508124485b32ef7cec3e84d18889d966b1e"
+    },
+    {
+      "file": "assets/index-Bv5bIQed.js",
+      "status": 200,
+      "matchesLocalBuild": true,
+      "sha256": "dd35d92c4181af736d1a7b0ce0778c765242365c8749cc4f74892138539a8f92"
+    },
+    {
+      "file": "assets/index-wMDy9rEl.css",
+      "status": 200,
+      "matchesLocalBuild": true,
+      "sha256": "1f2371ffe36a91fec6b11dbbfd2bbf1f4421de2dec78acf09c995f2913fc61ce"
+    },
+    {
+      "file": "sw.js",
+      "status": 200,
+      "matchesLocalBuild": true,
+      "sha256": "341f48303bf36dc4819b52220ab057bb58ea9f54ecfd7923311b203036d90937"
+    },
+    {
+      "file": "manifest.webmanifest",
+      "status": 200,
+      "matchesLocalBuild": true,
+      "sha256": "78674f34b80f1bc4ff5bae1385394cad9f7bf04d9337692f814b37a2cb68d5dc"
+    }
+  ],
+  "deployment": "c316c555-35af-4143-9313-e12114a9a86a",
+  "publishedAt": "2026-10-13T11:11:34.735Z",
+  "trafficPercent": 100,
+  "liveBrowserChecks": {
+    "passed": 4,
+    "failed": 0,
+    "retries": 0,
+    "durationSeconds": 39.3,
+    "environments": [
+      "Chromium with Pixel 7 emulation",
+      "WebKit with iPhone 14 emulation"
+    ],
+    "physicalDevices": false
+  }
+}

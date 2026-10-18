@@ -196,7 +196,7 @@ export function App() {
       <main className="shell">
         <div className="page">
           <h1>STYRKA</h1>
-          <p>Appen saknar serverkonfiguration (VITE_SUPABASE_URL och VITE_SUPABASE_ANON_KEY). Se README.</p>
+          <p>STYRKA kan inte starta just nu. Försök igen senare.</p>
         </div>
       </main>
     );

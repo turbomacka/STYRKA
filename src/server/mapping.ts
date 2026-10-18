@@ -1,5 +1,6 @@
 /** Översättning mellan lokala poster (gram, camelCase) och serverrader (numeric-sträng, snake_case). */
 import type { Experience, Mode } from '../domain/decision_engine';
+import type { LocalSkipEvent } from '../storage/db';
 import type { ExerciseId } from '../domain/catalog';
 import { exercise, type Area, type EquipmentSlug } from '../domain/catalog';
 import type { ChoiceScope, Familiarity, LoadEstimationKind, PerceivedEffort, PlanSnapshot, PlannedExercise, Readiness, RuleKind, SessionKind, SessionStatus, SetKind, SetStatus, Side, SymptomReaction, Technique } from '../domain/model';
@@ -7,10 +8,18 @@ import { decimalStringToGrams, gramsToDecimalString } from '../domain/units';
 import type { LocalAudit, LocalBalanceDecision, LocalCalibration, LocalConsent, LocalExerciseSettings, LocalNote, LocalPlanRevision, LocalProfile, LocalProgram, LocalRestriction, LocalSession, LocalSessionExercise, LocalSet, LocalSubstitutionEvent, LocalSymptom } from '../storage/db';
 
 const dec = (g: number | null): string | null => (g === null ? null : gramsToDecimalString(g));
+
+export function skipEventRow(userId: string, e: LocalSkipEvent): Record<string, unknown> {
+  return { id: e.id, user_id: userId, session_id: e.sessionId, session_exercise_id: e.sessionExerciseId, reason: e.reason, action: e.action, program_id: e.programId, target_rotation_index: e.targetRotationIndex, replaces_exercise_slug: e.replacesExerciseId, created_at: e.createdAt };
+}
+export function skipEventFromRow(r: Record<string, unknown>): LocalSkipEvent {
+  return { id: r.id as string, sessionId: r.session_id as string, sessionExerciseId: r.session_exercise_id as string, reason: r.reason as LocalSkipEvent['reason'], action: r.action as LocalSkipEvent['action'], programId: r.program_id as string | null, targetRotationIndex: r.target_rotation_index as number | null, replacesExerciseId: r.replaces_exercise_slug as ExerciseId | null, createdAt: r.created_at as string, syncState: 'synced' };
+}
 const grams = (v: unknown): number | null => (v === null || v === undefined ? null : decimalStringToGrams(String(v)));
 
 export function profileRow(p: LocalProfile): Record<string, unknown> {
   return {
+    ...(p.trainingPreferences ? { training_preferences: p.trainingPreferences } : {}),
     planned_sessions_per_week: p.plannedSessionsPerWeek,
     minutes_per_session: p.minutesPerSession,
     experience: p.experience,
@@ -29,6 +38,7 @@ export function profileRow(p: LocalProfile): Record<string, unknown> {
 
 export function profileFromRow(r: Record<string, unknown>, equipment: string[]): LocalProfile {
   return {
+    ...(r.training_preferences ? { trainingPreferences: r.training_preferences as LocalProfile['trainingPreferences'] } : {}),
     userId: r.user_id as string,
     plannedSessionsPerWeek: r.planned_sessions_per_week as number,
     minutesPerSession: r.minutes_per_session as number,
@@ -65,6 +75,7 @@ export function exerciseSettingsRow(userId: string, s: LocalExerciseSettings): R
     estimate_rir: s.estimateRir,
     estimate_measured: s.estimateMeasured,
     estimate_tested_at: s.estimateTestedAt,
+    ...(s.strengthInputs !== undefined ? { strength_inputs: s.strengthInputs } : {}),
     estimate_confidence: s.estimateKind === null ? 'unknown' : s.estimateKind === 'submax' ? 'low' : s.estimateKind === '1rm' && s.estimateMeasured ? 'high' : 'medium',
     max_load_kg: dec(s.maxLoadGrams),
     machine_min_kg: dec(s.machineMinGrams),
@@ -86,6 +97,7 @@ export function exerciseSettingsFromRow(r: Record<string, unknown>): LocalExerci
     estimateRir: (r.estimate_rir as number | null) ?? null,
     estimateMeasured: !!r.estimate_measured,
     estimateTestedAt: (r.estimate_tested_at as string | null) ?? null,
+    ...(Array.isArray(r.strength_inputs) ? { strengthInputs: r.strength_inputs as LocalExerciseSettings['strengthInputs'] } : {}),
     maxLoadGrams: grams(r.max_load_kg),
     machineMinGrams: grams(r.machine_min_kg),
     machineMaxGrams: grams(r.machine_max_kg),
@@ -186,6 +198,7 @@ export function sessionFromRow(r: Record<string, unknown>, snapshot: PlanSnapsho
 
 export function sessionExerciseRow(userId: string, e: LocalSessionExercise): Record<string, unknown> {
   return {
+    ...(e.configuration ? { configuration: e.configuration } : {}),
     id: e.id,
     user_id: userId,
     session_id: e.sessionId,
@@ -204,6 +217,7 @@ export function sessionExerciseRow(userId: string, e: LocalSessionExercise): Rec
 
 export function sessionExerciseFromRow(r: Record<string, unknown>, replacedById: string | null): LocalSessionExercise {
   return {
+    configuration: (r.configuration ?? undefined) as LocalSessionExercise['configuration'],
     id: r.id as string,
     sessionId: r.session_id as string,
     exerciseId: r.exercise_slug as ExerciseId,
@@ -299,6 +313,7 @@ export function noteFromRow(r: Record<string, unknown>): LocalNote {
 /** Fullständig payload för skapande via apply_set_mutation. */
 export function setCreatePayload(s: LocalSet): Record<string, unknown> {
   return {
+    ...(s.detail ? { detail: s.detail } : {}),
     sessionExerciseId: s.sessionExerciseId,
     ordinal: s.ordinal,
     kind: s.kind,
@@ -319,6 +334,7 @@ export function setCreatePayload(s: LocalSet): Record<string, unknown> {
 }
 
 const SET_FIELD_MAP: Array<[keyof LocalSet, string, (v: unknown) => unknown]> = [
+  ['detail', 'detail', (v) => v ?? null],
   ['status', 'status', (v) => v],
   ['targetGrams', 'targetKg', (v) => dec(v as number | null)],
   ['targetReps', 'targetReps', (v) => v],
@@ -352,6 +368,7 @@ export function setFullPatch(s: LocalSet): Record<string, unknown> {
 
 export function setFromRow(r: Record<string, unknown>, se: { sessionId: string; exerciseId: ExerciseId }): LocalSet {
   return {
+    ...(r.detail ? { detail: r.detail as LocalSet['detail'] } : {}),
     id: r.id as string,
     sessionId: se.sessionId,
     sessionExerciseId: r.session_exercise_id as string,
@@ -382,13 +399,14 @@ export function setFromRow(r: Record<string, unknown>, se: { sessionId: string; 
 export function applyServerSetValues(s: LocalSet, server: Record<string, unknown>, revision: number): LocalSet {
   return {
     ...s,
+    detail: (server.detail as LocalSet['detail']) ?? undefined,
     status: (server.status as SetStatus) ?? s.status,
     actualGrams: grams(server.actualKg),
     actualReps: (server.actualReps as number | null) ?? null,
     actualSeconds: (server.actualSeconds as number | null) ?? null,
     rir: (server.rir as number | null) ?? null,
     technique: (server.technique as Technique | null) ?? null,
-    perceivedEffort: (server.perceivedEffort as PerceivedEffort | null | undefined) ?? s.perceivedEffort ?? null,
+    perceivedEffort: server.perceivedEffort !== undefined ? server.perceivedEffort as PerceivedEffort | null : s.perceivedEffort ?? null,
     occurredAt: (server.occurredAt as string | null) ?? null,
     deleted: !!server.deleted,
     targetGrams: server.targetKg !== undefined ? grams(server.targetKg) : s.targetGrams,

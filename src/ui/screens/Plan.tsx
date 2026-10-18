@@ -1,3 +1,4 @@
+import { PerformanceHistory } from '../components/TrainingHistory';
 /**
  * ÄA-PLAN-001 "Min träningsplan": Kommande (levande, preliminär plan) och Genomförda (träningsdagbok).
  * En rad per pass i stängt läge; detaljer bara för det användaren expanderar. Ingen vy här ändrar träningsdata;
@@ -12,8 +13,10 @@ import { formatKg } from '../../domain/units';
 import { activeSession, previewNext } from '../../application/training';
 import { CHANGE_TYPE_SV, DEFAULT_HORIZON, getFuturePlan, getNote, getWorkoutDetail, getWorkoutHistory, lastPerformed, NOTE_MAX_LENGTH, PLAN_HORIZONS, planRevisions, saveNote, type NoteTarget, type PlanSlot, type WorkoutDetail, type WorkoutSummary } from '../../application/trainingPlan';
 import type { LocalPlanRevision, LocalSession, LocalSet } from '../../storage/db';
-import { Banner, Icon, Segmented } from '../components/common';
+import { Banner, Expandable, Icon, Segmented } from '../components/common';
 import { prescriptionText } from '../components/widgets';
+import { DeleteWorkout } from '../components/DeleteWorkout';
+import { CatchUpCard } from '../components/CatchUpCard';
 import { useServices } from '../services';
 import { MODE_SV, PLAN, TEMPLATE_SV } from '../strings';
 
@@ -69,6 +72,7 @@ export function Plan() {
       <div className="no-print">
         <Segmented label={PLAN.TAB_LABEL} value={tab} onChange={choose} options={[{ value: 'upcoming', label: PLAN.UPCOMING }, { value: 'done', label: PLAN.DONE }]} />
       </div>
+      {tab === 'upcoming' && !printing && <CatchUpCard />}
       {tab === 'upcoming' ? <Upcoming printing={!!printing} onPrinted={() => setPrinting(null)} /> : <Done printing={printing} onPrinted={() => setPrinting(null)} />}
       <div className="card stack no-print">
         {tab === 'done' && (
@@ -111,7 +115,7 @@ function Upcoming({ printing, onPrinted }: { printing: boolean; onPrinted: () =>
   });
   const [extra, setExtra] = useState(0);
   const [viewRevision, setViewRevision] = useState<string | null>(null);
-  const revKey = useLiveQuery(async () => `${await ctx.db.planRevisions.count()}|${await ctx.db.sessions.count()}|${(await ctx.db.programs.toArray()).map((p) => `${p.id}:${p.rotationIndex}`).join()}|${await ctx.db.restrictions.count()}|${JSON.stringify((await ctx.db.profile.get(ctx.userId)) ?? {})}`, [ctx]);
+  const revKey = useLiveQuery(async () => `${await ctx.db.skipEvents.count()}|${await ctx.db.planRevisions.count()}|${await ctx.db.sessions.count()}|${(await ctx.db.programs.toArray()).map((p) => `${p.id}:${p.rotationIndex}`).join()}|${await ctx.db.restrictions.count()}|${JSON.stringify((await ctx.db.profile.get(ctx.userId)) ?? {})}`, [ctx]);
   const active = useLiveQuery(() => activeSession(ctx), [ctx]);
   const [data, setData] = useState<{ revision: LocalPlanRevision; slots: PlanSlot[]; current: boolean } | null | undefined>(undefined);
   const [next, setNext] = useState<PlanSnapshot | null>(null);
@@ -227,8 +231,8 @@ function SlotRow({ slot, live, activeSession: act, readOnly, printing }: { slot:
           {names ? ` · ${names}` : ''}
         </span>
       </button>
-      {expanded && (
-        <div id={`${id}-d`} className="plan-row-body stack">
+      <Expandable open={expanded} id={`${id}-d`}>
+        <div className="plan-row-body stack">
           {act ? (
             <>
               <p className="small">{PLAN.ACTIVE_NOTE}</p>
@@ -239,7 +243,7 @@ function SlotRow({ slot, live, activeSession: act, readOnly, printing }: { slot:
           ) : live ? (
             <>
               <p className="small">
-                <strong>{PLAN.RECOMMENDED}</strong> – {PLAN.RECOMMENDED_NOTE} ({live.engineVersion}, {live.ruleSetVersion})
+                <strong>{PLAN.RECOMMENDED}</strong> – {PLAN.RECOMMENDED_NOTE}
               </p>
               <ul className="list">
                 {live.exercises.map((e) => (
@@ -289,7 +293,7 @@ function SlotRow({ slot, live, activeSession: act, readOnly, printing }: { slot:
           )}
           {!readOnly && <NoteEditor target={{ targetType: 'slot', slotSequence: slot.slotSequence }} printing={printing} />}
         </div>
-      )}
+      </Expandable>
     </li>
   );
 }
@@ -377,8 +381,8 @@ function DoneRow({ w, printing }: { w: WorkoutSummary; printing: { includeNotes:
           {w.durationMinutes !== null ? ` · ${w.durationMinutes} min` : ''} · {w.doneWorkSets} set
         </span>
       </button>
-      {expanded && (
-        <div id={`${id}-d`} className="plan-row-body stack">
+      <Expandable open={expanded} id={`${id}-d`}>
+        <div className="plan-row-body stack">
           {!detail ? (
             <p aria-busy="true">Hämtar set…</p>
           ) : (
@@ -397,13 +401,19 @@ function DoneRow({ w, printing }: { w: WorkoutSummary; printing: { includeNotes:
             ))
           )}
           {(!printing || printing.includeNotes) && <NoteEditor target={{ targetType: 'session', sessionId: s.id }} printing={!!printing} />}
+          {!printing && <DeleteWorkout sessionId={s.id} />}
         </div>
-      )}
+      </Expandable>
     </li>
   );
 }
 
 function SetLine({ set: x, no, lk, perHand }: { set: LocalSet; no: number; lk: LoadKind; perHand: boolean }) {
+  if (x.detail) {
+    const d = x.detail, e = d.configuration.equipment;
+    const target = d.targetLoadValue != null ? `${d.targetLoadValue.toLocaleString('sv-SE')}${d.targetSecondLoadValue != null ? ` / ${d.targetSecondLoadValue.toLocaleString('sv-SE')}` : ''} ${e.unit === 'level' ? 'nivå' : 'kg'} × ${x.targetReps} reps` : x.targetGrams === null && lk !== 'duration_sec' && lk !== 'reps_only' ? 'egen belastning' : loadText(x.targetGrams,x.targetReps,x.targetSeconds,lk,e.measurement === 'per_dumbbell');
+    return <li className="set-line"><PerformanceHistory set={x} /><span className="small muted">{PLAN.RECOMMENDED_THEN}: {target}</span></li>;
+  }
   const corrected = x.status === 'done' && x.occurredAt !== null && Date.parse(x.updatedAt) - Date.parse(x.occurredAt) > 1000;
   const status = x.status === 'done' ? PLAN.PERFORMED : x.status === 'skipped' ? 'Överhoppat' : 'Inte utfört';
   return (

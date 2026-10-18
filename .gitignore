@@ -13,3 +13,13 @@ supabase/.temp
 *.log
 spec/.reference-dist/
 docs/evidence/screenshots/*/test-failed-*.png
+
+# Lokala inloggningsuppgifter och verktygscache ska aldrig följa med till GitHub.
+.wrangler/
+.envrc
+*.pem
+*.key
+*.p12
+*.pfx
+*password*.txt
+*credentials*.json

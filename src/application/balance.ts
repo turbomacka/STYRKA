@@ -4,7 +4,7 @@
  * befintliga planeraren. Godkännande sker endast via befintliga profil- och revisionsflöden (idempotent, synkat).
  */
 import { exercise, isExerciseId, type ExerciseId } from '../domain/catalog';
-import { deriveBalanceOverview, DECISION_POLICY_VERSION, patternOf, STRENGTH_WINDOW_DAYS, type BalanceOverview, type BalanceSuggestion, type MainPattern, type StrengthSeriesInput } from '../domain/balance';
+import { deriveBalanceOverview, DECISION_POLICY_VERSION, localDate, patternOf, STRENGTH_WINDOW_DAYS, type BalanceOverview, type BalanceSuggestion, type MainPattern, type StrengthSeriesInput } from '../domain/balance';
 import { uuidFromSeed } from '../domain/hash';
 import { heavyPairAllowed } from '../domain/heavyPair';
 import { relationsFrom } from '../domain/substitutionCatalog';
@@ -45,7 +45,7 @@ export async function getBalanceOverview(ctx: AppContext, asOf: string = ctx.clo
       observations: series.points.filter((p) => (p.source === 'estimated' || p.source === 'measured') && p.sessionId).map((p) => ({ at: p.at, kg: p.kg, source: p.source as 'estimated' | 'measured', sessionId: p.sessionId! })),
     });
   }
-  return deriveBalanceOverview(
+  const overview = deriveBalanceOverview(
     {
       userId,
       timezone: profile.timezone || 'Europe/Stockholm',
@@ -68,6 +68,8 @@ export async function getBalanceOverview(ctx: AppContext, asOf: string = ctx.clo
     },
     asOf,
   );
+  const observed = sets.filter((s) => !s.deleted && s.kind === 'work' && s.occurredAt && localDate(s.occurredAt, overview.timezone) >= overview.windowStartLocalDate && localDate(s.occurredAt, overview.timezone) <= overview.windowEndLocalDate);
+  return { ...overview, partialWorkSets: observed.filter((s) => s.status === 'partial').length, sidePerformances: observed.flatMap((s) => s.detail?.performances ?? []).filter((p) => p.status === 'done' && p.side !== 'both').length };
 }
 
 export type SlotChange = { slotSequence: number; templateKey: string | null; removed: ExerciseId[]; added: ExerciseId[]; minutesBefore: number; minutesAfter: number };

@@ -11,6 +11,7 @@ import { ENGINE_VERSION, estimatedOneRepMax, initialPrescription, recommendNext,
 import type { ExerciseId, RefExerciseId } from './catalog';
 import { exercise } from './catalog';
 import type { Confidence, HistorySet, LiftEstimateInput, PerformedExercise, PlannedExercise, Role, UserExerciseSettings } from './model';
+import type { RecoveryAssessment } from './recoveryPolicy';
 
 /** H: samma som referensens MAX_INCREASE (exporteras inte där). Testas för ekvivalens. */
 export const MAX_INCREASE_PCT: Record<Experience, number> = { novice: 0.05, intermediate: 0.05, experienced: 0.03 };
@@ -24,13 +25,15 @@ export const START_PCT: Record<Experience, Record<Mode, number>> = {
 };
 
 export type GateInput = {
-  /** Timmar sedan relevant arbete enligt 02 §6 (grupp <48 h, annars samma övning), null = ingen historik. */
+  /** Verkliga timmar för en aktiv korttidsbegränsning eller för omstart; null = ingen tidsbegränsning. */
   hoursSinceRelevant: number | null;
+  recovery?: RecoveryAssessment;
   relevantSymptoms: SymptomState;
   impactedRegion: boolean;
 };
 
 export type PrescribeArgs = {
+  performedSetsOnly?: boolean;
   exerciseId: ExerciseId;
   mode: Mode;
   sets: number;
@@ -55,7 +58,7 @@ export function incrementFor(exerciseId: ExerciseId, settings: UserExerciseSetti
 export function e1rmFromEstimate(e: LiftEstimateInput): { kg: number; confidence: Confidence; source: 'measured' | 'estimated' } | null {
   if (e.kind === '1rm' || e.kind === '3rm') {
     const kg = estimatedOneRepMax({ kind: e.kind, kg: e.kg });
-    return { kg, confidence: e.kind === '1rm' && e.measured ? 'high' : 'medium', source: e.kind === '1rm' && e.measured ? 'measured' : 'estimated' };
+    return { kg, confidence: e.confidence ?? (e.kind === '1rm' && e.measured ? 'high' : 'medium'), source: e.kind === '1rm' && e.measured ? 'measured' : 'estimated' };
   }
   if (e.reps === undefined || e.rir === undefined || e.rir === null) return null;
   return submaxE1rm(e.kg, e.reps, e.rir);
@@ -72,7 +75,7 @@ function toEngineEstimate(e: LiftEstimateInput | null): { est: LiftEstimate | nu
     const s = e1rmFromEstimate(e);
     return s ? { est: { kind: '1rm', kg: s.kg, measured: false }, confidence: 'low' } : { est: null, confidence: 'unknown' };
   }
-  return { est: { kind: e.kind, kg: e.kg, measured: e.measured }, confidence: e.kind === '1rm' && e.measured ? 'medium' : 'low' };
+  return { est: { kind: e.kind, kg: e.kg, measured: e.measured }, confidence: e.confidence ?? (e.kind === '1rm' && e.measured ? 'medium' : 'low') };
 }
 
 function workDone(sets: HistorySet[]): HistorySet[] {
@@ -80,7 +83,7 @@ function workDone(sets: HistorySet[]): HistorySet[] {
 }
 
 export function hasWork(p: PerformedExercise): boolean {
-  return workDone(p.sets).length > 0;
+  return p.sets.some((s) => s.kind === 'work' && (s.status === 'done' || s.detail?.performances.some((p) => p.status === 'done')));
 }
 
 /** Mappar en historisk övning till referensmotorns Exposure. */
@@ -140,7 +143,7 @@ function base(args: PrescribeArgs, rec: Recommendation, extra: Partial<PlannedEx
     kg: rec.kg,
     targetSeconds: null,
     state: rec.state,
-    reasons: rec.reasons,
+    reasons: [...new Set([...rec.reasons, ...(args.gate.recovery?.reason ? [args.gate.recovery.reason] : [])])],
     confidence: rec.confidence,
     engineVersion: ENGINE_VERSION,
     calibration: rec.kg === null,
@@ -171,8 +174,22 @@ function latestFor(history: PerformedExercise[], mode: Mode): { latest: Performe
  * nedgraderat tung övning vid caution <48 h (08 §2 steg 4–5).
  */
 export function prescribe(args: PrescribeArgs): PlannedExercise {
-  const ex = exercise(args.exerciseId);
-  switch (ex.loadKind) {
+  if (args.performedSetsOnly) {
+    // Projection only: never rewrite immutable historical plans or stored observations.
+    args = { ...args, settings: args.settings ? { ...args.settings, estimate: null } : null,
+      history: args.history.map((h) => {
+        const loads = workDone(h.sets).flatMap((s) => s.actualKg !== null && s.actualKg >= 0 ? [s.actualKg] : []);
+        const observed = loads.length ? (exercise(h.exerciseId).loadKind === 'assistance_kg' ? Math.max(...loads) : Math.min(...loads)) : null;
+        return { ...h, plan: { ...h.plan, kg: h.plan.kg === null ? null : observed, estimatedOneRM: null, confidence: 'low' } };
+      }),
+    };
+  }
+  const result = prescribeForLoad(args);
+  return args.performedSetsOnly ? { ...result, loadSourcePolicyVersion: 'STYRKA-LOAD-SOURCE/1.0.0' } : result;
+}
+
+function prescribeForLoad(args: PrescribeArgs): PlannedExercise {
+  switch (exercise(args.exerciseId).loadKind) {
     case 'external_kg':
       return prescribeExternal(args);
     case 'assistance_kg':
@@ -207,6 +224,7 @@ function prescribeExternal(args: PrescribeArgs): PlannedExercise {
     }
     rec = { ...rec, state: gate.state, sets: applySets(args.sets, restart) };
     if (gate.state === 'caution') rec.reasons = [...rec.reasons, gate.reason];
+    if (args.settings?.estimate?.inputReason) rec.reasons = [...rec.reasons, args.settings.estimate.inputReason];
     return base(args, rec, { estimatedOneRM: e1rm, calibration: rec.kg === null });
   }
 
@@ -234,13 +252,18 @@ function prescribeExternal(args: PrescribeArgs): PlannedExercise {
 }
 
 function deriveFromOtherMode(args: PrescribeArgs, inc: number): { kg: number } | null {
-  const others = args.history.filter((h) => h.plan.mode !== args.mode && h.plan.kg !== null && hasWork(h));
+  const actualLoad = (h: PerformedExercise) => {
+    const loads = workDone(h.sets).flatMap((s) => s.actualKg !== null && s.actualKg > 0 ? [s.actualKg] : []);
+    return loads.length ? Math.min(...loads) : null;
+  };
+  const load = (h: PerformedExercise) => args.performedSetsOnly ? actualLoad(h) : h.plan.kg;
+  const others = args.history.filter((h) => h.plan.mode !== args.mode && load(h) !== null && hasWork(h));
   const src = others[others.length - 1];
-  if (!src || src.plan.kg === null) return null;
+  if (!src || load(src) === null) return null;
   const pctSrc = START_PCT[args.experience][src.plan.mode];
   const pctDst = START_PCT[args.experience][args.mode];
   if (pctDst > pctSrc) return null; // aldrig uppåt utan uppskattning
-  const kg = roundDownKg((src.plan.kg / pctSrc) * pctDst, inc);
+  const kg = roundDownKg((load(src)! / pctSrc) * pctDst, inc);
   return kg > 0 ? { kg } : null;
 }
 

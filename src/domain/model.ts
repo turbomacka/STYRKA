@@ -3,7 +3,7 @@ import type { ExerciseId } from './catalog';
 import type { Area, EquipmentSlug, LoadDisplayBasis, LoadKind } from './catalog';
 
 /** Versionsnummer som sparas i varje plansnapshot (04 §4). */
-export const RULESET_VERSION = 'STYRKA-RULES/1.2.0' as const;
+export const RULESET_VERSION = 'STYRKA-RULES/1.3.0' as const;
 export const PLANNER_VERSION = 'STYRKA-PLANNER/1.0.0' as const;
 
 export type Readiness = 'good' | 'normal' | 'tired' | 'pain';
@@ -11,7 +11,7 @@ export type SessionKind = 'planned' | 'extra' | 'calibration';
 export type SessionStatus = 'preview' | 'in_progress' | 'paused' | 'completed' | 'partial' | 'abandoned';
 export type Technique = 'controlled' | 'uncertain' | 'poor';
 export type SetKind = 'work' | 'warmup';
-export type SetStatus = 'planned' | 'done' | 'skipped';
+export type SetStatus = 'planned' | 'partial' | 'done' | 'skipped';
 export type Confidence = 'unknown' | 'low' | 'medium' | 'high';
 export type Role = 'main' | 'supplementary' | 'accessory' | 'bonus';
 export type SymptomReaction = Exclude<SymptomState, 'none'>;
@@ -50,6 +50,8 @@ export type LiftEstimateInput = {
   rir?: number | null;
   measured?: boolean;
   testedAt?: string;
+  confidence?: 'low' | 'medium';
+  inputReason?: 'MULTIPLE_STRENGTH_INPUTS' | 'STRENGTH_INPUTS_DISAGREE';
 };
 
 export type UserExerciseSettings = {
@@ -64,6 +66,7 @@ export type UserExerciseSettings = {
 };
 
 export type PlannerProfile = {
+  trainingPreferences?: import('./trainingFlow').TrainingPreferences;
   plannedSessionsPerWeek: number;
   minutesPerSession: number;
   experience: Experience;
@@ -80,6 +83,11 @@ export type PlannerProfile = {
 
 /** Föreskrift för en övning i ett plansnapshot. Immutabel efter skapande. */
 export type PlannedExercise = {
+  /** Present only when the user explicitly selects the performed-set source policy. */
+  loadSourcePolicyVersion?: 'STYRKA-LOAD-SOURCE/1.0.0';
+  targetLoadValue?: number | null;
+  targetSecondLoadValue?: number | null;
+  configuration?: import('./trainingFlow').ExerciseConfiguration;
   exerciseId: ExerciseId;
   loadKind: LoadKind;
   role: Role;
@@ -119,7 +127,8 @@ export type LoadEstimationKind = 'target_observed' | 'target_estimated' | 'calib
 export type RelationClass = 'near_variant' | 'movement_family' | 'accessory';
 export type Familiarity = 'familiar' | 'unfamiliar' | 'unknown';
 export type ChoiceScope = 'today' | 'future';
-export type PerceivedEffort = 'easy' | 'ok' | 'too_heavy';
+/** too_heavy is retained for earlier calibration answers; hard does not mean too_heavy. */
+export type PerceivedEffort = 'too_easy' | 'easy' | 'ok' | 'hard' | 'maximal' | 'too_heavy';
 
 export type SubstitutionMeta = {
   catalogVersion: string;
@@ -150,6 +159,7 @@ export type PlanStatus = 'ok' | 'time_reduced' | 'time_insufficient' | 'no_full_
 export type WarningCode = 'WARN_CAL' | 'WARN_TIME' | 'WARN_REVIEW' | 'WARN_NO_FULL_SCHEDULE' | 'WARN_TIME_INSUFFICIENT' | 'WARN_EMPTY' | 'WARN_PAIN' | 'WARN_RECOVERY';
 
 export type PlanSnapshot = {
+  catchUp?: { sourceExerciseId: string; exerciseId: ExerciseId; replacesExerciseId: ExerciseId; reason: 'time' | 'equipment'; decisionId: string };
   kind: 'planned' | 'extra';
   templateKey: string | null;
   templateVersion: string;
@@ -175,6 +185,7 @@ export type PlanSnapshot = {
 
 /** Ett utfört set i historiken (från lokal databas), kg som tal. */
 export type HistorySet = {
+  detail?: import('./trainingFlow').SetDetail;
   kind: SetKind;
   status: SetStatus;
   plannedKg: number | null;
@@ -186,7 +197,7 @@ export type HistorySet = {
   rir: number | null;
   technique: Technique | null;
   occurredAt: string | null;
-  /** Frivilligt enkelt svar vid kalibrering (lätt/lagom/för tungt). */
+  /** Frivillig setkänsla. Ensidiga svar finns på respektive prestation i detail. */
   perceivedEffort?: PerceivedEffort | null;
 };
 
@@ -203,6 +214,7 @@ export type PerformedExercise = {
 };
 
 export type PlannerInput = {
+  catchUp?: { sourceExerciseId: string; exerciseId: ExerciseId; replacesExerciseId: ExerciseId; reason: 'time' | 'equipment'; decisionId: string; mode: Mode; sets: number; targetRotationIndex: number; substitutionFrom?: ExerciseId | null };
   nowUtc: string;
   profile: PlannerProfile;
   exerciseSettings: UserExerciseSettings[];

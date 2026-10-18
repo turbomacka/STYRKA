@@ -8,10 +8,12 @@
  */
 import { applyServerSetValues, consentFromRow, exerciseSettingsFromRow, profileFromRow, programFromRow, restrictionFromRow, sessionExerciseFromRow, sessionFromRow, setFromRow, setFullPatch, symptomFromRow, auditFromRow, profileRow, calibrationFromRow, substitutionEventFromRow, noteFromRow, noteRow, planRevisionFromRow, balanceDecisionFromRow } from '../server/mapping';
 import { TransportError } from '../server/transport';
+import { skipEventFromRow } from '../server/mapping';
 import type { ConflictEntry, LocalProfile, LocalSet, OutboxEntry, ServerTable, SyncState } from '../storage/db';
 import type { ExerciseId } from '../domain/catalog';
 import type { PlanSnapshot } from '../domain/model';
 import { outbox, type AppContext } from './context';
+import { cleanCalibrations, deletedWorkouts, purgeWorkout } from './deleteWorkout';
 
 function sameValue(a: unknown, b: unknown): boolean {
   if (a === b) return true;
@@ -151,6 +153,8 @@ export class SyncEngine {
           blocked.add(next.recordId);
         }
       } catch (e) {
+        // An in-flight mutation may have been superseded by a local workout deletion.
+        if (!(await this.ctx.db.outbox.get(next.seq!))) continue;
         const err = e instanceof TransportError ? e : new TransportError('DB_UNAVAILABLE', String(e));
         if (err.retryable) {
           await this.ctx.db.outbox.update(next.seq!, { attempts: next.attempts + 1, lastError: err.code });
@@ -188,6 +192,10 @@ export class SyncEngine {
     const { db, transport, userId } = this.ctx;
     const op = entry.op;
     switch (op.type) {
+      case 'deleteWorkout':
+        await transport.deleteWorkout(op.sessionId, op.sequence);
+        await this.ack(entry);
+        return 'applied';
       case 'set': {
         let base = op.baseRevision;
         if (base === undefined) {
@@ -220,6 +228,10 @@ export class SyncEngine {
         await this.markRejected(entry, env.code ?? 'REJECTED');
         return 'rejected';
       }
+      case 'exerciseConfig':
+        await transport.patchExerciseConfiguration(op.exerciseId, op.configuration);
+        await this.ack(entry);
+        return 'applied';
       case 'upsert':
         await transport.upsert(op.table, op.row, { immutable: op.immutable });
         await this.ack(entry);
@@ -302,6 +314,14 @@ export class SyncEngine {
 
   private async ack(entry: OutboxEntry): Promise<void> {
     const db = this.ctx.db;
+    if (entry.op.type === 'exerciseConfig') {
+      const id = entry.op.exerciseId;
+      await db.transaction('rw', [db.outbox, db.sessionExercises], async () => {
+        await db.outbox.delete(entry.seq!);
+        if (await db.outbox.where('recordId').equals(id).count() === 0) await db.sessionExercises.update(id, { syncState: 'synced' });
+      });
+      return;
+    }
     if (entry.op.type !== 'upsert') {
       await db.outbox.delete(entry.seq!);
       return;
@@ -312,6 +332,7 @@ export class SyncEngine {
       session_exercises: 'sessionExercises', symptom_reports: 'symptoms', recommendation_audits: 'audits',
       user_exercise_calibrations: 'calibrations', session_exercise_substitution_events: 'substitutionEvents',
       plan_revisions: 'planRevisions', notebook_notes: 'notes', balance_suggestion_decisions: 'balanceDecisions',
+      exercise_skip_events: 'skipEvents',
     };
     const table = db.table<{ syncState: SyncState }, string>(localTables[entry.op.table]);
     const id = (entry.op.row.id ?? entry.op.row.user_id) as string;
@@ -398,7 +419,7 @@ export class SyncEngine {
     const { db, transport, userId } = this.ctx;
     // Bara poster som var synkade före hämtningen får avstämmas som raderade.
     // En lokal ändring/ny synk under nätanropet får inte försvinna på grund av en äldre serverbild.
-    const [beforeRestrictions, beforeSymptoms, beforeQueue, beforeNotes] = await Promise.all([db.restrictions.toArray(), db.symptoms.toArray(), db.outbox.toArray(), db.notes.toArray()]);
+    const [beforeRestrictions, beforeSymptoms, beforeQueue, beforeNotes, beforeSkipEvents] = await Promise.all([db.restrictions.toArray(), db.symptoms.toArray(), db.outbox.toArray(), db.notes.toArray(), db.skipEvents.toArray()]);
     const beforePending = new Set(beforeQueue.map((e) => e.recordId));
     // Äldre versioner tog bort kvitterade köposter men lämnade raderna märkta 'queued'.
     const wasSynced = (r: { id: string; syncState: SyncState }) => r.syncState === 'synced' || (r.syncState === 'queued' && !beforePending.has(r.id));
@@ -424,7 +445,18 @@ export class SyncEngine {
       }
     }
     const seIndex = new Map(snap.sessionExercises.map((se) => [se.id as string, { sessionId: se.session_id as string, exerciseId: se.exercise_slug as ExerciseId }]));
-    await db.transaction('rw', [db.profile, db.exerciseSettings, db.restrictions, db.symptoms, db.consents, db.programs, db.sessions, db.sessionExercises, db.sets, db.audits, db.meta, db.calibrations, db.substitutionEvents, db.outbox, db.planRevisions, db.notes, db.balanceDecisions], async () => {
+    await db.transaction('rw', [db.profile, db.exerciseSettings, db.restrictions, db.symptoms, db.consents, db.programs, db.sessions, db.sessionExercises, db.sets, db.audits, db.meta, db.calibrations, db.substitutionEvents, db.outbox, db.conflicts, db.planRevisions, db.notes, db.balanceDecisions, db.skipEvents], async () => {
+      for (const d of snap.deletedWorkouts ?? []) await purgeWorkout(db, d);
+      const deleted = new Set((await deletedWorkouts(db)).map((d) => d.id));
+      // A snapshot started before local deletion must not bring any of its children back.
+      snap.skipEvents = (snap.skipEvents ?? []).filter((r) => !deleted.has(r.session_id as string));
+      snap.sessions = snap.sessions.filter((r) => !deleted.has(r.id as string));
+      snap.sessionExercises = snap.sessionExercises.filter((r) => !deleted.has(r.session_id as string));
+      snap.sets = snap.sets.filter((r) => !deleted.has(seIndex.get(r.session_exercise_id as string)?.sessionId ?? ''));
+      snap.audits = snap.audits.filter((r) => !deleted.has(r.session_id as string));
+      snap.notes = snap.notes.filter((r) => !deleted.has(r.session_id as string));
+      snap.substitutionEvents = snap.substitutionEvents.filter((r) => !deleted.has(r.session_id as string));
+      snap.symptoms = snap.symptoms.map((r) => deleted.has(r.session_id as string) ? { ...r, session_id: null } : r);
       const queued = await db.outbox.toArray();
       const pendingIds = new Set(queued.map((e) => e.recordId));
       const keep = <T extends { syncState: string; id?: string; userId?: string }>(local: T | undefined) => {
@@ -432,7 +464,7 @@ export class SyncEngine {
         const id = local.id ?? local.userId ?? '';
         return local.syncState !== 'queued' || pendingIds.has(id) || pendingIds.has(`consent:${id}`);
       };
-      const pendingErase = queued.some((e) => e.op.type === 'rpc' && e.op.name === 'erase_health_data');
+      const pendingErase = [...queued, ...beforeQueue].some((e) => e.op.type === 'rpc' && e.op.name === 'erase_health_data');
       const pendingDeletes = new Set(queued.filter((e) => e.op.type === 'delete').map((e) => e.recordId));
       const restrictionIds = new Set(snap.restrictions.map((r) => r.id));
       const symptomIds = new Set(snap.symptoms.map((r) => r.id));
@@ -463,7 +495,10 @@ export class SyncEngine {
       for (const r of snap.sessionExercises) if (!keep(await db.sessionExercises.get(r.id as string))) await db.sessionExercises.put(sessionExerciseFromRow(r, replacedBy.get(r.id as string) ?? null));
       for (const r of snap.sets) {
         const se = seIndex.get(r.session_exercise_id as string);
-        if (!se || keep(await db.sets.get(r.id as string))) continue;
+        const local = await db.sets.get(r.id as string);
+        if (!se || keep(local)) continue;
+        // A fetch begun before an acknowledged write must never lower its revision.
+        if (local?.serverRevision != null && typeof r.revision === 'number' && r.revision < local.serverRevision) continue;
         await db.sets.put(setFromRow(r, se));
       }
       for (const r of snap.audits) if (!keep(await db.audits.get(r.id as string))) await db.audits.put(auditFromRow(r));
@@ -477,6 +512,10 @@ export class SyncEngine {
       }
       for (const r of snap.notes ?? []) if (!pendingErase && !keep(await db.notes.get(r.id as string))) await db.notes.put(noteFromRow(r));
       for (const r of snap.balanceDecisions ?? []) if (!keep(await db.balanceDecisions.get(r.id as string))) await db.balanceDecisions.put(balanceDecisionFromRow(r));
+      const skipIds = new Set(snap.skipEvents.map((r) => r.id));
+      for (const old of beforeSkipEvents) if (wasSynced(old) && !skipIds.has(old.id) && sameValue(old, await db.skipEvents.get(old.id))) await db.skipEvents.delete(old.id);
+      for (const r of snap.skipEvents) if (!pendingErase && !beforeSkipEvents.some((e) => e.id === r.id) && !(await db.skipEvents.get(r.id as string))) await db.skipEvents.put(skipEventFromRow(r));
+      await cleanCalibrations(db);
       await db.meta.put({ key: 'lastPullAt', value: this.ctx.clock.now() });
     });
     this.emit();

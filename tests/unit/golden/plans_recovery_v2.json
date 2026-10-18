@@ -1,0 +1,8 @@
+{
+  "ruleSetVersion": "STYRKA-RULES/1.3.0",
+  "plans": 2100,
+  "exercises": 7333,
+  "sha256": "35ef08fc839ea9586259191f3dbe5e7c8a2a3b1e6a62876074d31b018cb4fa34",
+  "originalBaseline": "plans_pre_cr_3ec01ef.json",
+  "intentionalChange": "Dose, effort and movement overlap. All differences verified to be confined to recent-work scenarios."
+}

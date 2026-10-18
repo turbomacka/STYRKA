@@ -6,11 +6,11 @@
     "reviewed_at": "2026-10-10",
     "warning_sv": "Evidensregistret är beskrivande: det validerar inte STYRKA:s rekommendationsmotor eller medicinsk säkerhet."
   },
-  "methodVersion": "STYRKA-METOD/1.3.0",
-  "ruleSetVersion": "STYRKA-RULES/1.2.0",
+  "methodVersion": "STYRKA-METOD/1.4.0",
+  "ruleSetVersion": "STYRKA-RULES/1.3.0",
   "engineVersion": "1.0.0",
   "substitutionCatalogVersion": "SUBST/1.2.0",
-  "lastSubstantiveUpdate": "2026-10-12",
+  "lastSubstantiveUpdate": "2026-10-16",
   "verificationNote": "Källor och påståenden kommer från produktägarens evidensregister (schema 1.0.0, granskat 2026-10-10). DOI och länkar kontrollerade mot Crossref, PMC och utgivarnas sidor 2026-10-11. Innehållet är en sammanfattning för allmänheten, inte en fullständig granskning av varje studie.",
   "sources": [
     {
@@ -367,7 +367,7 @@
       "plain_language_sv": "När en hjälpskattning används blir första förslaget högst 60 % av den preliminära maxstyrkan. Siffran är en försiktighetsregel som vi har valt – den bygger inte på någon studie.",
       "evidence_kind": "product_heuristic_unvalidated",
       "population_scope": "Ej tillämpligt – produktregel",
-      "caveats_sv": "Ingen källa: värdet är en versionsstyrd produktheuristik som inte är validerad.",
+      "caveats_sv": "Gränsen är vald för appens beräkningar och har inte validerats vetenskapligt.",
       "source_ids": [],
       "register_rule_ids": [
         "SUB:first_exposure_fraction_cap"
@@ -386,7 +386,7 @@
       "plain_language_sv": "En ny övning räknas som kalibrerad när du har minst två kontrollerade pass i den utan rapporterade hinder. Det är en produktregel, inte ett mått på mätsäkerhet i befolkningen.",
       "evidence_kind": "product_heuristic_unvalidated",
       "population_scope": "Ej tillämpligt – produktregel",
-      "caveats_sv": "Ingen källa: värdet är en versionsstyrd produktheuristik som inte är validerad.",
+      "caveats_sv": "Gränsen är vald för appens beräkningar och har inte validerats vetenskapligt.",
       "source_ids": [],
       "register_rule_ids": [
         "SUB:calibration_quality"
@@ -548,10 +548,10 @@
     {
       "rule_id": "aterhamtning",
       "group": "B",
-      "title_sv": "Tid sedan liknande träning",
-      "method_sv": "Har du tränat samma rörelsemönster de senaste två dygnen föreslås ingen ny tung belastning och ingen ökning. Mellan två dygn och 13 dagar gäller normala regler. Lång vila ger ingen extra ökning.",
-      "value_sv": "< 24 h och 24–48 h: försiktighet; 48 h–13 dygn: normalt",
-      "rationale_sv": "Försiktig rutin; inget fysiologiskt optimum kan räknas fram ur antal timmar.",
+      "title_sv": "Träningsmängd, ansträngning och återhämtning",
+      "method_sv": "Förslaget väger samman utförda arbetsset, frivillig ansträngningsbedömning och tid. Samma rörelsemönster påverkar mer än delvis överlappande övningar. Ett eller två uttryckligen lätta set begränsar inte nästa förslag. Vanligt arbete kan begränsa till medelnivå under 24 timmar; större eller mer krävande arbete kan begränsa till lätt nivå under 48 timmar. Krävande arbete i ett överlappande mönster begränsar högst till medelnivå under 24 timmar. Automatisk ökning pausas medan begränsningen gäller. Uppvärmning räknas inte, och ensidiga set räknas per sida.",
+      "value_sv": "Krävande: minst ett maxset, två tunga set, tre set som inte uttryckligen var lätta, eller sex arbetsset totalt. Tre lätta set ger kortare försiktighet. Saknade känslosvar behandlas som vanligt arbete.",
+      "rationale_sv": "Konfigurerbara produktantaganden, inte individuella återhämtningstider. Känslosvar översätts inte till gissade repetitionsreserver. Äldre krävande arbete ligger kvar tills dess tidsfönster löper ut. Smärta, egna begränsningar och omstart efter uppehåll hanteras separat.",
       "heuristic": true,
       "reason_codes": [
         "RECOVERY_UNDER_24H",
@@ -563,7 +563,10 @@
         "RECENT_PATTERN_WORK",
         "HEAVY_DOWNGRADED_TO_LIGHT",
         "RECENT_HEAVY_PATTERN",
-        "NO_RECENT_HEAVY_FLAG"
+        "NO_RECENT_HEAVY_FLAG",
+        "RECOVERY_MATCHED_WORK",
+        "RECOVERY_OVERLAPPING_WORK",
+        "RECOVERY_MODE_REDUCED"
       ]
     },
     {
@@ -585,7 +588,7 @@
       "title_sv": "Rapporterade besvär",
       "method_sv": "Rapporterar du hälta, svullnad eller kvarstående besvär ingår övningar som belastar området inte i automatiska förslag tills du själv markerar besväret som löst. Tillfälliga besvär ger ingen ökning tills nästa besvärsfria pass. Ingen diagnos ställs.",
       "value_sv": "Områdeskoppling per övning (planeringsetikett)",
-      "rationale_sv": "Försiktighetsregel; vilka områden en övning belastar är en produktbedömning som kräver fackgranskning.",
+      "rationale_sv": "En försiktig anpassning utifrån vilka områden övningen brukar belasta, inte en individuell medicinsk bedömning.",
       "heuristic": true,
       "reason_codes": [
         "SYMPTOM_REVIEW_REQUIRED",
@@ -667,8 +670,8 @@
       "rule_id": "programmall",
       "group": "B",
       "title_sv": "Programmallar",
-      "method_sv": "Passen följer versionsstyrda mallar för 1–7 pass per vecka (t.ex. A/B/C). Ordningen fortsätter där du slutade, utan att börja om varje vecka.",
-      "value_sv": "Mallversion 1.0.0",
+      "method_sv": "Passen följer en plan för 1–7 pass per vecka. Ordningen fortsätter där du slutade, utan att börja om varje vecka.",
+      "value_sv": "1–7 pass per vecka",
       "rationale_sv": "Fördelar baslyften över veckan.",
       "heuristic": true,
       "reason_codes": [
@@ -697,7 +700,7 @@
       "group": "B",
       "title_sv": "Utrustning saknas",
       "method_sv": "Saknas utrustning för en övning i mallen ersätts den bara med en tillgänglig övning i samma definierade familj. Annars tas den bort.",
-      "value_sv": "Mallfilens ersättningsfamiljer",
+      "value_sv": "Tillgängliga övningar med liknande rörelser",
       "rationale_sv": "Byter aldrig utanför definierad familj utan ditt aktiva val.",
       "heuristic": true,
       "reason_codes": [
@@ -739,9 +742,9 @@
       "rule_id": "ovningsbyte-relationer",
       "group": "C",
       "title_sv": "Övningsbyte: tre slags relationer",
-      "method_sv": "Varje bytesförslag kommer från produktägarens kandidatmappning och har en av tre relationer: nära variant (liknande teknik, men styrkan är fortfarande övningsspecifik), samma rörelsefamilj (delvis överlapp – ingen överföring av maxvikt) eller kompletterande alternativ (delvis träningsstimulus – inte likvärdig för ett specifikt styrkemål). Ingen relation betyder ”likvärdig”, och varje övning har egen belastning.",
-      "value_sv": "Kandidatmappning, katalogversion 1.2.0 (SUBST/1.2.0)",
-      "rationale_sv": "Mappningen är ett redaktionellt urval, inte validerad parvis likvärdighet eller klinisk säkerhet.",
+      "method_sv": "Ett bytesförslag kan vara en nära variant med liknande teknik, en övning i samma rörelsefamilj eller ett kompletterande alternativ. Övningarna ger inte nödvändigtvis samma effekt för ditt styrkemål. Varje övning har egen belastning och historik.",
+      "value_sv": "Nära variant, samma rörelsefamilj eller kompletterande alternativ",
+      "rationale_sv": "Liknande rörelser innebär inte att övningarna är likvärdiga eller medicinskt säkra för just dig.",
       "heuristic": true,
       "reason_codes": [
         "SUB_RELATION_NEAR_VARIANT",
@@ -764,7 +767,7 @@
       "group": "C",
       "title_sv": "Vikt efter byte: ordning",
       "method_sv": "1) Din egen historik i den nya övningen. 2) Din egen uppskattade maxstyrka i den nya övningen. 3) Din kalibrering i den nya övningen. 4) Endast för två par: en försiktig populationsbaserad hjälpskattning med låg säkerhet. 5) Annars ingen vikt – du väljer en lätt, kontrollerad vikt. Den tidigare övningens kilo används aldrig.",
-      "value_sv": "Auktoritetsordning 1–5",
+      "value_sv": "Din egen träningshistorik används i första hand",
       "rationale_sv": "Dina egna data går alltid före populationsdata.",
       "heuristic": true,
       "reason_codes": [
@@ -838,7 +841,7 @@
       "group": "C",
       "title_sv": "Hantlar: kilo per hantel",
       "method_sv": "Övningar med två hantlar loggas och visas som vikt per hantel – två hantlar på 24 kg är '24 kg per hantel', inte 48 kg.",
-      "value_sv": "Lastbas per_hand_kg",
+      "value_sv": "Kilogram per hantel",
       "rationale_sv": "Undviker sammanblandning med skivstångsvikt.",
       "heuristic": false,
       "reason_codes": []
@@ -922,6 +925,31 @@
         "BAL_RESTRICTION_SUPPRESSED",
         "BAL_REVIEW_REQUIRED"
       ]
+    },
+    {
+      "rule_id": "flera-styrkeuppgifter",
+      "group": "C",
+      "title_sv": "Flera uppgifter om samma övning",
+      "method_sv": "Ett max för en repetition, ett max för tre repetitioner och ett vanligt set kan sparas var för sig. Samma befintliga formler räknar om giltiga uppgifter till uppskattad maxstyrka. När datum finns används uppgifter högst 90 dagar äldre än den senaste giltiga daterade uppgiften; odaterade uppgifter sparas men räknas då inte med. Ett set utan angivna repetitioner kvar räknas inte om till maxstyrka. Jämförbara uppgifter vägs samman: uppmätt max för en repetition får vikt 3, uppgivet max eller max för tre repetitioner vikt 2 och ett set vikt 1. Sammanvägningen får inte överstiga ett ingående max för en repetition. Skiljer högsta och lägsta uppskattning mer än 15 procent används den lägre med låg säkerhet.",
+      "value_sv": "Frivilliga separata uppgifter; 90 dagar, vikter 3/2/1, 15 procents skillnad",
+      "rationale_sv": "En försiktig produktregel för startvikter, inte en vetenskapligt validerad kombinationsmodell eller garanti om optimalt träningsupplägg. Inga extra set skapas. Registrerade träningspass och den befintliga progressionen gäller fortsatt.",
+      "heuristic": true,
+      "reason_codes": [
+        "MULTIPLE_STRENGTH_INPUTS",
+        "STRENGTH_INPUTS_DISAGREE"
+      ]
+    },
+    {
+      "rule_id": "overhoppad-ovning",
+      "group": "C",
+      "title_sv": "Efter en överhoppad övning",
+      "method_sv": "Du kan ange varför en övning hoppades över. Vid tidsbrist eller upptagen utrustning kan appen föreslå ett byte i nästa pass. Du ser vad som ändras och godkänner själv. Bara ett byte görs, huvudövningen och övriga övningars dosering behålls. Besvär och överhopp utan angiven orsak ger inget sådant förslag.",
+      "value_sv": "Ett frivilligt byte i nästa pass, utifrån senaste avslutade passet",
+      "rationale_sv": "En förutsägbar produktregel. Missade moment samlas inte till en träningsskuld. Befintliga begränsningar, återhämtning och tidsbudget gäller.",
+      "heuristic": true,
+      "reason_codes": [
+        "USER_ACCEPTED_CATCH_UP"
+      ]
     }
   ],
   "registryAdditions": [
@@ -944,7 +972,7 @@
       "Sex rörelsemönster (knädominant, höftdominant, horisontell och vertikal press, horisontellt och vertikalt drag) är en praktisk produktklassificering, inte en biologisk eller klinisk norm. Varje övning har exakt ett primärt mönster så att inget set räknas två gånger.",
       "Planerat jämförs bara med genomfört i dina genomförda ordinarie pass, mot den plan du accepterade när passet startade. Eftersom STYRKA planerar en följd av pass och inte datum räknas inga pass som missade när dagar går. Spontanpass och extra set redovisas separat.",
       "För att jämföra styrkeutveckling mellan övningar krävs samma slags mått (uppskattad maxstyrka i kg med samma lastbas), minst tre pass per övning och minst 42 dagar mellan första och sista observationen inom tolv veckor. Assistans, kroppsvikt, tid och olika lastbaser jämförs inte procentuellt.",
-      "Gränserna för balansförslag (se Så fungerar balansförslagen nedan) är versionssatta produktheuristiker. De är inte validerade som säkra eller optimala träningsdoser.",
+      "Gränserna för balansförslag beskrivs nedan. De är valda för appens beräkningar och är inte validerade som säkra eller optimala träningsdoser.",
       "Skaderisk kan inte beräknas ur balansprofilen. Dina egna begränsningar och rapporterade besvär har alltid företräde, och Balans föreslår aldrig att en spärr kringgås."
     ],
     "source_ids": [

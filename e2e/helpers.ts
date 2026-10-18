@@ -84,29 +84,41 @@ export async function clearAuth(page: Page): Promise<void> {
 }
 
 /** Intro med 1RM för knäböj/bänk/marklyft och i övrigt standardval. */
-export async function onboard(page: Page, opts: { pull?: 'Latsdrag' | 'Assisterade chins'; estimates?: boolean; screenshot?: (n: string) => Promise<void> } = {}): Promise<void> {
+export async function onboard(page: Page, opts: { pull?: 'Latsdrag' | 'Assisterade chins'; estimates?: boolean; multipleEstimates?: boolean; screenshot?: (n: string) => Promise<void> } = {}): Promise<void> {
   await page.getByText('Jag bekräftar att jag är vuxen').click();
   await opts.screenshot?.('S02-intro-1');
-  await page.getByRole('button', { name: 'Nästa' }).click();
-  if (opts.pull) await page.getByRole('radio', { name: opts.pull }).click();
+  await page.getByRole('button', { name: 'Fortsätt', exact: true }).click();
+  if (opts.pull) {
+    await page.getByText('Anpassa upplägget', { exact: false }).click();
+    await page.getByRole('radio', { name: opts.pull, exact: true }).click();
+  }
   await opts.screenshot?.('S03-intro-2');
-  await page.getByRole('button', { name: 'Nästa' }).click();
+  await page.getByRole('button', { name: 'Fortsätt', exact: true }).click();
   if (opts.estimates !== false) {
-    const lifts: Array<[string, string]> = [
-      ['Knäböj', '100'],
-      ['Bänkpress', '80'],
-      ['Marklyft', '120'],
-    ];
-    for (const [name, kg] of lifts) {
-      const card = page.locator('.card', { has: page.getByRole('heading', { name, exact: true }) });
-      await card.getByRole('radio', { name: '1RM' }).click();
-      await card.getByRole('textbox').fill(kg);
+    await page.getByText('Ange styrkeuppgifter nu', { exact: true }).click();
+    await page.getByRole('button', { name: 'Fortsätt', exact: true }).click();
+    for (const [name, kg] of [['Knäböj', '100'], ['Bänkpress', '80'], ['Marklyft', '120']]) {
+      await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+      await page.getByRole('button', { name: 'Max för 1 repetition', exact: true }).click();
+      await page.getByLabel('Vikt (kg)', { exact: true }).fill(kg);
+      if (opts.multipleEstimates && name === 'Knäböj') {
+        await page.getByRole('button', { name: 'Spara och lägg till en uppgift' }).click();
+        await page.getByRole('button', { name: 'Max för 3 repetitioner', exact: true }).click();
+        await page.getByLabel('Vikt (kg)', { exact: true }).fill('90');
+        await page.getByRole('button', { name: 'Spara och lägg till en uppgift' }).click();
+        await page.getByRole('button', { name: 'Ett vanligt träningsset', exact: true }).click();
+        await page.getByLabel('Vikt (kg)', { exact: true }).fill('75');
+        await page.getByLabel('Repetitioner (1–8)').fill('6');
+        await page.getByText('Fler detaljer', { exact: false }).click();
+        await page.getByLabel('Hur många fler repetitioner hade du kunnat göra?').selectOption('1');
+      }
+      await page.getByRole('button', { name: 'Fortsätt', exact: true }).click();
     }
   }
   await opts.screenshot?.('S04-intro-3');
-  await page.getByRole('button', { name: 'Nästa' }).click();
+  await page.getByRole('button', { name: 'Fortsätt', exact: true }).click();
   await opts.screenshot?.('S05-intro-4');
-  await page.getByRole('button', { name: /Hoppa över och börja|Klar/ }).click();
+  await page.getByRole('button', { name: 'Skapa min plan', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Idag' })).toBeVisible();
 }
 

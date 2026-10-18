@@ -1,0 +1,456 @@
+{
+  "baselineCommit": "3ec01ef",
+  "originalGoldenVerified": true,
+  "previous": {
+    "plans": 2100,
+    "exercises": 7333,
+    "sha256": "b04aa62d7c78a105e4d49c34a8b31953ef173e20d2fe68394217f9c5aa09e3e8"
+  },
+  "current": {
+    "plans": 2100,
+    "exercises": 7333,
+    "sha256": "35ef08fc839ea9586259191f3dbe5e7c8a2a3b1e6a62876074d31b018cb4fa34"
+  },
+  "changed": 405,
+  "unchanged": 1695,
+  "changedOnlyRecentWork": true,
+  "examples": [
+    {
+      "freq": 1,
+      "exp": "novice",
+      "rot": 0,
+      "min": 20,
+      "variant": 1,
+      "before": {
+        "status": "time_reduced",
+        "est": 19.5,
+        "removed": [],
+        "warnings": [
+          "WARN_TIME",
+          "WARN_RECOVERY"
+        ],
+        "ex": [
+          [
+            "squat",
+            "light",
+            2,
+            10,
+            60,
+            null,
+            false,
+            "HEAVY_DOWNGRADED_TO_LIGHT,INITIAL_HEURISTIC,NOVICE_MAX_SETS,RECENT_LOWER_HEAVY,RECOVERY_24_TO_48H,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            1,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,PRIORITY_LIFT_OVERDUE_14D,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A,TIME_SETS_REDUCED"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            1,
+            8,
+            47.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A,TIME_SETS_REDUCED"
+          ]
+        ]
+      },
+      "after": {
+        "status": "time_reduced",
+        "est": 19.5,
+        "removed": [],
+        "warnings": [
+          "WARN_TIME",
+          "WARN_RECOVERY"
+        ],
+        "ex": [
+          [
+            "squat",
+            "light",
+            2,
+            10,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,NOVICE_MAX_SETS,RECOVERY_24_TO_48H,RECOVERY_MATCHED_WORK,RECOVERY_MODE_REDUCED,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            1,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,PRIORITY_LIFT_OVERDUE_14D,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A,TIME_SETS_REDUCED"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            1,
+            8,
+            47.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A,TIME_SETS_REDUCED"
+          ]
+        ]
+      }
+    },
+    {
+      "freq": 1,
+      "exp": "novice",
+      "rot": 0,
+      "min": 30,
+      "variant": 1,
+      "before": {
+        "status": "ok",
+        "est": 24,
+        "removed": [],
+        "warnings": [
+          "WARN_RECOVERY"
+        ],
+        "ex": [
+          [
+            "squat",
+            "light",
+            2,
+            10,
+            60,
+            null,
+            false,
+            "HEAVY_DOWNGRADED_TO_LIGHT,INITIAL_HEURISTIC,NOVICE_MAX_SETS,RECENT_LOWER_HEAVY,RECOVERY_24_TO_48H,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            2,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,PRIORITY_LIFT_OVERDUE_14D,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            2,
+            8,
+            47.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ]
+        ]
+      },
+      "after": {
+        "status": "ok",
+        "est": 24,
+        "removed": [],
+        "warnings": [
+          "WARN_RECOVERY"
+        ],
+        "ex": [
+          [
+            "squat",
+            "light",
+            2,
+            10,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,NOVICE_MAX_SETS,RECOVERY_24_TO_48H,RECOVERY_MATCHED_WORK,RECOVERY_MODE_REDUCED,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            2,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,PRIORITY_LIFT_OVERDUE_14D,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            2,
+            8,
+            47.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ]
+        ]
+      }
+    },
+    {
+      "freq": 1,
+      "exp": "novice",
+      "rot": 0,
+      "min": 45,
+      "variant": 1,
+      "before": {
+        "status": "ok",
+        "est": 24,
+        "removed": [],
+        "warnings": [
+          "WARN_RECOVERY"
+        ],
+        "ex": [
+          [
+            "squat",
+            "light",
+            2,
+            10,
+            60,
+            null,
+            false,
+            "HEAVY_DOWNGRADED_TO_LIGHT,INITIAL_HEURISTIC,NOVICE_MAX_SETS,RECENT_LOWER_HEAVY,RECOVERY_24_TO_48H,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            2,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,PRIORITY_LIFT_OVERDUE_14D,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            2,
+            8,
+            47.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ]
+        ]
+      },
+      "after": {
+        "status": "ok",
+        "est": 24,
+        "removed": [],
+        "warnings": [
+          "WARN_RECOVERY"
+        ],
+        "ex": [
+          [
+            "squat",
+            "light",
+            2,
+            10,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,NOVICE_MAX_SETS,RECOVERY_24_TO_48H,RECOVERY_MATCHED_WORK,RECOVERY_MODE_REDUCED,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            2,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,PRIORITY_LIFT_OVERDUE_14D,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            2,
+            8,
+            47.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ]
+        ]
+      }
+    },
+    {
+      "freq": 1,
+      "exp": "novice",
+      "rot": 0,
+      "min": 60,
+      "variant": 1,
+      "before": {
+        "status": "ok",
+        "est": 24,
+        "removed": [],
+        "warnings": [
+          "WARN_RECOVERY"
+        ],
+        "ex": [
+          [
+            "squat",
+            "light",
+            2,
+            10,
+            60,
+            null,
+            false,
+            "HEAVY_DOWNGRADED_TO_LIGHT,INITIAL_HEURISTIC,NOVICE_MAX_SETS,RECENT_LOWER_HEAVY,RECOVERY_24_TO_48H,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            2,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,PRIORITY_LIFT_OVERDUE_14D,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            2,
+            8,
+            47.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ]
+        ]
+      },
+      "after": {
+        "status": "ok",
+        "est": 24,
+        "removed": [],
+        "warnings": [
+          "WARN_RECOVERY"
+        ],
+        "ex": [
+          [
+            "squat",
+            "light",
+            2,
+            10,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,NOVICE_MAX_SETS,RECOVERY_24_TO_48H,RECOVERY_MATCHED_WORK,RECOVERY_MODE_REDUCED,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            2,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,PRIORITY_LIFT_OVERDUE_14D,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            2,
+            8,
+            47.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ]
+        ]
+      }
+    },
+    {
+      "freq": 1,
+      "exp": "novice",
+      "rot": 0,
+      "min": 90,
+      "variant": 1,
+      "before": {
+        "status": "ok",
+        "est": 24,
+        "removed": [],
+        "warnings": [
+          "WARN_RECOVERY"
+        ],
+        "ex": [
+          [
+            "squat",
+            "light",
+            2,
+            10,
+            60,
+            null,
+            false,
+            "HEAVY_DOWNGRADED_TO_LIGHT,INITIAL_HEURISTIC,NOVICE_MAX_SETS,RECENT_LOWER_HEAVY,RECOVERY_24_TO_48H,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            2,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,PRIORITY_LIFT_OVERDUE_14D,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            2,
+            8,
+            47.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ]
+        ]
+      },
+      "after": {
+        "status": "ok",
+        "est": 24,
+        "removed": [],
+        "warnings": [
+          "WARN_RECOVERY"
+        ],
+        "ex": [
+          [
+            "squat",
+            "light",
+            2,
+            10,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,NOVICE_MAX_SETS,RECOVERY_24_TO_48H,RECOVERY_MATCHED_WORK,RECOVERY_MODE_REDUCED,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            2,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,PRIORITY_LIFT_OVERDUE_14D,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            2,
+            8,
+            47.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -35,6 +35,14 @@ export async function newUser(label: string): Promise<TestUser> {
   const client = anonClient();
   const { error } = await client.auth.signInWithPassword({ email, password: 'Testlosen-123!' });
   if (error) throw new Error(`inloggning misslyckades: ${error.message}`);
+  // Local Auth and PostgREST occasionally disagree at a second boundary. Wait for this
+  // freshly issued session to be accepted; never retry/relax an RLS assertion itself.
+  for (let attempt = 0; ; attempt++) {
+    const ready = await client.from('profiles').select('user_id').eq('user_id', created.data.user.id).limit(1);
+    if (!ready.error) break;
+    if (ready.error.code !== 'PGRST303' || !ready.error.message.includes('issued at future') || attempt >= 8) throw new Error(`session readiness: ${ready.error.code}`);
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
   return { id: created.data.user.id, email, client };
 }
 

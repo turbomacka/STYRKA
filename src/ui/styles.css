@@ -144,11 +144,15 @@ button, .btn { font: inherit; }
 /* Formulär */
 .field { display: flex; flex-direction: column; gap: var(--s1); }
 .field label, .field .label { font-size: 14px; font-weight: 600; color: var(--text-2); }
-input[type='text'], input[type='email'], input[type='password'], input[type='number'], select, textarea {
+input[type='text'], input[type='email'], input[type='password'], input[type='number'], input[type='date'], select, textarea {
   font: inherit; min-height: var(--tap); padding: 0 var(--s3); border-radius: 10px; border: 1px solid var(--border);
   background: var(--surface); color: var(--text); width: 100%;
 }
 textarea { padding: var(--s2) var(--s3); min-height: 96px; }
+.strength-entry { margin-inline: 0; min-inline-size: 0; padding: var(--s3) 0 0; border: 0; border-top: 1px solid var(--border); }
+.strength-entry legend { padding: 0 var(--s2) 0 0; font-size: 17px; font-weight: 600; }
+.strength-entry input[type='date'] { min-width: 0; }
+.strength-entry input[type='date']::-webkit-date-and-time-value { text-align: left; }
 .error-text { color: var(--danger); font-size: 14px; font-weight: 600; }
 .check { display: flex; align-items: flex-start; gap: var(--s3); min-height: var(--tap); padding: var(--s2) 0; cursor: pointer; }
 .check input { width: 24px; height: 24px; margin: 2px 0 0; flex: none; accent-color: var(--accent); }
@@ -272,6 +276,11 @@ small svg, .small svg.ico { width: 16px; height: 16px; vertical-align: -3px; }
 .sub-option .sub-name { font-weight: 700; font-size: 17px; }
 .set-effort { grid-column: 1 / -1; display: flex; flex-direction: column; gap: var(--s1); }
 .block-text { display: block; margin-top: var(--s1); }
+.effort-feedback { border-top: 1px solid var(--border); padding-top: var(--s2); }
+.effort-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s2); }
+.effort-options .btn { min-height: 48px; white-space: normal; }
+.effort-options .btn:last-child { grid-column: 1 / -1; flex-direction: column; gap: var(--s1); }
+.effort-options .btn[aria-pressed="true"] { border: 2px solid var(--accent); }
 
 /* Min träningsplan (ÄA-PLAN-001) */
 .plan-list { display: grid; gap: var(--s2); }
@@ -308,3 +317,22 @@ small svg, .small svg.ico { width: 16px; height: 16px; vertical-align: -3px; }
 .balance-bar > span { display: block; height: 100%; background: var(--text-2); border-radius: 999px; }
 .balance-text { grid-column: 1 / -1; }
 .balance .h-small { font-size: 17px; margin: var(--s2) 0 0; }
+
+/* Integrated training flow: reuse existing fields, cards and touch controls. */
+.performance-group { padding: var(--s3) 0; min-width: 0; }
+.performance-group + .performance-group { border-top: 1px solid var(--border); }
+.performance-group > .set-list { padding: 0; }
+.performance-group .set-row { padding-left: 0; padding-right: 0; }
+.performance-summary { gap: var(--s1); }
+.performance-summary .btn { font-size: 14px; text-align: left; white-space: normal; }
+.equipment-panel > summary { min-height: 48px; display: flex; align-items: center; cursor: pointer; }
+.equipment-panel .stack { min-width: 0; }
+.equipment-panel input, .equipment-panel select { max-width: 100%; min-width: 0; }
+.rest-panel .rest-value { font-size: clamp(32px, 10vw, 44px); min-width: 5ch; }
+.rest-panel { scroll-margin-bottom: 96px; }
+.training-history table { width: 100%; border-collapse: collapse; }
+.training-history th, .training-history td { padding: 8px 4px; text-align: left; overflow-wrap: anywhere; vertical-align: top; }
+.training-history ul { padding-inline-start: 20px; }
+
+.check-row { display: flex; align-items: center; gap: var(--s2); min-height: 48px; cursor: pointer; }
+.check-row input { flex: 0 0 auto; }

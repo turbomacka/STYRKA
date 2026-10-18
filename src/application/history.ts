@@ -6,6 +6,8 @@ import { gramsToKg } from '../domain/units';
 import type { LocalSession } from '../storage/db';
 import type { AppContext } from './context';
 import { toUserSettings } from './plannerInput';
+import { effectiveRir } from '../domain/effort';
+import { canEstimateMax, comparisonKey, defaultConfiguration, EXECUTION_LABELS, SIDE_LABELS, type SetPerformance } from '../domain/trainingFlow';
 
 export type SessionSummary = { session: LocalSession; doneWorkSets: number; exercises: Array<{ exerciseId: ExerciseId; done: number; planned: number }> };
 
@@ -27,8 +29,64 @@ export async function listSessions(ctx: AppContext, opts: { limit?: number; befo
 }
 
 /** `sessionId` finns för punkter som härletts ur ett träningspass (inte ur en angiven uppskattning). */
-export type StrengthPoint = { at: string; kg: number; source: 'measured' | 'estimated' | 'performance'; detail: string; sessionId?: string };
-export type StrengthSeries = { exerciseId: ExerciseId; comparable: boolean; points: StrengthPoint[]; note: string | null };
+export type StrengthPoint = { at: string; kg: number; source: 'measured' | 'estimated' | 'performance'; origin?: 'input'; detail: string; sessionId?: string };
+export type StrengthSeries = { exerciseId: ExerciseId; comparable: boolean; points: StrengthPoint[]; latestMax?: StrengthPoint; note: string | null; unit?: string };
+function latestMax(points: StrengthPoint[]): StrengthPoint | undefined {
+  // Settings.updatedAt can advance on sync. An input is a reference, never a newer workout.
+  const workoutMaxima = points.filter((p) => p.source !== 'performance' && p.origin !== 'input');
+  const candidates = workoutMaxima.length ? workoutMaxima : points.filter((p) => p.origin === 'input');
+  return candidates.sort((a,b) => a.at.localeCompare(b.at)).at(-1);
+}
+
+export function performanceSeriesKey(id: ExerciseId, p: SetPerformance): string {
+  return p.side === 'both' && p.comparisonKey === comparisonKey(id, defaultConfiguration(id)) && ['free_mass','per_dumbbell','barbell_total'].includes(p.equipment.measurement) ? 'default' : `flow:${p.comparisonKey}:${p.side}`;
+}
+
+export async function trainingSeriesOptions(ctx: AppContext, id: ExerciseId): Promise<Array<{ value: string; label: string }>> {
+  const exs = await ctx.db.sessionExercises.where('exerciseId').equals(id).toArray();
+  const sets = (await ctx.db.sets.where('exerciseId').equals(id).toArray()).filter((s) => !s.deleted && s.kind === 'work');
+  const options = new Map<string,string>();
+  for (const s of sets) {
+    if (!s.detail && s.status === 'done') { const key = exs.find((e) => e.id === s.sessionExerciseId)?.variantKey ?? 'default'; options.set(key, key === 'default' ? 'Standard / äldre registreringar' : key); }
+    for (const p of s.detail?.performances.filter((p) => p.status === 'done') ?? []) {
+      const key = performanceSeriesKey(id,p);
+      const name = p.equipment.comparisonGroup ?? p.equipment.name;
+      const context = !name && p.equipment.id.startsWith('unidentified:') ? `Ej namngiven maskin · ${new Date(p.completedAt!).toLocaleDateString('sv-SE')}` : name;
+      const label = `${context ? context + ' · ' : ''}${EXECUTION_LABELS[p.executionMode]}${p.side !== 'both' ? ` · ${SIDE_LABELS[p.side]}` : ''}${p.equipment.basis === 'independent' ? ' · Stapel 1' : ''}`;
+      options.set(key,label);
+      if (p.equipment.basis === 'independent') options.set(key + ':second', label.replace('Stapel 1','Stapel 2'));
+    }
+  }
+  return [...options].map(([value,label]) => ({ value,label }));
+}
+
+async function detailedStrengthSeries(ctx: AppContext, exerciseId: ExerciseId, key: string, since?: string): Promise<StrengthSeries> {
+  const sets = (await ctx.db.sets.where('exerciseId').equals(exerciseId).toArray()).filter((s) => !s.deleted && s.kind === 'work');
+  const second = key.endsWith(':second'); const baseKey = second ? key.slice(0,-7) : key;
+  const entries = sets.flatMap((s) => (s.detail?.performances ?? []).filter((p) => p.status === 'done' && performanceSeriesKey(exerciseId,p) === baseKey && p.completedAt).map((p) => ({ s,p })));
+  const points: StrengthPoint[] = [];
+  const sample = entries[0]?.p;
+  const e = sample?.equipment;
+  const unit = e?.unit === 'level' ? 'nivå' : e?.measurement === 'duration' ? 's' : e?.measurement === 'bodyweight' ? 'reps' : 'kg';
+  const performance = new Map<string,StrengthPoint>(); const maximum = new Map<string,StrengthPoint>();
+  for (const { s,p } of entries) {
+    const load = second ? p.secondLoadValue : p.loadValue;
+    const value = unit === 's' ? p.seconds : unit === 'reps' ? p.repetitions : load;
+    if (value === null) continue;
+    const point: StrengthPoint = { at: p.completedAt!, kg: value, source: 'performance', detail: `${SIDE_LABELS[p.side]} · ${p.repetitions ?? p.seconds} ${unit === 's' ? 's' : 'reps'}${p.rir !== null ? ` · ${p.rir} reps kvar` : ''}`, sessionId: s.sessionId };
+    const cur = performance.get(s.sessionId);
+    if (!cur || (e?.measurement === 'bodyweight_assistance' ? value < cur.kg : value > cur.kg)) performance.set(s.sessionId,point);
+    const rir = effectiveRir(p.rir,p.effort);
+    if (!second && canEstimateMax(p.equipment) && load !== null && p.repetitions !== null && rir !== null && p.technique === 'controlled') {
+      const estimated = submaxE1rm(load,p.repetitions,rir);
+      const measured = p.repetitions === 1 && rir === 0;
+      const max = measured ? load : estimated?.kg;
+      if (max !== undefined && max > (maximum.get(s.sessionId)?.kg ?? 0)) maximum.set(s.sessionId,{ ...point, kg: max, source: measured ? 'measured' : 'estimated', detail: `${SIDE_LABELS[p.side]} · ${measured ? '1 rep, 0 kvar' : p.effort === 'maximal' ? 'uppskattat från maxansträngning' : 'uppskattat från reps och reps kvar'}` });
+    }
+  }
+  points.push(...performance.values(),...maximum.values()); points.sort((a,b) => a.at.localeCompare(b.at) || a.source.localeCompare(b.source));
+  return { exerciseId, comparable: !!e && canEstimateMax(e), points: points.filter((p) => !since || p.at >= since), latestMax: latestMax(points), unit, note: 'Separat serie för samma utförande, sida och utrustningskonfiguration. Angiven maskinbelastning är en prestationsindikator för just denna utrustning. Sidoskillnader är observationer, inte en bedömning av skaderisk.' };
+}
 
 /**
  * - measured: användarrapporterat uppmätt 1RM, eller utfört 1-repetitionsset med RIR 0.
@@ -37,14 +95,15 @@ export type StrengthSeries = { exerciseId: ExerciseId; comparable: boolean; poin
  * Assistans/kroppsvikt/tid räknas aldrig om till skivstångs-1RM (02 §4).
  */
 export async function strengthSeries(ctx: AppContext, exerciseId: ExerciseId, sinceUtc?: string, variantKey = 'default'): Promise<StrengthSeries> {
+  if (variantKey.startsWith('flow:')) return detailedStrengthSeries(ctx,exerciseId,variantKey,sinceUtc);
   const lk = exercise(exerciseId).loadKind;
   // Uppskattningar i inställningar gäller standardvarianten; andra maskinprofiler visas som egna serier (§2.3).
   const settings = variantKey === 'default' ? await ctx.db.exerciseSettings.where('exerciseId').equals(exerciseId).first() : undefined;
   const ofVariant = new Set((await ctx.db.sessionExercises.where('exerciseId').equals(exerciseId).toArray()).filter((e) => e.variantKey === variantKey).map((e) => e.id));
-  const sets = (await ctx.db.sets.where('exerciseId').equals(exerciseId).toArray()).filter((s) => ofVariant.has(s.sessionExerciseId) && !s.deleted && s.kind === 'work' && s.status === 'done' && s.occurredAt && (!sinceUtc || s.occurredAt >= sinceUtc));
+  const sets = (await ctx.db.sets.where('exerciseId').equals(exerciseId).toArray()).filter((s) => ofVariant.has(s.sessionExerciseId) && (!s.detail || s.detail.performances.every((p) => performanceSeriesKey(exerciseId,p) === variantKey)) && !s.deleted && s.kind === 'work' && s.status === 'done' && s.occurredAt);
   if (lk !== 'external_kg') {
     const bySession = new Map<string, (typeof sets)[number]>();
-    for (const s of sets) {
+    for (const s of sets.filter((s) => !sinceUtc || s.occurredAt! >= sinceUtc)) {
       const cur = bySession.get(s.sessionId);
       const better = lk === 'assistance_kg' ? (cur === undefined || (s.actualGrams ?? 0) < (cur.actualGrams ?? 0)) : lk === 'duration_sec' ? (cur === undefined || (s.actualSeconds ?? 0) > (cur.actualSeconds ?? 0)) : cur === undefined || (s.actualReps ?? 0) > (cur.actualReps ?? 0);
       if (better) bySession.set(s.sessionId, s);
@@ -57,40 +116,36 @@ export async function strengthSeries(ctx: AppContext, exerciseId: ExerciseId, si
   const points: StrengthPoint[] = [];
   if (settings?.estimateKind && settings.estimateGrams !== null) {
     const est = e1rmFromEstimate(toUserSettings(settings).estimate!);
-    if (est) points.push({ at: (settings.estimateTestedAt ? `${settings.estimateTestedAt}T00:00:00.000Z` : settings.updatedAt), kg: est.kg, source: est.source, detail: settings.estimateKind === '3rm' ? '3RM-uppgift' : settings.estimateKind === 'submax' ? 'submaximal uppgift' : '1RM-uppgift' });
+    if (est) points.push({ at: (settings.estimateTestedAt ? `${settings.estimateTestedAt}T00:00:00.000Z` : settings.updatedAt), kg: est.kg, source: est.source, origin: 'input', detail: settings.estimateKind === '3rm' ? '3RM-uppgift' : settings.estimateKind === 'submax' ? 'submaximal uppgift' : '1RM-uppgift' });
   }
-  const perSession = new Map<string, { at: string; best: number; e1rm: number | null; measured: boolean; sessionId: string }>();
+  const perSession = new Map<string, { at: string; best: number; maximum: StrengthPoint | null; sessionId: string }>();
   for (const s of sets) {
     if (s.actualGrams === null || s.actualReps === null || s.actualReps < 1) continue;
     const kgv = gramsToKg(s.actualGrams);
-    const cur = perSession.get(s.sessionId) ?? { at: s.occurredAt!, best: 0, e1rm: null, measured: false, sessionId: s.sessionId };
+    const cur = perSession.get(s.sessionId) ?? { at: s.occurredAt!, best: 0, maximum: null, sessionId: s.sessionId };
     cur.best = Math.max(cur.best, kgv);
-    if (s.actualReps === 1 && s.rir === 0) {
-      cur.measured = true;
-      cur.e1rm = Math.max(cur.e1rm ?? 0, kgv);
-    } else if (s.rir !== null) {
-      const e = submaxE1rm(kgv, s.actualReps, s.rir);
-      if (e) cur.e1rm = Math.max(cur.e1rm ?? 0, e.kg);
+    const reliableTechnique = !s.detail || s.technique === 'controlled';
+    const rir = effectiveRir(s.rir,s.perceivedEffort);
+    if (reliableTechnique && rir !== null) {
+      const measured = s.actualReps === 1 && rir === 0;
+      const max = measured ? kgv : submaxE1rm(kgv, s.actualReps, rir)?.kg;
+      if (max !== undefined && (!cur.maximum || max > cur.maximum.kg || (max === cur.maximum.kg && measured))) {
+        cur.maximum = { at: s.occurredAt!, kg: max, source: measured ? 'measured' : 'estimated', sessionId: s.sessionId,
+          detail: measured ? '1 rep, 0 kvar' : s.perceivedEffort === 'maximal' ? 'uppskattad från maxansträngning' : 'uppskattad från reps och reps kvar' };
+      }
     }
     cur.at = s.occurredAt! > cur.at ? s.occurredAt! : cur.at;
     perSession.set(s.sessionId, cur);
   }
   for (const v of perSession.values()) {
     points.push({ at: v.at, kg: v.best, source: 'performance', detail: 'bästa arbetsset', sessionId: v.sessionId });
-    if (v.e1rm !== null) points.push({ at: v.at, kg: v.e1rm, source: v.measured ? 'measured' : 'estimated', detail: v.measured ? '1 rep, 0 kvar' : 'uppskattad från reps och reps kvar', sessionId: v.sessionId });
+    if (v.maximum) points.push(v.maximum);
   }
   points.sort((a, b) => a.at.localeCompare(b.at) || a.source.localeCompare(b.source));
-  return { exerciseId, comparable: true, points, note: null };
+  return { exerciseId, comparable: true, points: points.filter((p) => !sinceUtc || p.at >= sinceUtc), latestMax: latestMax(points), note: null };
 }
 
 /** Maskinprofiler med utförda set för en övning ('default' först). Serierna skarvas aldrig ihop. */
 export async function performedVariants(ctx: AppContext, exerciseId: ExerciseId): Promise<string[]> {
-  const exs = await ctx.db.sessionExercises.where('exerciseId').equals(exerciseId).toArray();
-  const out = new Set<string>();
-  for (const e of exs) {
-    if (out.has(e.variantKey)) continue;
-    const done = await ctx.db.sets.where('sessionExerciseId').equals(e.id).filter((s) => s.status === 'done' && !s.deleted).count();
-    if (done) out.add(e.variantKey);
-  }
-  return [...out].sort((a, b) => (a === 'default' ? -1 : b === 'default' ? 1 : a.localeCompare(b)));
+  return (await trainingSeriesOptions(ctx,exerciseId)).map((x) => x.value).sort((a,b) => a === 'default' ? -1 : b === 'default' ? 1 : a.localeCompare(b));
 }

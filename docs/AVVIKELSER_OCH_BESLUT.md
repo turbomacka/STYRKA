@@ -1,6 +1,12 @@
 # Avvikelser, tolkningar och alla H-värden
 
-Alla tolkningar följer normhierarkin i paketets README. Inga evidensklassade eller användardefinierade regler har ändrats. Nya produktheuristiker är märkta **H (ny)** och har acceptanstest.
+Alla tolkningar följer normhierarkin i paketets README. Nya produktheuristiker är märkta **H (ny)** och har acceptanstest. Nedan dokumenteras tidigare beslut med respektive versionsnummer.
+
+## Tillägg 2026-10-16: återhämtning, regelversion 1.3.0
+
+På produktägarens begäran ersätts den generella tidsregeln för nyligt arbete och H-N4 av en gemensam bedömning av faktiskt utförda arbetsset, ansträngning, sidprestationer och rörelseöverlapp. **H (ny):** vanliga direkta exponeringar begränsar till medelnivå under 24 timmar; krävande/större direkt arbete till lätt nivå under 48 timmar; krävande överlapp till medelnivå under 24 timmar. Gränserna är produktheuristiker, inte uppmätt individuell återhämtning. Uppvärmning undantas. Automatisk progression hålls tillbaka även för maskinnivåer och oberoende staplar. Referensmotorn, symtomreglerna och historiska registreringar bevaras.
+
+Fullständiga kriterier, arkitektur och verifiering: [Återhämtning utifrån faktiskt arbete](ATERHAMTNING_2026-10-16.md). Tidigare uppgifter om återhämtning nedan ska läsas med detta tillägg. Övriga historiska beslut gäller fortsatt.
 
 ## 1. Motsägelser och luckor i paketet
 

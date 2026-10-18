@@ -170,7 +170,7 @@ describe('spontanpass ändrar nästa ordinarie rekommendation (02 §8)', () => {
     expect(after.templateKey).toBe(before.templateKey);
     const sqAfter = after.exercises.find((e) => e.exerciseId === 'squat')!;
     expect(sqAfter.mode).toBe('light');
-    expect(sqAfter.reasons).toEqual(expect.arrayContaining(['RECENT_LOWER_HEAVY', 'HEAVY_DOWNGRADED_TO_LIGHT']));
+    expect(sqAfter.reasons).toEqual(expect.arrayContaining(['RECOVERY_MATCHED_WORK', 'RECOVERY_MODE_REDUCED']));
     expect(after.warnings).toContain('WARN_RECOVERY');
   });
 

@@ -6,6 +6,7 @@ import type { ExerciseId } from '../../src/domain/catalog';
 import { ALL_AREAS, ALL_EQUIPMENT, CATALOG, exercise, impactsAreas, isAvailable, type EquipmentSlug } from '../../src/domain/catalog';
 import type { PerformedExercise, PlannerInput, RestrictionRule, SymptomReport } from '../../src/domain/model';
 import { progressionDecision } from '../../src/domain/prescription';
+import { assessRecovery } from '../../src/domain/recoveryPolicy';
 import { planExtra, planRegular } from '../../src/planner/planner';
 import { NOW, est, hoursBefore, input, performed, rule, sets, symptom } from './helpers';
 
@@ -125,7 +126,7 @@ describe('property: schemagenerator', () => {
     }
   });
 
-  it('300 slumpade spontanpass: invarianter håller och inget tungt flerled i grupp med arbete <48 h', () => {
+  it('300 slumpade spontanpass: invarianter håller och inget tungt arbete med aktiv återhämtningsbegränsning', () => {
     for (let seed = 1000; seed < 1300; seed++) {
       const inp = randomInput(seed);
       const r = rng(seed);
@@ -138,8 +139,7 @@ describe('property: schemagenerator', () => {
       if (readiness === 'tired') expect(snap.exercises.every((e) => e.mode !== 'heavy' && e.sets <= 2)).toBe(true);
       if (readiness === 'pain') expect(snap.warnings).toContain('WARN_PAIN');
       for (const e of snap.exercises.filter((x) => x.mode === 'heavy')) {
-        const recent = inp.history.some((h) => exercise(h.exerciseId).recoveryGroup === exercise(e.exerciseId).recoveryGroup && (Date.parse(NOW) - Date.parse(h.whenUtc)) / 3.6e6 < 48 && h.sets.some((s) => s.kind === 'work' && s.status === 'done'));
-        expect(recent, `seed ${seed}`).toBe(false);
+        expect(assessRecovery(e.exerciseId, inp.history, NOW).modeCap, `seed ${seed}`).toBeNull();
       }
     }
   });

@@ -91,7 +91,7 @@ describe('evidensregister', () => {
   it('regler med siffror utan direkt empiriskt stöd är märkta som produktregel; inga påståenden om klinisk validering', () => {
     const mustBeHeuristic = ['balans-allsidighet', 'balans-styrka', 'balans-forslag', 'e1rm-uppskattning', 'startvikt', 'set-och-repetitioner', 'dubbel-progression', 'reps-i-reserv', 'missade-mal', 'tung-belastning', 'aterhamtning', 'omstart', 'tidsmodell', 'unilateral-tid', 'prioritet-baslyft', 'ovningsbyte-relationer', 'prior-frontboj', 'prior-hantelpress', 'forsta-exponering', 'kalibrerad-niva', 'upplevd-anstrangning'];
     for (const id of mustBeHeuristic) expect(EVIDENCE.rules.find((r) => r.rule_id === id)?.heuristic, id).toBe(true);
-    expect(HEURISTIC_LABEL).toBe('Produktregel / ännu inte validerad tröskel');
+    expect(HEURISTIC_LABEL).toBe('Appens antagande – inte vetenskapligt validerat');
     const text = JSON.stringify(raw);
     expect(text).not.toMatch(/kliniskt validerad (faktor|omräkning)(?! )/i);
     // Ingen juridisk slutsats om medicinteknisk status – bara att avsett ändamål avgör och att bedömning återstår.

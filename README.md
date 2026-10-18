@@ -2,6 +2,8 @@
 
 Svensk, mobilförst PWA (React + TypeScript + Vite) som ger träningsförslag för knäböj, bänkpress och marklyft utifrån användarens registrerade träning, tid, utrustning och egna begränsningar. Byggd enligt utvecklingspaketet v2.0 i [spec/](spec/).
 
+Privat kodrepository: [turbomacka/STYRKA](https://github.com/turbomacka/STYRKA), huvudgren `main`. GitHub innehåller källkod, tester, specifikationer och versionshistorik. Miljöfiler, lösenord, nycklar och lokala databaser ingår inte. Publicering av appen på Cloudflare görs separat från uppladdning av koden till GitHub.
+
 > **Status:** utvecklingsprodukt för testmiljö. Releasegrind G5 (juridik MDR/GDPR, fackgranskning av träningsregler, staging-pilot) är **inte** godkänd och kan inte godkännas av kod. Se [docs/RELEASEGRINDAR.md](docs/RELEASEGRINDAR.md). Ingen offentlig driftsättning utan produktägarens uttryckliga godkännande.
 
 ## Snabbstart (lokal testmiljö)
@@ -53,10 +55,10 @@ Normhierarki enligt paketet: användarspärrar och säkerhetsgränser → numeri
 |---|---|
 | engineVersion | `1.0.0` (STYRKA-ENGINE, referensmotor) |
 | plannerVersion | `STYRKA-PLANNER/1.0.0` |
-| ruleSetVersion | `STYRKA-RULES/1.2.0` (nya H-regler märkta i AVVIKELSER, inkl. H-S1–H-S8 för övningsbyte) |
+| ruleSetVersion | `STYRKA-RULES/1.3.0` (inkl. [återhämtning utifrån faktiskt arbete](docs/ATERHAMTNING_2026-10-16.md); äldre H-regler i AVVIKELSER) |
 | catalogVersion | `2.0.1` (17 oförändrade + 31 erbjudna varianter enligt produktägarens kandidatmappning; `lunge` inaktiv) |
 | substitutionCatalogVersion | `SUBST/1.2.0` (`src/planner/replacement_seed.json`, enda källa; originalet oförändrat i `spec/cr-2026-10-10-01/`) |
-| evidensregister / metod | `EVIDENS/2.0.0` / `STYRKA-METOD/1.2.0` (`src/science/evidence.json` ur `spec/cr-2026-10-10-01/STYRKA_evidence_register.json`; publik sida `/vetenskap`) |
+| evidensregister / metod | `EVIDENS/2.0.0` / `STYRKA-METOD/1.4.0` (`src/science/evidence.json` ur `spec/cr-2026-10-10-01/STYRKA_evidence_register.json`; publik sida `/vetenskap`) |
 | templateVersion | `1.0.0` (`fixtures/planner_templates.json`) |
 | privacyNoticeVersion | `PN-2026-10-v1-UTKAST` (ej juridiskt granskad) |
 | balans | `balance-patterns/1.0.0`, `balance-decisions/1.0.0`; flaggor `VITE_FLAG_BALANCE` (på), `VITE_FLAG_BALANCE_ADJUSTMENTS` (av) |

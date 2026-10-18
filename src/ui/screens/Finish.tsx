@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ALL_AREAS, AREA_LABEL_SV, type Area } from '../../domain/catalog';
+import { ALL_AREAS, AREA_LABEL_SV, exercise, type Area } from '../../domain/catalog';
+import { SkipExercise } from '../components/SkipExercise';
+import { CatchUpCard } from '../components/CatchUpCard';
 import type { Side, SymptomReaction } from '../../domain/model';
 import { canOfferCountAsPlanned, countExtraAsPlanned, finishSession, reportSymptom } from '../../application/training';
 import { Banner, PageHeader } from '../components/common';
@@ -34,6 +36,8 @@ export function Finish() {
   const active = exs.filter((e) => !e.replacedById);
   const planned = active.reduce((n, e) => n + e.snapshot.sets, 0);
   const doneSets = sets.filter((s) => s.status === 'done' && !s.deleted && s.kind === 'work').length;
+  const partialSets = sets.filter((s) => s.status === 'partial' && !s.deleted && s.kind === 'work').length;
+  const warmups = sets.filter((s) => s.status === 'done' && !s.deleted && s.kind === 'warmup').length;
   const minutes = session.startedAt ? Math.max(1, Math.round((Date.now() - Date.parse(session.startedAt)) / 60000)) : null;
 
   async function save() {
@@ -56,6 +60,7 @@ export function Finish() {
       <div className="page stack">
         <h1>Bra jobbat</h1>
         <p>{done.status === 'completed' ? 'Passet är sparat som genomfört.' : done.status === 'partial' ? 'Passet är sparat som delvis genomfört. Alla utförda set finns kvar.' : 'Passet är avbrutet.'}</p>
+        <CatchUpCard />
         {done.offer && (
           <div className="card stack">
             <p>Du gjorde huvudövningen i ditt nästa ordinarie pass. Vill du räkna spontanpasset som det passet? Då föreslås passet därefter nästa gång.</p>
@@ -85,12 +90,17 @@ export function Finish() {
           {doneSets}/{planned} set
         </p>
         <p className="muted num">{minutes !== null ? `Faktisk tid: cirka ${minutes} min` : ''}</p>
-        <p>{doneSets >= planned ? 'Alla planerade set är gjorda.' : doneSets > 0 ? 'Sparas som delvis genomfört – det räknas inte som misslyckande.' : 'Inga set registrerade.'}</p>
+        <p>{doneSets >= planned ? 'Alla planerade set är gjorda.' : doneSets > 0 || partialSets > 0 ? 'Sparas som delvis genomfört – det räknas inte som misslyckande.' : 'Inga arbetsset registrerade.'}</p>
+        {(partialSets > 0 || warmups > 0) && <p className="small">{partialSets} ofullständiga arbetsset · {warmups} uppvärmningsset. Registrerade sidprestationer sparas även i ofullständiga set.</p>}
       </div>
       <label className="check card">
         <input type="checkbox" checked={abandon} onChange={(e) => setAbandon(e.target.checked)} />
         <span>Avbryt passet i stället</span>
       </label>
+      {active.filter((e) => !sets.some((s) => s.sessionExerciseId === e.id && !s.deleted && s.kind === 'work' && s.status === 'done')).length > 0 && <details className="card stack">
+        <summary>Övningar du inte gjorde – ange orsak (valfritt)</summary>
+        {active.filter((e) => !sets.some((s) => s.sessionExerciseId === e.id && !s.deleted && s.kind === 'work' && s.status === 'done')).map((e) => <SkipExercise key={e.id} exerciseId={e.id} name={exercise(e.exerciseId).nameSv} prompt />)}
+      </details>}
       {abandon && doneSets > 0 && (
         <label className="check card">
           <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} />

@@ -4,6 +4,8 @@ import type { ExerciseId } from '../domain/catalog';
 import { ALL_EQUIPMENT, isExerciseId, type Area, type EquipmentSlug } from '../domain/catalog';
 import type { RuleKind, Side } from '../domain/model';
 import { TEMPLATE_VERSION, TEMPLATES } from '../planner/planner';
+import { resolveStrengthInputs, validStrengthInput, type StrengthInput } from '../domain/strengthInputs';
+import { defaultConfiguration, trainingPreferences, validateConfiguration, type TrainingPreferences } from '../domain/trainingFlow';
 import type { LocalConsent, LocalExerciseSettings, LocalProfile, LocalProgram, LocalRestriction } from '../storage/db';
 import { consentRow, exerciseSettingsRow, profileRow, programRow, restrictionRow } from '../server/mapping';
 import { AppError, outbox, type AppContext } from './context';
@@ -26,7 +28,7 @@ export function validateProfileFields(p: { plannedSessionsPerWeek?: number; minu
 
 async function txAll<T>(ctx: AppContext, fn: () => Promise<T>): Promise<T> {
   const { db } = ctx;
-  const r = await db.transaction('rw', [db.profile, db.programs, db.exerciseSettings, db.restrictions, db.consents, db.outbox, db.symptoms], fn);
+  const r = await db.transaction('rw', [db.profile, db.programs, db.exerciseSettings, db.restrictions, db.consents, db.outbox, db.symptoms, db.meta], fn);
   ctx.onQueued?.();
   return r;
 }
@@ -38,6 +40,7 @@ function newProgram(ctx: AppContext, freq: number): LocalProgram {
 export type EstimateInput = { exerciseId: ExerciseId; kind: '1rm' | '3rm' | 'submax'; grams: number; reps?: number | null; rir?: number | null; measured?: boolean; testedAt?: string | null };
 
 export type OnboardingInput = {
+  loadRecommendationSource?: TrainingPreferences['loadRecommendationSource'];
   adultConfirmed: boolean;
   ageYears?: number | null;
   plannedSessionsPerWeek: number;
@@ -47,6 +50,7 @@ export type OnboardingInput = {
   goals: Partial<Record<ExerciseId, number>>;
   substitutions?: Partial<Record<ExerciseId, ExerciseId>>;
   estimates: EstimateInput[];
+  strengthInputs?: Array<{ exerciseId: ExerciseId; inputs: StrengthInput[] }>;
   healthConsent: boolean;
   restrictions: Array<Omit<NewRestriction, 'active'> & { active?: boolean }>;
   timezone?: string;
@@ -56,12 +60,14 @@ export type OnboardingInput = {
 export async function completeOnboarding(ctx: AppContext, input: OnboardingInput): Promise<LocalProfile> {
   if (!input.adultConfirmed) throw new AppError('VALIDATION_ERROR', 'adultConfirmed');
   validateProfileFields(input);
+  if (input.loadRecommendationSource !== undefined && !['performed_sets', 'strength_inputs'].includes(input.loadRecommendationSource)) throw new AppError('VALIDATION_ERROR', 'loadRecommendationSource');
   if (!input.equipment.length || input.equipment.some((e) => !ALL_EQUIPMENT.includes(e))) throw new AppError('VALIDATION_ERROR', 'equipment');
   if (!input.healthConsent && input.restrictions.some((r) => r.area)) throw new AppError('PRIVACY_CONSENT_REQUIRED');
   const now = ctx.clock.now();
   const existing = await ctx.db.profile.get(ctx.userId);
   const profile: LocalProfile = {
     userId: ctx.userId,
+    ...(input.loadRecommendationSource ? { trainingPreferences: trainingPreferences({ loadRecommendationSource: input.loadRecommendationSource }) } : {}),
     plannedSessionsPerWeek: input.plannedSessionsPerWeek,
     minutesPerSession: input.minutesPerSession,
     experience: input.experience,
@@ -88,14 +94,24 @@ export async function completeOnboarding(ctx: AppContext, input: OnboardingInput
       await ctx.db.programs.put(p);
       await ctx.db.outbox.add(outbox(ctx, p.id, { type: 'upsert', table: 'programs', row: programRow(ctx.userId, p) }));
     }
-    for (const e of input.estimates) await putEstimate(ctx, e);
+    const groups = new Map<ExerciseId, EstimateInput[]>();
+    for (const e of input.estimates) groups.set(e.exerciseId, [...(groups.get(e.exerciseId) ?? []), e]);
+    for (const [exerciseId, entries] of groups) {
+      if (entries.length === 1) await putEstimate(ctx, entries[0]);
+      else await putStrengthInputs(ctx, exerciseId, entries.map((e) => ({ kind: e.kind, grams: e.grams, reps: e.reps ?? null, rir: e.rir ?? null, measured: !!e.measured, testedAt: e.testedAt ?? null })));
+    }
+    for (const entry of input.strengthInputs ?? []) {
+      if (groups.has(entry.exerciseId)) throw new AppError('VALIDATION_ERROR', 'duplicateStrengthInputs');
+      await putStrengthInputs(ctx, entry.exerciseId, entry.inputs);
+    }
     await putConsent(ctx, input.healthConsent);
     for (const r of input.restrictions) await putRestriction(ctx, { ...r, active: r.active ?? true });
+    await ctx.db.meta.delete('onboarding-draft-v1');
   });
   return profile;
 }
 
-export type ProfileChanges = Partial<Pick<LocalProfile, 'plannedSessionsPerWeek' | 'minutesPerSession' | 'experience' | 'goals' | 'substitutions' | 'favorites' | 'bodyweightGrams' | 'ageYears' | 'timezone' | 'equipmentProfiles'>> & { equipment?: EquipmentSlug[] };
+export type ProfileChanges = Partial<Pick<LocalProfile, 'plannedSessionsPerWeek' | 'minutesPerSession' | 'experience' | 'goals' | 'substitutions' | 'favorites' | 'bodyweightGrams' | 'ageYears' | 'timezone' | 'equipmentProfiles' | 'trainingPreferences'>> & { equipment?: EquipmentSlug[] };
 
 /** Maskinprofil: kort etikett som användaren själv anger (t.ex. "gym-b"). */
 export function validateVariantKey(key: string): void {
@@ -107,6 +123,15 @@ export function validateVariantKey(key: string): void {
  */
 export async function patchProfile(ctx: AppContext, changes: ProfileChanges): Promise<LocalProfile> {
   validateProfileFields(changes);
+  if (changes.trainingPreferences) {
+    const p = changes.trainingPreferences;
+    if (p.loadRecommendationSource !== undefined && !['performed_sets', 'strength_inputs'].includes(p.loadRecommendationSource)) throw new AppError('VALIDATION_ERROR', 'loadRecommendationSource');
+    if (typeof p.showWarmupSets !== 'boolean' || typeof p.adaptiveRestEnabled !== 'boolean' || !['right','left'].includes(p.defaultStartingSide)
+      || !Array.isArray(p.equipmentProfiles) || p.equipmentProfiles.length > 100
+      || Object.entries(p.exerciseDefaults).some(([id,c]) => !isExerciseId(id) || !validateConfiguration(c!))
+      || p.equipmentProfiles.some((e) => !validateConfiguration({ ...defaultConfiguration('cable_row'), equipment: e }))
+      || Object.entries(p.preferredRestOverrides).some(([id,n]) => !isExerciseId(id) || !Number.isInteger(n) || n! < 30 || n! > 300)) throw new AppError('VALIDATION_ERROR','trainingPreferences');
+  }
   if (changes.equipmentProfiles) for (const [k, v] of Object.entries(changes.equipmentProfiles)) if (!isExerciseId(k) || typeof v !== 'string') throw new AppError('VALIDATION_ERROR', 'equipmentProfiles');
   if (changes.equipmentProfiles) for (const v of Object.values(changes.equipmentProfiles)) validateVariantKey(v as string);
   if (changes.equipment && (!changes.equipment.length || changes.equipment.some((e) => !ALL_EQUIPMENT.includes(e)))) throw new AppError('VALIDATION_ERROR', 'equipment');
@@ -159,7 +184,37 @@ function emptySettings(ctx: AppContext, exerciseId: ExerciseId): LocalExerciseSe
 }
 
 export async function setEstimate(ctx: AppContext, e: EstimateInput): Promise<void> {
-  await txAll(ctx, () => putEstimate(ctx, e));
+  await txAll(ctx, async () => {
+    const current = await ctx.db.exerciseSettings.where('exerciseId').equals(e.exerciseId).first();
+    if (current?.strengthInputs !== undefined) {
+      await putStrengthInputs(ctx, e.exerciseId, [...current.strengthInputs.filter((s) => s.kind !== e.kind), { kind: e.kind, grams: e.grams, reps: e.reps ?? null, rir: e.rir ?? null, measured: !!e.measured, testedAt: e.testedAt ?? null }]);
+    } else await putEstimate(ctx, e);
+  });
+}
+
+/** Existing single estimates are retained when an older profile is opened in the new editor. */
+export function strengthInputsFromSettings(s?: LocalExerciseSettings): StrengthInput[] {
+  if (s?.strengthInputs !== undefined) return s.strengthInputs;
+  return s?.estimateKind && s.estimateGrams !== null ? [{ kind: s.estimateKind, grams: s.estimateGrams, reps: s.estimateReps, rir: s.estimateRir, measured: s.estimateMeasured, testedAt: s.estimateTestedAt }] : [];
+}
+
+async function putStrengthInputs(ctx: AppContext, exerciseId: ExerciseId, inputs: StrengthInput[]): Promise<void> {
+  if (!isExerciseId(exerciseId) || inputs.length > 3 || new Set(inputs.map((s) => s.kind)).size !== inputs.length || inputs.some((s) => !validStrengthInput(s, ctx.clock.now().slice(0, 10)))) throw new AppError('VALIDATION_ERROR', 'strengthInputs');
+  const current = await ctx.db.exerciseSettings.where('exerciseId').equals(exerciseId).first();
+  const estimate = resolveStrengthInputs(inputs).estimate;
+  const s: LocalExerciseSettings = {
+    ...(current ?? emptySettings(ctx, exerciseId)), strengthInputs: inputs.map((x) => ({ ...x })),
+    estimateKind: estimate?.kind ?? null, estimateGrams: estimate ? Math.round(estimate.kg * 1000) : null,
+    estimateReps: estimate?.reps ?? null, estimateRir: estimate?.rir ?? null,
+    estimateMeasured: !!estimate?.measured, estimateTestedAt: estimate?.testedAt ?? null,
+    updatedAt: ctx.clock.now(), syncState: 'queued',
+  };
+  await ctx.db.exerciseSettings.put(s);
+  await ctx.db.outbox.add(outbox(ctx, s.id, { type: 'upsert', table: 'user_exercise_profiles', row: exerciseSettingsRow(ctx.userId, s) }));
+}
+
+export async function setStrengthInputs(ctx: AppContext, exerciseId: ExerciseId, inputs: StrengthInput[]): Promise<void> {
+  await txAll(ctx, () => putStrengthInputs(ctx, exerciseId, inputs));
 }
 
 export type ExerciseSettingsChanges = Partial<Pick<LocalExerciseSettings, 'experience' | 'incrementGrams' | 'maxLoadGrams' | 'machineMinGrams' | 'machineMaxGrams'>> & { clearEstimate?: boolean };
@@ -172,7 +227,7 @@ export async function updateExerciseSettings(ctx: AppContext, exerciseId: Exerci
   await txAll(ctx, async () => {
     const current = (await ctx.db.exerciseSettings.where('exerciseId').equals(exerciseId).first()) ?? emptySettings(ctx, exerciseId);
     const { clearEstimate, ...rest } = changes;
-    const s: LocalExerciseSettings = { ...current, ...rest, ...(clearEstimate ? { estimateGrams: null, estimateKind: null, estimateReps: null, estimateRir: null, estimateMeasured: false } : {}), updatedAt: ctx.clock.now(), syncState: 'queued' };
+    const s: LocalExerciseSettings = { ...current, ...rest, ...(clearEstimate ? { strengthInputs: [], estimateGrams: null, estimateKind: null, estimateReps: null, estimateRir: null, estimateMeasured: false, estimateTestedAt: null } : {}), updatedAt: ctx.clock.now(), syncState: 'queued' };
     await ctx.db.exerciseSettings.put(s);
     await ctx.db.outbox.add(outbox(ctx, s.id, { type: 'upsert', table: 'user_exercise_profiles', row: exerciseSettingsRow(ctx.userId, s) }));
   });
