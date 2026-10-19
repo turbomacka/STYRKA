@@ -1,3 +1,5 @@
+import { NextWorkout, SyncLink } from './Today';
+import type { SavedWorkoutFeedback } from '../../application/workoutFeedback';
 import { PerformanceHistory } from '../components/TrainingHistory';
 /**
  * ÄA-PLAN-001 "Min träningsplan": Kommande (levande, preliminär plan) och Genomförda (träningsdagbok).
@@ -11,7 +13,7 @@ import { exercise, type ExerciseId, type LoadKind } from '../../domain/catalog';
 import type { PlanSnapshot } from '../../domain/model';
 import { formatKg } from '../../domain/units';
 import { activeSession, previewNext } from '../../application/training';
-import { CHANGE_TYPE_SV, DEFAULT_HORIZON, getFuturePlan, getNote, getWorkoutDetail, getWorkoutHistory, lastPerformed, NOTE_MAX_LENGTH, PLAN_HORIZONS, planRevisions, saveNote, type NoteTarget, type PlanSlot, type WorkoutDetail, type WorkoutSummary } from '../../application/trainingPlan';
+import { CHANGE_TYPE_SV, getFuturePlan, getNote, getWorkoutDetail, getWorkoutHistory, lastPerformed, NOTE_MAX_LENGTH, PLAN_HORIZONS, planRevisions, saveNote, type NoteTarget, type PlanSlot, type WorkoutDetail, type WorkoutSummary } from '../../application/trainingPlan';
 import type { LocalPlanRevision, LocalSession, LocalSet } from '../../storage/db';
 import { Banner, Expandable, Icon, Segmented } from '../components/common';
 import { prescriptionText } from '../components/widgets';
@@ -53,9 +55,12 @@ function loadText(grams: number | null, reps: number | null, seconds: number | n
 }
 
 export function Plan() {
+  const {ctx}=useServices();
   const [params, setParams] = useSearchParams();
+  const completed=params.get('klart');
+  const feedback=useLiveQuery(async()=>completed ? (await ctx.db.meta.get(`workout-feedback:${completed}`))?.value as SavedWorkoutFeedback|undefined : undefined,[ctx,completed]);
   const fromUrl = params.get('flik');
-  const initial: Tab = fromUrl === 'genomforda' ? 'done' : fromUrl === 'kommande' ? 'upcoming' : store.get('plan.tab') === 'done' ? 'done' : 'upcoming';
+  const initial: Tab = fromUrl === 'genomforda' ? 'done' : fromUrl === 'kommande' ? 'upcoming' : 'upcoming';
   const [tab, setTab] = useState<Tab>(initial);
   const [printing, setPrinting] = useState<null | { includeNotes: boolean }>(null);
   const [includeNotes, setIncludeNotes] = useState(false);
@@ -67,8 +72,10 @@ export function Plan() {
   return (
     <div className="page stack plan">
       <div className="row spread no-print">
-        <h1 style={{ margin: 0 }}>{PLAN.TITLE}</h1>
+        <h1 style={{ margin: 0 }}>{PLAN.TITLE}</h1><SyncLink/>
       </div>
+      {feedback&&<section className="card stack no-print" role="status"><strong>Passet är sparat</strong><p>{feedback.text}</p><button type="button" className="btn" onClick={()=>choose('done')}>Visa genomfört pass</button></section>}
+      {!printing&&<NextWorkout/>}
       <div className="no-print">
         <Segmented label={PLAN.TAB_LABEL} value={tab} onChange={choose} options={[{ value: 'upcoming', label: PLAN.UPCOMING }, { value: 'done', label: PLAN.DONE }]} />
       </div>
@@ -111,7 +118,7 @@ function Upcoming({ printing, onPrinted }: { printing: boolean; onPrinted: () =>
   const { ctx } = useServices();
   const [horizon, setHorizon] = useState<number>(() => {
     const v = Number(store.get('plan.horizon'));
-    return (PLAN_HORIZONS as readonly number[]).includes(v) ? v : DEFAULT_HORIZON;
+    return (PLAN_HORIZONS as readonly number[]).includes(v) ? v : 12;
   });
   const [extra, setExtra] = useState(0);
   const [viewRevision, setViewRevision] = useState<string | null>(null);
@@ -144,7 +151,7 @@ function Upcoming({ printing, onPrinted }: { printing: boolean; onPrinted: () =>
 
   return (
     <>
-      <div className="no-print stack">
+      <details className="no-print stack"><summary>Planens omfattning och tidigare versioner</summary>
         <Segmented
           label={PLAN.HORIZON}
           value={String(horizon) as `${number}`}
@@ -185,7 +192,7 @@ function Upcoming({ printing, onPrinted }: { printing: boolean; onPrinted: () =>
             </ul>
           </details>
         )}
-      </div>
+      </details>
       <ol className="list plan-list" aria-label={`${PLAN.UPCOMING} pass`}>
         {data.slots.map((s) => (
           <SlotRow key={s.plannedSlotId} slot={s} live={s.status === 'ready' && data.current && !viewRevision ? next : null} activeSession={activeSeq === s.slotSequence ? active! : null} readOnly={!!viewRevision} printing={printing} />

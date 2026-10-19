@@ -13,8 +13,9 @@ export async function deletedWorkouts(db: StyrkaDB): Promise<DeletedWorkout[]> {
 export async function purgeWorkout(db: StyrkaDB, deleted: DeletedWorkout): Promise<void> {
   const id = deleted.id;
   await db.meta.put({ key: deletedWorkoutKey(id), value: deleted });
+  await db.meta.delete(`workout-feedback:${id}`);
   const ids = new Set<string>([id]);
-  for (const table of [db.sets, db.sessionExercises, db.audits, db.substitutionEvents, db.notes, db.skipEvents]) {
+  for (const table of [db.sets, db.sessionExercises, db.audits, db.substitutionEvents, db.notes, db.skipEvents, db.workoutOrderEvents]) {
     const rows = await table.where('sessionId').equals(id).toArray();
     rows.forEach((r) => ids.add(r.id));
     await table.bulkDelete(rows.map((r) => r.id));
@@ -46,7 +47,7 @@ export async function cleanCalibrations(db: StyrkaDB): Promise<void> {
 
 export async function deleteWorkout(ctx: AppContext, sessionId: string): Promise<void> {
   const { db } = ctx;
-  await db.transaction('rw', [db.meta, db.sessions, db.sessionExercises, db.sets, db.audits, db.substitutionEvents, db.notes, db.outbox, db.conflicts, db.symptoms, db.calibrations, db.skipEvents], async () => {
+  await db.transaction('rw', [db.meta, db.sessions, db.sessionExercises, db.sets, db.audits, db.substitutionEvents, db.notes, db.outbox, db.conflicts, db.symptoms, db.calibrations, db.skipEvents, db.workoutOrderEvents], async () => {
     if (await db.meta.get(deletedWorkoutKey(sessionId))) return;
     const session = await db.sessions.get(sessionId);
     if (!session) throw new AppError('NOT_FOUND');

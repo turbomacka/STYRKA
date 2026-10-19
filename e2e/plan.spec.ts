@@ -31,7 +31,8 @@ test('Min träningsplan: kommande, genomförda, anteckning, planversioner och ut
 
   // Högst två tryck från Idag till hela framtidslistan.
   let taps = 0;
-  await page.getByRole('link', { name: 'Visa hela planen' }).click();
+  await page.getByText('Planens omfattning och tidigare versioner',{exact:true}).click();
+  await page.getByRole('radio',{name:'36',exact:true}).click();
   taps++;
   const upcoming = page.getByRole('list', { name: 'Kommande pass' });
   await expect(upcoming.locator(':scope > li')).toHaveCount(36);
@@ -63,15 +64,15 @@ test('Min träningsplan: kommande, genomförda, anteckning, planversioner och ut
   await expect(p1.getByText(/\d+(,\d+)? kg/).first()).toBeVisible();
   await shot('PLAN-2-nasta-pass');
   await p1.getByRole('button', { name: 'Öppna passet' }).click();
-  await expect(page.getByRole('button', { name: 'Starta', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Starta passet', exact: true })).toBeEnabled();
 
   // Genomför ett delvis pass (ett set).
-  await page.getByRole('button', { name: 'Starta', exact: true }).click();
-  await page.getByRole('button', { name: 'Klart, set 1' }).click();
+  await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
+  await page.getByRole('button', { name: 'Registrera set 1' }).click();
   await expect(page.getByRole('button', { name: 'Set 1 utfört. Ändra eller ångra' })).toBeVisible();
   await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
-  await page.getByRole('button', { name: 'Spara passet' }).click();
-  await page.getByRole('button', { name: 'Till Idag' }).click();
+  await page.getByRole('button', { name: 'Avsluta och spara' }).click();
+  await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
 
   // Genomförda: verkliga set, status och åtskilda vikttyper.
   await page.getByRole('link', { name: 'Plan', exact: true }).click();
@@ -112,6 +113,7 @@ test('Min träningsplan: kommande, genomförda, anteckning, planversioner och ut
   // Kommande börjar nu på pass 2; tidigare planversion finns med orsak (PL05/PL15).
   await page.getByRole('radio', { name: 'Kommande' }).click();
   await expect(page.getByRole('button', { name: /^Pass 2 · .*Nästa/ })).toBeVisible();
+  await page.getByText('Planens omfattning och tidigare versioner',{exact:true}).click();
   await page.getByText('Tidigare planversioner').click();
   await expect(page.getByRole('button', { name: /Första planen/ })).toBeVisible();
   await page.getByRole('button', { name: /Första planen/ }).click();

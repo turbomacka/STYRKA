@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ALL_AREAS, AREA_LABEL_SV, exercise, type Area } from '../../domain/catalog';
 import { SkipExercise } from '../components/SkipExercise';
-import { CatchUpCard } from '../components/CatchUpCard';
+import { refreshFuturePlan } from '../../application/trainingPlan';
+import { savedWorkoutFeedback } from '../../application/workoutFeedback';
 import type { Side, SymptomReaction } from '../../domain/model';
 import { canOfferCountAsPlanned, countExtraAsPlanned, finishSession, reportSymptom } from '../../application/training';
 import { Banner, PageHeader } from '../components/common';
@@ -29,58 +30,51 @@ export function Finish() {
   const [side, setSide] = useState<Side>('not_applicable');
   const [reaction, setReaction] = useState<SymptomReaction>('transient');
   const [err, setErr] = useState<string | null>(null);
-  const [done, setDone] = useState<null | { status: string; offer: boolean }>(null);
+  const [done, setDone] = useState<null | { status: string; offer: boolean; text: string }>(null);
+  const saving=useRef(false),symptomSaved=useRef(false);
+  const [calculating,setCalculating]=useState(false);
   const [busy, setBusy] = useState(false);
 
   if (!session || !sets || !exs) return <p className="page" aria-busy="true">Laddar…</p>;
   const active = exs.filter((e) => !e.replacedById);
-  const planned = active.reduce((n, e) => n + e.snapshot.sets, 0);
+  const planned = sets.filter((s)=>!s.deleted&&s.kind==='work').length;
   const doneSets = sets.filter((s) => s.status === 'done' && !s.deleted && s.kind === 'work').length;
   const partialSets = sets.filter((s) => s.status === 'partial' && !s.deleted && s.kind === 'work').length;
   const warmups = sets.filter((s) => s.status === 'done' && !s.deleted && s.kind === 'warmup').length;
   const minutes = session.startedAt ? Math.max(1, Math.round((Date.now() - Date.parse(session.startedAt)) / 60000)) : null;
 
-  async function save() {
-    setBusy(true);
-    setErr(null);
-    try {
-      const fin = await finishSession(ctx, session!.id, abandon ? { status: 'abandoned', keepLoggedSets: keep } : {});
-      if (report && consent) await reportSymptom(ctx, { sessionId: session!.id, area, side, reaction });
-      const offer = fin.kind === 'extra' ? await canOfferCountAsPlanned(ctx, fin.id) : false;
-      setDone({ status: fin.status, offer });
-    } catch {
-      setErr('Passet kunde inte sparas på enheten. Försök igen – inget har raderats.');
-    } finally {
-      setBusy(false);
-    }
+  async function returnToPlan() {
+    setCalculating(true);setErr(null);
+    try { await refreshFuturePlan(ctx); nav(`/?klart=${id}`,{replace:true}); }
+    catch { setErr('Träningen är sparad. Nästa pass kunde inte räknas fram just nu.'); }
+    finally { setCalculating(false); }
   }
-
-  if (done)
-    return (
-      <div className="page stack">
-        <h1>Bra jobbat</h1>
-        <p>{done.status === 'completed' ? 'Passet är sparat som genomfört.' : done.status === 'partial' ? 'Passet är sparat som delvis genomfört. Alla utförda set finns kvar.' : 'Passet är avbrutet.'}</p>
-        <CatchUpCard />
-        {done.offer && (
-          <div className="card stack">
-            <p>Du gjorde huvudövningen i ditt nästa ordinarie pass. Vill du räkna spontanpasset som det passet? Då föreslås passet därefter nästa gång.</p>
-            <button
-              type="button"
-              className="btn block"
-              onClick={async () => {
-                await countExtraAsPlanned(ctx, session.id);
-                nav('/');
-              }}
-            >
-              Räkna som ordinarie
-            </button>
-          </div>
-        )}
-        <button type="button" className="btn primary block big" onClick={() => nav('/')}>
-          Till Idag
-        </button>
-      </div>
-    );
+  async function save() {
+    if(saving.current)return;saving.current=true;setBusy(true);setErr(null);
+    try {
+      // Report first: a failed symptom write must remain visible and retryable.
+      if(report&&consent&&!symptomSaved.current){await reportSymptom(ctx,{sessionId:session!.id,area,side,reaction});symptomSaved.current=true;}
+      const fin=await finishSession(ctx,session!.id,abandon?{status:'abandoned',keepLoggedSets:keep}:{});
+      // The completed session is already committed even if feedback or planning fails.
+      setDone({status:fin.status,offer:false,text:'Dina registrerade set är sparade.'});
+      const feedback=await savedWorkoutFeedback(ctx,fin.id);
+      const offer=fin.kind==='extra'?await canOfferCountAsPlanned(ctx,fin.id):false;
+      setDone({status:fin.status,offer,text:feedback.text});
+      if(!offer)await returnToPlan();
+    } catch {
+      const stored=await ctx.db.sessions.get(id!);
+      if(stored&&['completed','partial','abandoned'].includes(stored.status)){
+        setDone({status:stored.status,offer:stored.kind==='extra',text:'Dina registrerade set är sparade.'});
+        setErr('Träningen är sparad. Nästa steg kunde inte förberedas. Försök igen.');
+      } else setErr('Kunde inte spara. Dina registrerade set finns kvar. Försök igen.');
+    } finally {setBusy(false);saving.current=false;}
+  }
+  if(done)return <div className="page stack">
+    <h1>Passet är sparat</h1><p className="finish-feedback">{done.text}</p>
+    {calculating&&<p role="status" aria-busy="true">Förbereder nästa pass…</p>}
+    {done.offer&&!calculating&&<div className="card stack"><p>Räkna spontanpasset som ditt ordinarie pass?</p><button type="button" className="btn primary" disabled={busy} onClick={async()=>{setBusy(true);try{await countExtraAsPlanned(ctx,id!);await returnToPlan();}catch{setErr('Passet är sparat. Kunde inte ändra hur det räknas.');}finally{setBusy(false);}}}>Räkna som ordinarie</button><button type="button" className="btn" onClick={()=>void returnToPlan()}>Behåll som spontanpass</button></div>}
+    {err&&<><Banner kind="warn">{err}</Banner><button type="button" className="btn" disabled={calculating} onClick={()=>void returnToPlan()}>Försök beräkna igen</button><button type="button" className="btn" onClick={()=>nav(`/?klart=${id}`,{replace:true})}>Till planen</button></>}
+  </div>;
 
   return (
     <div className="page full stack">
@@ -93,10 +87,10 @@ export function Finish() {
         <p>{doneSets >= planned ? 'Alla planerade set är gjorda.' : doneSets > 0 || partialSets > 0 ? 'Sparas som delvis genomfört – det räknas inte som misslyckande.' : 'Inga arbetsset registrerade.'}</p>
         {(partialSets > 0 || warmups > 0) && <p className="small">{partialSets} ofullständiga arbetsset · {warmups} uppvärmningsset. Registrerade sidprestationer sparas även i ofullständiga set.</p>}
       </div>
-      <label className="check card">
+      <details><summary>Avbryta passet</summary><label className="check card">
         <input type="checkbox" checked={abandon} onChange={(e) => setAbandon(e.target.checked)} />
         <span>Avbryt passet i stället</span>
-      </label>
+      </label></details>
       {active.filter((e) => !sets.some((s) => s.sessionExerciseId === e.id && !s.deleted && s.kind === 'work' && s.status === 'done')).length > 0 && <details className="card stack">
         <summary>Övningar du inte gjorde – ange orsak (valfritt)</summary>
         {active.filter((e) => !sets.some((s) => s.sessionExerciseId === e.id && !s.deleted && s.kind === 'work' && s.status === 'done')).map((e) => <SkipExercise key={e.id} exerciseId={e.id} name={exercise(e.exerciseId).nameSv} prompt />)}
@@ -155,7 +149,7 @@ export function Finish() {
       {err && <Banner kind="danger">{err}</Banner>}
       <div className="bottom-cta">
         <button type="button" className={`btn block big ${abandon ? 'danger' : 'primary'}`} disabled={busy} onClick={save}>
-          {abandon ? 'Avbryt passet' : 'Spara passet'}
+          {abandon ? 'Avbryt passet' : 'Avsluta och spara'}
         </button>
       </div>
     </div>

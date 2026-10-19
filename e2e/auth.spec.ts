@@ -183,7 +183,7 @@ test('byt lösenord under Data och konto', async ({ page }) => {
   await expect(page.getByText('Lösenordet är bytt.')).toBeVisible();
   await clearAuth(page);
   await signIn(page, email, NEW_PASSWORD);
-  await expect(page.getByRole('heading', { name: 'Idag' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Min träningsplan' })).toBeVisible();
 });
 
 test('inloggning via e-post utan lösenord (kod) för befintligt konto; fel kod och okänt konto ger tydliga fel', async ({ page }) => {

@@ -19,14 +19,14 @@ async function noHorizontalScroll(page: Page) {
 
 /** Ordinarie pass där bara första setet loggas (resten hoppas över) – ger ett delvis genomfört pass. */
 async function shortSession(page: Page) {
-  await page.getByRole('link', { name: 'Idag' }).click();
-  await page.getByRole('button', { name: 'Starta dagens pass' }).click();
-  await page.getByRole('button', { name: 'Starta', exact: true }).click();
-  await page.getByRole('button', { name: 'Klart, set 1' }).click();
+  await page.getByRole('link', { name: 'Plan' }).click();
+  await page.getByRole('button', { name: 'Öppna passet' }).click();
+  await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
+  await page.getByRole('button', { name: 'Registrera set 1' }).click();
   await expect(page.getByRole('button', { name: 'Set 1 utfört. Ändra eller ångra' })).toBeVisible();
   await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
-  await page.getByRole('button', { name: 'Spara passet' }).click();
-  await page.getByRole('button', { name: 'Till Idag' }).click();
+  await page.getByRole('button', { name: 'Avsluta och spara' }).click();
+  await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
 }
 
 test('Balans under Utveckling: tomläge, fördelning, förslag, förhandsvisning och avböjande', async ({ page }, info) => {
@@ -71,6 +71,7 @@ test('Balans under Utveckling: tomläge, fördelning, förslag, förhandsvisning
 
   // Antal planversioner innan förhandsvisning och avböjande.
   await page.getByRole('link', { name: 'Plan', exact: true }).click();
+  await page.getByText('Planens omfattning och tidigare versioner',{exact:true}).click();
   const versionLine = page.getByText(/^Planversion /);
   await expect(versionLine).toBeVisible();
   const versionBefore = await versionLine.textContent();

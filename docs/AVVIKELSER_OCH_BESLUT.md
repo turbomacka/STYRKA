@@ -174,3 +174,12 @@ Inga nya träningsregler. Framtidsplanen tas fram genom den befintliga planerare
 4. Ska "Radera mina hälsorelaterade uppgifter" även radera rena övningsblockeringar (nuvarande: ja, alla regler raderas)?
 5. Godkänn H-S1–H-S8 och substitutionskatalogens relationer efter fackgranskning; bekräfta att vetenskapssidans formuleringar (inkl. medicinteknisk gräns) får publiceras.
 6. Ska "Använd framöver" även gälla spontanpassens urval i fler fall än i dag (nu: endast permanenta ersättare)?
+
+
+## 6. Sammanhängande UX, 18–19 oktober 2026
+
+Den samlade UX-anmodan ersätter tidigare krav på separata Idag-/förhandsvisningsflöden, fyra huvudflikar, synliga maskinprofilsformulär och en extra navigeringshandling efter avslut. Plan är startsida, planvärden autosparas separat från registrering, och samma passöversikt används före/under träning. Motiv, migration, testresultat och begränsningar finns i [UX-redovisningen](UX_OMARBETNING_2026-10-18.md).
+
+Vila versionshöjs separat till REST/1.1.0 för sent frivilligt ansträngningssvar. Referensmotorns numerik och kontrollsummor ändras inte. Originalrekommendation, aktuell plan och prestation bevaras som skilda uppgifter. Servermigrationerna är additiva och lokal lagring uppgraderas till Dexie v6. En eventuell klientrollback måste behålla v6-stödet så att uppgraderad lokal data fortfarande kan öppnas.
+
+Implementationen är lokal; produktionspublicering och fysisk enhetsverifiering ingår inte i genomförda kodtester.

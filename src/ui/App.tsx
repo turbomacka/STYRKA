@@ -9,7 +9,7 @@ import { ServicesProvider, useServices } from './services';
 import { Icon } from './components/common';
 import { Welcome } from './screens/Welcome';
 import { Onboarding } from './screens/Onboarding';
-import { Today } from './screens/Today';
+import { WorkoutOverview } from './components/WorkoutOverview';
 import { Preview } from './screens/Preview';
 import { Spontaneous } from './screens/Spontaneous';
 import { Train } from './screens/Train';
@@ -107,8 +107,7 @@ function BottomTabs() {
   return (
     <nav className="tabs" aria-label="Huvudmeny">
       <ul>
-        {tab('/', 'Idag', Icon.Today)}
-        {tab('/plan', 'Plan', Icon.List)}
+        {tab('/', 'Plan', Icon.List)}
         {tab('/utveckling', 'Utveckling', Icon.Chart)}
         {tab('/profil', 'Profil', Icon.Person)}
       </ul>
@@ -158,10 +157,11 @@ function Authed({ onSignedOut }: { onSignedOut: () => Promise<void> }) {
   return (
     <div className="shell">
       <Routes>
-        <Route path="/" element={<Today />} />
+        <Route path="/" element={<Plan />} />
         <Route path="/forhandsvisning" element={<Preview />} />
         <Route path="/spontan" element={<Spontaneous />} />
         <Route path="/pass/:id" element={<Train />} />
+        <Route path="/pass/:id/oversikt" element={<WorkoutOverview />} />
         <Route path="/pass/:id/avsluta" element={<Finish />} />
         <Route path="/plan" element={<Plan />} />
         <Route path="/utveckling" element={<Progress />} />

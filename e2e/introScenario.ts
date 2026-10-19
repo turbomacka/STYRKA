@@ -71,7 +71,7 @@ export async function independentIntro(page: Page, context: BrowserContext, dir:
     await page.screenshot({ path: `${dir}/summary.png`, fullPage: true, animations: 'disabled' });
     await page.getByRole('button', { name: 'Fortsätt', exact: true }).click();
     await page.getByRole('button', { name: 'Skapa min plan', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Idag' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Min träningsplan' })).toBeVisible();
     await page.getByRole('link', { name: 'Profil', exact: true }).click();
     await page.getByRole('link', { name: 'Övningar: nivå, viktsteg och maxvärden' }).click();
     await expect(page.getByRole('group', { name: 'Max för 1 repetition', exact: true }).getByLabel('Vikt (kg)', { exact: true })).toHaveValue('100');

@@ -22,7 +22,7 @@ import { auditRow, calibrationRow, profileRow, programRow, sessionExerciseRow, s
 import { AppError, outbox, type AppContext } from './context';
 import { activeHealthConsent, buildPlannerInput } from './plannerInput';
 import { comparisonKey, defaultConfiguration, detailStatus, executionDefinition, nextSide, requiredSides, supportedMeasurements, trainingPreferences, validateConfiguration, type ExerciseConfiguration, type PerformanceSide, type SetDetail, type SetPerformance } from '../domain/trainingFlow';
-import { observedRestSeconds, recommendRest, type RestPerformance } from '../domain/restPolicy';
+import { observedRestSeconds, recommendRest, type RestPerformance, type RestInput } from '../domain/restPolicy';
 import { warmupSuggestions } from '../domain/warmupPolicy';
 import { effectiveRir, validEffort } from '../domain/effort';
 
@@ -39,7 +39,7 @@ export function canTransition(from: SessionStatus, to: SessionStatus): boolean {
   return ALLOWED[from].includes(to);
 }
 
-async function tx<T>(ctx: AppContext, fn: () => Promise<T>): Promise<T> {
+export async function trainingTransaction<T>(ctx: AppContext, fn: () => Promise<T>): Promise<T> {
   const { db } = ctx;
   try {
     let queued = false;
@@ -77,7 +77,7 @@ export async function activeSession(ctx: AppContext): Promise<LocalSession | und
  * Planerade set för en övning. Startvikt: föreskriven kg, annars bekräftat kalibreringsförslag, annars ingen.
  * Ersättare får deterministiska set-id (samma byte på två enheter ⇒ samma set ⇒ revisionskonflikt i stället för dubblett).
  */
-function plannedSetsFor(ctx: AppContext, sessionId: string, se: LocalSessionExercise, now: string, opts: { deterministic?: boolean; targetGrams?: number | null } = {}): LocalSet[] {
+export function plannedSetsFor(ctx: AppContext, sessionId: string, se: LocalSessionExercise, now: string, opts: { deterministic?: boolean; targetGrams?: number | null } = {}): LocalSet[] {
   const p = se.snapshot;
   const startKg = p.kg ?? p.calibrationSuggestionKg ?? null;
   const target = opts.targetGrams !== undefined ? opts.targetGrams : startKg === null ? null : kgToGrams(startKg);
@@ -109,7 +109,7 @@ function plannedSetsFor(ctx: AppContext, sessionId: string, se: LocalSessionExer
 }
 
 /** Startar pass från ett immutabelt snapshot. Snapshot + audit skrivs i samma transaktion. */
-export async function startSession(ctx: AppContext, snapshot: PlanSnapshot): Promise<LocalSession> {
+export async function startSession(ctx: AppContext, snapshot: PlanSnapshot, prepare = false): Promise<LocalSession> {
   if (!snapshot.exercises.length) throw new AppError('RULE_UNSATISFIABLE');
   if (await activeSession(ctx)) throw new AppError('INVALID_STATE', 'active_session_exists');
   if (snapshot.catchUp) {
@@ -123,9 +123,9 @@ export async function startSession(ctx: AppContext, snapshot: PlanSnapshot): Pro
     id: ctx.ids.uuid(),
     programId: snapshot.kind === 'planned' ? (program?.id ?? null) : null,
     kind: snapshot.kind === 'extra' ? 'extra' : 'planned',
-    status: 'in_progress',
+    status: prepare ? 'preview' : 'in_progress',
     timezone: profile?.timezone ?? 'Europe/Stockholm',
-    startedAt: now,
+    startedAt: prepare ? null : now,
     finishedAt: null,
     plannedMinutes: snapshot.budgetMinutes,
     readiness: snapshot.readiness,
@@ -166,13 +166,16 @@ export async function startSession(ctx: AppContext, snapshot: PlanSnapshot): Pro
     return substitutionEvent(ctx, { sessionId: session.id, original: s.original, replacement: target?.snapshot ?? null, replacementSessionExerciseId: target?.id ?? null, originalSessionExerciseId: null, scope: s.scope, userOverride: s.userOverride, seed: `preview|${session.id}|${s.original.exerciseId}|${s.replacementExerciseId}|${s.variantKey ?? 'default'}` });
   });
   const audit = { id: ctx.ids.uuid(), sessionId: session.id, engineVersion: snapshot.engineVersion, inputsHash: snapshot.inputsHash, reasonCodes: [...new Set([...snapshot.reasons, ...snapshot.exercises.flatMap((e) => e.reasons)])], snapshot, generatedAt: snapshot.generatedAtUtc, syncState: 'queued' as const };
-  await tx(ctx, async () => {
+  await trainingTransaction(ctx, async () => {
+    if (await activeSession(ctx)) throw new AppError('INVALID_STATE', 'active_session_exists');
+    if (prepare && (await ctx.db.sessions.where('status').equals('preview').count())) throw new AppError('INVALID_STATE', 'preview_exists');
     await ctx.db.sessions.add(session);
     await ctx.db.sessionExercises.bulkAdd(exs);
     await ctx.db.sets.bulkAdd(sets);
     await ctx.db.audits.add(audit);
     await ctx.db.outbox.add(outbox(ctx, session.id, { type: 'upsert', table: 'training_sessions', row: sessionRow(ctx.userId, session) }));
     for (const e of exs) await ctx.db.outbox.add(outbox(ctx, e.id, { type: 'upsert', table: 'session_exercises', row: sessionExerciseRow(ctx.userId, e), immutable: true }));
+    for (const set of sets) await mutateSet(ctx, set.id, (x) => x);
     await ctx.db.outbox.add(outbox(ctx, audit.id, { type: 'upsert', table: 'recommendation_audits', row: auditRow(ctx.userId, audit), immutable: true }));
     for (const ev of events) {
       await ctx.db.substitutionEvents.put(ev);
@@ -182,7 +185,7 @@ export async function startSession(ctx: AppContext, snapshot: PlanSnapshot): Pro
   return session;
 }
 
-export type SetValues = { actualGrams?: number | null; actualReps?: number | null; actualSeconds?: number | null; rir?: number | null; technique?: Technique | null; perceivedEffort?: PerceivedEffort | null };
+export type SetValues = { secondLoadValue?: number | null; actualGrams?: number | null; actualReps?: number | null; actualSeconds?: number | null; rir?: number | null; technique?: Technique | null; perceivedEffort?: PerceivedEffort | null };
 
 function validateValues(se: LocalSessionExercise, v: SetValues, done: boolean): void {
   if (v.perceivedEffort !== undefined && !validEffort(v.perceivedEffort)) throw new AppError('VALIDATION_ERROR', 'perceivedEffort');
@@ -204,9 +207,9 @@ function validateValues(se: LocalSessionExercise, v: SetValues, done: boolean): 
  * Gemensam väg: ändra set lokalt + köa create/patch i SAMMA transaktion. `post` körs i samma transaktion
  * efter att setet sparats (t.ex. kalibreringsfortsättning), så att allt eller inget sparas.
  */
-async function mutateSet(ctx: AppContext, setId: string, change: (s: LocalSet, se: LocalSessionExercise) => LocalSet, post?: (saved: LocalSet, se: LocalSessionExercise) => Promise<void>): Promise<LocalSet> {
+export async function mutateSet(ctx: AppContext, setId: string, change: (s: LocalSet, se: LocalSessionExercise) => LocalSet, post?: (saved: LocalSet, se: LocalSessionExercise) => Promise<void>): Promise<LocalSet> {
   let result!: LocalSet;
-  await tx(ctx, async () => {
+  await trainingTransaction(ctx, async () => {
     const before = await ctx.db.sets.get(setId);
     if (!before) throw new AppError('NOT_FOUND');
     const session = await ctx.db.sessions.get(before.sessionId);
@@ -214,12 +217,6 @@ async function mutateSet(ctx: AppContext, setId: string, change: (s: LocalSet, s
     const se = await ctx.db.sessionExercises.get(before.sessionExerciseId);
     if (!se) throw new AppError('NOT_FOUND');
     const after = { ...change(before, se), updatedAt: ctx.clock.now() };
-    const touched = after.status !== 'planned' || before.createQueued || !!after.detail;
-    if (!touched) {
-      await ctx.db.sets.put({ ...after, syncState: 'local' });
-      result = { ...after, syncState: 'local' };
-      return;
-    }
     if (!before.createQueued) {
       after.createQueued = true;
       await ctx.db.outbox.add(outbox(ctx, setId, { type: 'set', setId, create: true, payload: setCreatePayload(after) }));
@@ -273,7 +270,7 @@ export async function logSet(ctx: AppContext, setId: string, values: SetValues):
  */
 export async function rateSet(ctx: AppContext, setId: string, effort: PerceivedEffort | null, side?: PerformanceSide): Promise<LocalSet> {
   if (!validEffort(effort)) throw new AppError('VALIDATION_ERROR', 'perceivedEffort');
-  return tx(ctx, async () => {
+  return trainingTransaction(ctx, async () => {
     const existing = await ctx.db.sets.get(setId);
     if (!existing) throw new AppError('NOT_FOUND');
     if (existing.deleted || existing.kind !== 'work') throw new AppError('INVALID_STATE');
@@ -286,7 +283,7 @@ export async function rateSet(ctx: AppContext, setId: string, effort: PerceivedE
         const detail = structuredClone(s.detail!);
         detail.performances = detail.performances.map((p) => p.id === performance.id ? { ...p, effort, rir: effort === 'maximal' ? null : p.rir } : p);
         return withDetail(s, detail);
-      }, (saved, x) => continueCalibration(ctx, x, saved));
+      }, async (saved, x) => { await continueCalibration(ctx, x, saved); await refreshActiveRest(ctx,saved); });
     }
     if (existing.status !== 'done' || side && side !== 'both') throw new AppError('INVALID_STATE');
     if ((existing.perceivedEffort ?? null) === effort) return existing;
@@ -325,23 +322,25 @@ export async function skipSet(ctx: AppContext, setId: string): Promise<LocalSet>
 
 /** Lägg till ett set (kopia av senaste setets mål). Ordinal max 20 (DB). */
 export async function addSet(ctx: AppContext, sessionExerciseId: string): Promise<LocalSet> {
-  const se = await ctx.db.sessionExercises.get(sessionExerciseId);
-  if (!se) throw new AppError('NOT_FOUND');
-  const sets = (await ctx.db.sets.where('sessionExerciseId').equals(sessionExerciseId).toArray()).filter((s) => s.kind === 'work');
-  const ordinal = Math.max(0, ...sets.map((s) => s.ordinal)) + 1;
-  if (ordinal > 20) throw new AppError('VALIDATION_ERROR', 'ordinal');
-  const last = sets.sort((a, b) => b.ordinal - a.ordinal)[0];
-  const now = ctx.clock.now();
-  const s: LocalSet = { ...plannedSetsFor(ctx, se.sessionId, { ...se, snapshot: { ...se.snapshot, sets: 1 } }, now)[0], ordinal, targetGrams: last?.targetGrams ?? null, targetReps: last?.targetReps ?? null, targetSeconds: last?.targetSeconds ?? null };
-  await tx(ctx, async () => {
+  return trainingTransaction(ctx,async () => {
+    const se=await ctx.db.sessionExercises.get(sessionExerciseId);
+    const session=se && await ctx.db.sessions.get(se.sessionId);
+    if(!se || !session) throw new AppError('NOT_FOUND');
+    if(se.replacedById || !['preview','in_progress','paused'].includes(session.status)) throw new AppError('INVALID_STATE');
+    const sets=(await ctx.db.sets.where('sessionExerciseId').equals(se.id).toArray()).filter((s)=>s.kind==='work');
+    const ordinal=Math.max(0,...sets.map((s)=>s.ordinal))+1;
+    if(ordinal>20) throw new AppError('VALIDATION_ERROR','ordinal');
+    const last=sets.filter((s)=>!s.deleted).sort((a,b)=>b.ordinal-a.ordinal)[0];
+    const s:LocalSet={...plannedSetsFor(ctx,se.sessionId,{...se,snapshot:{...se.snapshot,sets:1}},ctx.clock.now())[0],ordinal,
+      targetGrams:last?.targetGrams ?? null,targetReps:last?.targetReps ?? se.snapshot.reps,targetSeconds:last?.targetSeconds ?? se.snapshot.targetSeconds};
     await ctx.db.sets.add(s);
+    return mutateSet(ctx,s.id,(x)=>({...x,detail:{...detailFor(x,se),targetLoadValue:last?.detail?.targetLoadValue,targetSecondLoadValue:last?.detail?.targetSecondLoadValue,plannedSides:last?.detail?.plannedSides ? structuredClone(last.detail.plannedSides) : undefined}}));
   });
-  return s;
 }
 
-async function setStatus(ctx: AppContext, sessionId: string, to: SessionStatus, extra: Partial<LocalSession> = {}): Promise<LocalSession> {
+export async function setStatus(ctx: AppContext, sessionId: string, to: SessionStatus, extra: Partial<LocalSession> = {}): Promise<LocalSession> {
   let out!: LocalSession;
-  await tx(ctx, async () => {
+  await trainingTransaction(ctx, async () => {
     const s = await ctx.db.sessions.get(sessionId);
     if (!s) throw new AppError('NOT_FOUND');
     if (!canTransition(s.status, to)) throw new AppError('INVALID_STATE', `${s.status}->${to}`);
@@ -365,15 +364,13 @@ export type FinishOptions = { status?: 'completed' | 'partial' | 'abandoned'; ke
 export async function finishSession(ctx: AppContext, sessionId: string, opts: FinishOptions = {}): Promise<LocalSession> {
   const now = ctx.clock.now();
   let out!: LocalSession;
-  await tx(ctx, async () => {
+  await trainingTransaction(ctx, async () => {
     const s = await ctx.db.sessions.get(sessionId);
     if (!s) throw new AppError('NOT_FOUND');
+    if (['completed', 'partial', 'abandoned'].includes(s.status)) return void (out = s);
     const sets = (await ctx.db.sets.where('sessionId').equals(sessionId).toArray()).filter((x) => !x.deleted && x.kind === 'work');
-    const exs = await ctx.db.sessionExercises.where('sessionId').equals(sessionId).toArray();
-    const activeEx = exs.filter((e) => !e.replacedById);
-    const plannedWork = activeEx.reduce((n, e) => n + e.snapshot.sets, 0);
     const doneWork = sets.filter((x) => x.status === 'done').length;
-    const allPlannedDone = plannedWork > 0 && activeEx.every((e) => sets.filter((x) => x.sessionExerciseId === e.id && x.status === 'done').length >= e.snapshot.sets);
+    const allPlannedDone = sets.length > 0 && sets.every((x) => x.status === 'done');
     const status = opts.status === 'abandoned' ? 'abandoned' : opts.status ?? (allPlannedDone ? 'completed' : 'partial');
     if (!canTransition(s.status, status)) throw new AppError('INVALID_STATE', `${s.status}->${status}`);
     for (const set of await ctx.db.sets.where('sessionId').equals(sessionId).toArray()) if (set.detail?.rests.some((r) => r.outcome === 'active')) await mutateSet(ctx, set.id, (x) => ({ ...x, detail: { ...x.detail!, rests: x.detail!.rests.map((r) => r.outcome === 'active' ? { ...r, outcome: 'session_ended', endedAt: now } : r) } }));
@@ -410,7 +407,7 @@ export async function countExtraAsPlanned(ctx: AppContext, extraSessionId: strin
   const done = exs.map((e) => ({ exerciseId: e.exerciseId, doneWorkSets: sets.filter((x) => x.sessionExerciseId === e.id && x.kind === 'work' && x.status === 'done' && !x.deleted).length }));
   if (!canCountAsPlanned(next, done)) return false;
   const now = ctx.clock.now();
-  await tx(ctx, async () => {
+  await trainingTransaction(ctx, async () => {
     const program = (await ctx.db.programs.where('active').equals(1).toArray())[0];
     const upd = { ...s, countsAsPlannedAt: now, isReplacementForPlanned: true, programId: program?.id ?? null, revision: s.revision + 1, syncState: 'queued' as const };
     await ctx.db.sessions.put(upd);
@@ -448,7 +445,9 @@ export async function swapExerciseLegacy(ctx: AppContext, sessionExerciseId: str
   if (gate.impactedRegion && ['persistent', 'limping', 'swelling'].includes(gate.relevantSymptoms)) throw new AppError('RULE_UNSATISFIABLE', 'SYMPTOM_REVIEW_REQUIRED');
   let mode: Mode = opts.mode ?? old.mode;
   mode = recoveryMode(mode, gate.recovery);
-  const sets = old.snapshot.sets;
+  const remaining = (await ctx.db.sets.where('sessionExerciseId').equals(old.id).toArray()).filter((s) => !s.deleted && s.kind === 'work' && s.status !== 'done' && !s.detail?.performances.some((p) => p.status === 'done'));
+  if (!remaining.length || old.replacedById) throw new AppError('INVALID_STATE');
+  const sets = remaining.length;
   const settings = input.exerciseSettings.find((s) => s.exerciseId === to) ?? null;
   const p: PlannedExercise = prescribe({ exerciseId: to, mode, sets, role: old.snapshot.role, experience: settings?.experience ?? input.profile.experience, settings, history: history.filter((h) => h.exerciseId === to), gate, bodyweightKg: input.profile.bodyweightKg });
   const now = ctx.clock.now();
@@ -476,16 +475,27 @@ export async function swapExerciseLegacy(ctx: AppContext, sessionExerciseId: str
     syncState: 'queued',
   };
   const newSets = plannedSetsFor(ctx, old.sessionId, ne, now);
-  await tx(ctx, async () => {
+  await trainingTransaction(ctx, async () => {
+    await dismissExerciseRests(ctx,old.id);
     await ctx.db.sessionExercises.put({ ...old, replacedById: ne.id });
     await ctx.db.sessionExercises.add(ne);
     // Oanvända planerade set i gamla övningen tas bort lokalt (de har aldrig synkats).
     const oldSets = await ctx.db.sets.where('sessionExerciseId').equals(old.id).toArray();
-    for (const s of oldSets) if (s.status === 'planned' && !s.createQueued) await ctx.db.sets.delete(s.id);
+    for (const s of oldSets) {
+      if (s.status === 'partial') await abortTrainingSet(ctx, s.id);
+      else if (s.status !== 'done' && !s.deleted) await mutateSet(ctx, s.id, (x) => ({ ...x, deleted: true }));
+    }
     await ctx.db.sets.bulkAdd(newSets);
     await ctx.db.outbox.add(outbox(ctx, ne.id, { type: 'upsert', table: 'session_exercises', row: sessionExerciseRow(ctx.userId, ne), immutable: true }));
+    for (const set of newSets) await mutateSet(ctx, set.id, (x) => x);
   });
   return ne;
+}
+
+async function dismissExerciseRests(ctx:AppContext,exerciseId:string) {
+  for(const set of await ctx.db.sets.where('sessionExerciseId').equals(exerciseId).toArray()) {
+    if(set.detail?.rests.some((r)=>r.outcome==='active'))await mutateSet(ctx,set.id,(s)=>({...s,detail:{...s.detail!,rests:s.detail!.rests.map((r)=>r.outcome==='active'?{...r,outcome:'dismissed',endedAt:ctx.clock.now()}:r)}}));
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -543,7 +553,7 @@ async function putFamiliarity(ctx: AppContext, exerciseId: ExerciseId, familiari
 
 /** "Har du gjort övningen tidigare?" – sparas per övning och används för hjälpskattning (§3.3). */
 export async function setFamiliarity(ctx: AppContext, exerciseId: ExerciseId, familiarity: Familiarity): Promise<void> {
-  await tx(ctx, () => putFamiliarity(ctx, exerciseId, familiarity));
+  await trainingTransaction(ctx, () => putFamiliarity(ctx, exerciseId, familiarity));
 }
 
 export async function getFamiliarities(ctx: AppContext): Promise<Partial<Record<ExerciseId, Familiarity>>> {
@@ -619,7 +629,7 @@ export async function swapExercise(ctx: AppContext, sessionExerciseId: string, t
   if (!old) throw new AppError('NOT_FOUND');
   if (old.replacedById) throw new AppError('INVALID_STATE', 'ALREADY_REPLACED');
   const session = await ctx.db.sessions.get(old.sessionId);
-  if (!session || !['in_progress', 'paused'].includes(session.status)) throw new AppError('INVALID_STATE');
+  if (!session || !['preview', 'in_progress', 'paused'].includes(session.status)) throw new AppError('INVALID_STATE');
   const scope = opts.scope ?? 'today';
   const all = await ctx.db.sessionExercises.where('sessionId').equals(old.sessionId).toArray();
   const others = displayOrder(all).filter((e) => e.id !== old.id).map((e) => e.snapshot);
@@ -627,7 +637,9 @@ export async function swapExercise(ctx: AppContext, sessionExerciseId: string, t
   const familiarity = opts.familiarity ?? (await familiarityMap(ctx))[to];
   const res = planReplacement(input, { from: old.snapshot, to, others, familiarity, variantKey: opts.variantKey, replacesSessionExerciseId: old.id });
   if (res.status !== 'ok' || !res.planned) throw new AppError('RULE_UNSATISFIABLE', res.status);
-  const planned = res.planned;
+  const remaining = (await ctx.db.sets.where('sessionExerciseId').equals(old.id).toArray()).filter((s) => !s.deleted && s.kind === 'work' && s.status !== 'done' && !s.detail?.performances.some((p) => p.status === 'done'));
+  if (!remaining.length) throw new AppError('INVALID_STATE', 'no_remaining_sets');
+  const planned = { ...res.planned, sets: Math.min(res.planned.sets, remaining.length) };
   const proposedKg = planned.kg ?? planned.calibrationSuggestionKg ?? null;
   if (res.requiresConfirmation && opts.startGrams === undefined) throw new AppError('VALIDATION_ERROR', 'CONFIRM_START_WEIGHT');
   if (opts.startGrams !== undefined && opts.startGrams !== null && (!Number.isInteger(opts.startGrams) || opts.startGrams < 0 || opts.startGrams > MAX_GRAMS)) throw new AppError('VALIDATION_ERROR', 'startKg');
@@ -655,17 +667,24 @@ export async function swapExercise(ctx: AppContext, sessionExerciseId: string, t
   };
   const newSets = plannedSetsFor(ctx, old.sessionId, ne, now, { deterministic: true, ...(opts.startGrams !== undefined ? { targetGrams: opts.startGrams } : {}) });
   const event = substitutionEvent(ctx, { sessionId: old.sessionId, original: old.snapshot, replacement: planned, originalSessionExerciseId: old.id, replacementSessionExerciseId: ne.id, scope, userOverride, seed });
-  await tx(ctx, async () => {
+  await trainingTransaction(ctx, async () => {
     const fresh = await ctx.db.sessionExercises.get(old.id);
     if (fresh?.replacedById) throw new AppError('INVALID_STATE', 'ALREADY_REPLACED');
+    await dismissExerciseRests(ctx,old.id);
     await ctx.db.sessionExercises.put({ ...old, replacedById: ne.id });
     await ctx.db.sessionExercises.put(ne);
-    // Oanvända planerade set i den gamla övningen tas bort lokalt (de har aldrig synkats); utförda set behålls.
-    for (const s of await ctx.db.sets.where('sessionExerciseId').equals(old.id).toArray()) if (s.status === 'planned' && !s.createQueued) await ctx.db.sets.delete(s.id);
+    // Planerade set markeras borttagna även på servern; utförda prestationer behålls.
+    for (const s of await ctx.db.sets.where('sessionExerciseId').equals(old.id).toArray()) {
+      if (!s.deleted && s.status !== 'done') {
+        if (s.detail?.performances.some((p) => p.status === 'done')) await abortTrainingSet(ctx, s.id);
+        else await mutateSet(ctx, s.id, (x) => ({ ...x, deleted: true }));
+      }
+    }
     for (const s of newSets) if (!(await ctx.db.sets.get(s.id))) await ctx.db.sets.add(s);
     await ctx.db.substitutionEvents.put(event);
     if (opts.familiarity) await putFamiliarity(ctx, to, opts.familiarity);
     await ctx.db.outbox.add(outbox(ctx, ne.id, { type: 'upsert', table: 'session_exercises', row: sessionExerciseRow(ctx.userId, ne), immutable: true }));
+    for (const set of newSets) await mutateSet(ctx, set.id, (x) => x);
     await ctx.db.outbox.add(outbox(ctx, event.id, { type: 'upsert', table: 'session_exercise_substitution_events', row: substitutionEventRow(ctx.userId, event), immutable: true }));
     if (scope === 'future') await applyFutureScope(ctx, old.snapshot.substitutionFrom ?? old.exerciseId, to, planned.variantKey);
   });
@@ -688,7 +707,7 @@ export async function swapInPreview(ctx: AppContext, snapshot: PlanSnapshot, ind
   const original = prior?.original ?? from;
   const root = original.substitutionFrom ?? original.exerciseId;
   if (prior && to === original.exerciseId && (opts.variantKey ?? original.variantKey ?? 'default') === (original.variantKey ?? 'default')) {
-    await tx(ctx, async () => {
+    await trainingTransaction(ctx, async () => {
       if (opts.familiarity) await putFamiliarity(ctx, to, opts.familiarity);
       if (scope === 'future') await applyFutureScope(ctx, root, to, original.variantKey);
     });
@@ -715,7 +734,7 @@ export async function swapInPreview(ctx: AppContext, snapshot: PlanSnapshot, ind
     ...(planned.variantKey ? { variantKey: planned.variantKey } : {}),
     ...(opts.startGrams !== undefined ? { startGrams: opts.startGrams } : {}),
   };
-  await tx(ctx, async () => {
+  await trainingTransaction(ctx, async () => {
     if (opts.familiarity) await putFamiliarity(ctx, to, opts.familiarity);
     if (scope === 'future') await applyFutureScope(ctx, root, to, planned.variantKey);
   });
@@ -742,8 +761,8 @@ async function continueCalibration(ctx: AppContext, se: LocalSessionExercise, sa
   let target = saved.actualGrams;
   if (saved.perceivedEffort === 'too_heavy') target = assistance ? Math.min(MAX_GRAMS, target + step) : Math.max(0, target - step);
   for (const s of mine) {
-    if (s.status !== 'planned' || s.createQueued || s.ordinal < saved.ordinal || s.targetGrams === target) continue;
-    await ctx.db.sets.put({ ...s, targetGrams: target, updatedAt: ctx.clock.now() });
+    if (s.status !== 'planned' || s.detail?.plannedSides || s.detail?.performances.length || s.ordinal < saved.ordinal || s.targetGrams === target) continue;
+    await mutateSet(ctx,s.id,(x)=>({...x,targetGrams:target,detail:x.detail ? {...x.detail,targetLoadValue:target/1000} : undefined}));
   }
 }
 
@@ -798,7 +817,7 @@ async function updateCalibrationsTx(ctx: AppContext, sessionId: string): Promise
 
 /** Räkna om kalibreringsnivåer för ett avslutat pass (används även av tester). */
 export async function updateCalibrations(ctx: AppContext, sessionId: string): Promise<void> {
-  await tx(ctx, () => updateCalibrationsTx(ctx, sessionId));
+  await trainingTransaction(ctx, () => updateCalibrationsTx(ctx, sessionId));
 }
 
 /** S11/02 §6: frivillig symtomrapport; lagras endast med aktivt hälsosamtycke (03 §4). */
@@ -806,7 +825,7 @@ export async function reportSymptom(ctx: AppContext, r: { sessionId: string | nu
   if (!(await activeHealthConsent(ctx.db, ctx.userId))) throw new AppError('PRIVACY_CONSENT_REQUIRED');
   if (r.pain !== undefined && r.pain !== null && (!Number.isInteger(r.pain) || r.pain < 0 || r.pain > 10)) throw new AppError('VALIDATION_ERROR', 'pain');
   const s: LocalSymptom = { id: ctx.ids.uuid(), sessionId: r.sessionId, area: r.area, side: r.side, reaction: r.reaction, pain: r.pain ?? null, reportedAt: ctx.clock.now(), resolvedAt: null, syncState: 'queued' };
-  await tx(ctx, async () => {
+  await trainingTransaction(ctx, async () => {
     await ctx.db.symptoms.add(s);
     await ctx.db.outbox.add(outbox(ctx, s.id, { type: 'upsert', table: 'symptom_reports', row: symptomRow(ctx.userId, s) }));
   });
@@ -815,7 +834,7 @@ export async function reportSymptom(ctx: AppContext, r: { sessionId: string | nu
 
 /** Endast användarens aktiva bekräftelse häver review_required (02 §6). */
 export async function resolveSymptom(ctx: AppContext, id: string): Promise<void> {
-  await tx(ctx, async () => {
+  await trainingTransaction(ctx, async () => {
     const s = await ctx.db.symptoms.get(id);
     if (!s) throw new AppError('NOT_FOUND');
     const upd = { ...s, resolvedAt: ctx.clock.now(), syncState: 'queued' as const };
@@ -827,7 +846,7 @@ export async function resolveSymptom(ctx: AppContext, id: string): Promise<void>
 export type { ExtraOptions, Readiness };
 
 /** New sessions snapshot execution and equipment. Unidentified machines are session-specific. */
-function initialConfiguration(p: PlannedExercise, profile: LocalProfile | undefined, sessionId: string): ExerciseConfiguration {
+export function initialConfiguration(p: PlannedExercise, profile: LocalProfile | undefined, sessionId: string): ExerciseConfiguration {
   const prefs = trainingPreferences(profile?.trainingPreferences);
   const c = structuredClone(p.configuration ?? prefs.exerciseDefaults[p.exerciseId] ?? defaultConfiguration(p.exerciseId, prefs.defaultStartingSide));
   if ((!c.equipment.id || c.equipment.id.startsWith('unidentified:')) && ['machine_stack', 'machine_level', 'cable_known', 'cable_unknown', 'bodyweight_assistance'].includes(c.equipment.measurement)) c.equipment.id = p.variantKey && p.variantKey !== 'default' ? `legacy:${p.variantKey}` : `unidentified:${sessionId}`;
@@ -860,7 +879,7 @@ async function requireActive(ctx: AppContext, s: LocalSet): Promise<void> {
 }
 
 function restPerformance(s: LocalSet, p: SetPerformance): RestPerformance {
-  return { comparisonKey: p.comparisonKey, side: p.side, load: p.loadValue, secondLoad: p.secondLoadValue, reps: p.repetitions, targetReps: s.targetReps, rir: effectiveRir(p.rir, p.effort), kind: s.kind, technique: p.technique };
+  return { comparisonKey: p.comparisonKey, side: p.side, load: p.loadValue, secondLoad: p.secondLoadValue, reps: p.repetitions, targetReps: s.detail?.plannedSides?.[p.side]?.reps ?? s.targetReps, rir: effectiveRir(p.rir, p.effort), kind: s.kind, technique: p.technique };
 }
 
 /** Close previously active timers atomically with the next observed training action. */
@@ -878,7 +897,7 @@ async function closeRests(ctx: AppContext, sessionId: string, followingSet: stri
 
 /** Stable side IDs and an explicit side argument make rapid duplicate activation idempotent. */
 export async function recordPerformance(ctx: AppContext, setId: string, side: PerformanceSide, values: SetValues & { secondLoadValue?: number | null }, options: { edit?: boolean; alternating?: boolean } = {}): Promise<LocalSet> {
-  return tx(ctx, async () => {
+  return trainingTransaction(ctx, async () => {
     const existing = await ctx.db.sets.get(setId);
     const se = existing && await ctx.db.sessionExercises.get(existing.sessionExerciseId);
     if (!existing || !se) throw new AppError('NOT_FOUND');
@@ -887,12 +906,14 @@ export async function recordPerformance(ctx: AppContext, setId: string, side: Pe
     const d = detailFor(existing, se);
     if (!requiredSides(d.configuration).includes(side)) throw new AppError('VALIDATION_ERROR', 'side');
     const old = d.performances.find((p) => p.side === side);
+    if (options.edit && old?.status !== 'done') throw new AppError('INVALID_STATE');
     if (old?.status === 'done' && !options.edit) return existing;
-    const v = { actualGrams: old?.loadValue != null ? Math.round(old.loadValue * 1000) : existing.targetGrams, actualReps: old?.repetitions ?? existing.targetReps, actualSeconds: old?.seconds ?? existing.targetSeconds, rir: old?.rir ?? null, technique: old?.technique ?? 'controlled', ...values };
+    const sidePlan = d.plannedSides?.[side];
+    const v = { actualGrams: old?.loadValue != null ? Math.round(old.loadValue * 1000) : (sidePlan ? sidePlan.grams : existing.targetGrams), actualReps: old?.repetitions ?? sidePlan?.reps ?? existing.targetReps, actualSeconds: old?.seconds ?? sidePlan?.seconds ?? existing.targetSeconds, rir: old?.rir ?? null, technique: old?.technique ?? 'controlled', ...values };
     if (se.snapshot.loadKind === 'bodyweight_plus_kg' && v.actualGrams == null) v.actualGrams = 0;
     validateValues(se, v, true);
     const equipment = options.edit && old ? old.equipment : structuredClone(se.configuration?.equipment ?? d.configuration.equipment);
-    const second = values.secondLoadValue !== undefined ? values.secondLoadValue : old?.secondLoadValue ?? null;
+    const second = values.secondLoadValue !== undefined ? values.secondLoadValue : old?.secondLoadValue ?? (sidePlan ? sidePlan.secondLoad : d.targetSecondLoadValue ?? null);
     if (equipment.basis === 'independent' && (second === null || !Number.isFinite(second) || second < 0 || second > 500)) throw new AppError('VALIDATION_ERROR', 'secondLoadValue');
     const id = old?.id ?? uuidFromSeed(`${setId}|${side}`);
     if (!options.edit) await closeRests(ctx, existing.sessionId, setId, id, false);
@@ -922,12 +943,13 @@ export async function recordPerformance(ctx: AppContext, setId: string, side: Pe
       const previous = all.filter((s) => s.id !== setId && s.kind === existing.kind).flatMap((s) => (s.detail?.performances ?? []).filter((x) => x.side === side && x.status === 'done').map((x) => ({ s, p: x }))).sort((a, b) => (b.p.completedAt ?? '').localeCompare(a.p.completedAt ?? ''))[0];
       const knownRir = updated.performances.filter((x) => x.status === 'done').flatMap((x) => effectiveRir(x.rir,x.effort) === null ? [] : [effectiveRir(x.rir,x.effort)!]);
       const reliableMax = se.snapshot.estimatedOneRM && se.snapshot.configuration && comparisonKey(se.exerciseId, se.snapshot.configuration) === p.comparisonKey && ['high','medium'].includes(se.snapshot.confidence) ? se.snapshot.estimatedOneRM : null;
-      const recommendation = recommendRest({ category: exercise(se.exerciseId).timeKind, mode: se.mode, strengthFocus: se.mode === 'heavy', experience: (await ctx.db.profile.get(ctx.userId))?.experience ?? 'novice', adaptive: prefs.adaptiveRestEnabled,
+      const restInput: RestInput = { effort: updated.performances.some((x) => x.effort === 'maximal') ? 'maximal' : updated.performances.some((x) => x.effort === 'hard' || x.effort === 'too_heavy') ? 'hard' : null, category: exercise(se.exerciseId).timeKind, mode: se.mode, strengthFocus: se.mode === 'heavy', experience: (await ctx.db.profile.get(ctx.userId))?.experience ?? 'novice', adaptive: prefs.adaptiveRestEnabled,
         kind: existing.kind, nextKind: following?.kind ?? null, secondSidePending, betweenSidesSeconds: d.configuration.betweenSidesSeconds, relativeIntensity: reliableMax && p.loadValue !== null ? p.loadValue / reliableMax : null,
-        overrideSeconds: se.configuration?.restSeconds ?? prefs.preferredRestOverrides[se.exerciseId], current: restPerformance(existing, p), effortRir: knownRir.length ? Math.min(...knownRir) : null, previous: previous && restPerformance(previous.s, previous.p) });
+        overrideSeconds: se.configuration?.restSeconds ?? prefs.preferredRestOverrides[se.exerciseId], current: restPerformance(existing, p), effortRir: knownRir.length ? Math.min(...knownRir) : null, previous: previous && restPerformance(previous.s, previous.p) };
+      const recommendation = recommendRest(restInput);
       if (recommendation.seconds > 0) updated.rests.push({ id: ctx.ids.uuid(), precedingPerformanceId: id, followingPerformanceId: null, followingSetId: secondSidePending ? setId : following?.id ?? null,
         type: secondSidePending ? 'between_sides' : existing.kind === 'warmup' ? (following?.kind === 'work' ? 'before_work' : 'warmup') : 'between_sets',
-        startedAt: ctx.clock.now(), endedAt: null, recommendedSeconds: recommendation.seconds, actualSeconds: null, adjustmentSeconds: 0, reasons: recommendation.reasons, policyVersion: recommendation.version, outcome: 'active' });
+        recommendationInput: restInput, initialRecommendedSeconds: recommendation.seconds, startedAt: ctx.clock.now(), endedAt: null, recommendedSeconds: recommendation.seconds, actualSeconds: null, adjustmentSeconds: 0, reasons: recommendation.reasons, policyVersion: recommendation.version, outcome: 'active' });
     }
     return mutateSet(ctx, setId, (s) => ({ ...withDetail(s, updated), manualOverride: isOverride(s, v) }), async (saved, x) => {
       if (saved.kind === 'work' && saved.status === 'done' && updated.configuration.executionMode === 'bilateral' && equipment.unit === 'kg') await continueCalibration(ctx, x, saved);
@@ -937,7 +959,7 @@ export async function recordPerformance(ctx: AppContext, setId: string, side: Pe
 
 /** Optional explicit start is the only source of measured rest. Logging remains one press. */
 export async function startPerformance(ctx: AppContext, setId: string, side: PerformanceSide): Promise<void> {
-  await tx(ctx, async () => {
+  await trainingTransaction(ctx, async () => {
     const s = await ctx.db.sets.get(setId); const se = s && await ctx.db.sessionExercises.get(s.sessionExerciseId);
     if (!s || !se) throw new AppError('NOT_FOUND');
     await requireActive(ctx, s);
@@ -988,13 +1010,13 @@ export async function abortTrainingSet(ctx: AppContext, setId: string, resume = 
 export async function adjustRest(ctx: AppContext, setId: string, restId: string, delta: number | 'dismiss'): Promise<void> {
   await mutateSet(ctx, setId, (s) => {
     if (!s.detail) throw new AppError('NOT_FOUND');
-    return { ...s, detail: { ...s.detail, rests: s.detail.rests.map((r) => r.id !== restId || r.outcome !== 'active' ? r : delta === 'dismiss' ? { ...r, outcome: 'dismissed', endedAt: ctx.clock.now() } : { ...r, adjustmentSeconds: Math.max(0, Math.min(300, r.recommendedSeconds + r.adjustmentSeconds + delta)) - r.recommendedSeconds }) } };
+    return { ...s, detail: { ...s.detail, rests: s.detail.rests.map((r) => r.id !== restId || r.outcome !== 'active' ? r : delta === 'dismiss' ? { ...r, outcome: 'dismissed', endedAt: ctx.clock.now() } : { ...r, userAdjustmentSeconds: Math.max(-300,Math.min(300,(r.userAdjustmentSeconds ?? r.adjustmentSeconds)+delta)), adjustmentSeconds: Math.max(0, Math.min(300, r.recommendedSeconds + (r.userAdjustmentSeconds ?? r.adjustmentSeconds) + delta)) - r.recommendedSeconds }) } };
   });
 }
 
 export async function configureExercise(ctx: AppContext, id: string, configuration: ExerciseConfiguration, remember = true): Promise<void> {
   if (!validateConfiguration(configuration)) throw new AppError('VALIDATION_ERROR', 'configuration');
-  await tx(ctx, async () => {
+  await trainingTransaction(ctx, async () => {
     const se = await ctx.db.sessionExercises.get(id); if (!se) throw new AppError('NOT_FOUND');
     if (!supportedMeasurements(se.exerciseId).includes(configuration.equipment.measurement)) throw new AppError('VALIDATION_ERROR', 'loadMeasurement');
     if (!executionDefinition(se.exerciseId).supported.includes(configuration.executionMode)) throw new AppError('VALIDATION_ERROR', 'executionMode');
@@ -1004,7 +1026,7 @@ export async function configureExercise(ctx: AppContext, id: string, configurati
     const changedEquipment = comparisonKey(se.exerciseId, se.configuration ?? defaultConfiguration(se.exerciseId)) !== comparisonKey(se.exerciseId, configuration);
     for (const s of await ctx.db.sets.where('sessionExerciseId').equals(id).toArray()) if (s.status === 'planned' && !s.detail?.performances.length) await mutateSet(ctx, s.id, (x) => ({ ...x,
       targetGrams: changedEquipment ? null : x.targetGrams,
-      detail: { ...detailFor(x, se), configuration: structuredClone(configuration), ...(changedEquipment ? { targetLoadValue: null, targetSecondLoadValue: null } : {}) } }));
+      detail: { ...detailFor(x, se), configuration: structuredClone(configuration), ...(changedEquipment ? { targetLoadValue: null, targetSecondLoadValue: null, plannedSides: undefined } : {}) } }));
     if (remember) {
       const p = await ctx.db.profile.get(ctx.userId); if (!p) throw new AppError('NOT_FOUND');
       const prefs = trainingPreferences(p.trainingPreferences);
@@ -1018,7 +1040,7 @@ export async function configureExercise(ctx: AppContext, id: string, configurati
 }
 
 export async function ensureWarmups(ctx: AppContext, exerciseInstanceId: string): Promise<void> {
-  await tx(ctx, async () => {
+  await trainingTransaction(ctx, async () => {
     const se = await ctx.db.sessionExercises.get(exerciseInstanceId); const profile = await ctx.db.profile.get(ctx.userId);
     if (!se) throw new AppError('NOT_FOUND');
     const prefs = trainingPreferences(profile?.trainingPreferences);
@@ -1044,7 +1066,7 @@ export async function ensureWarmups(ctx: AppContext, exerciseInstanceId: string)
 }
 
 export async function addWarmup(ctx: AppContext, exerciseInstanceId: string): Promise<LocalSet> {
-  return tx(ctx, async () => {
+  return trainingTransaction(ctx, async () => {
     const se = await ctx.db.sessionExercises.get(exerciseInstanceId); if (!se) throw new AppError('NOT_FOUND');
     const sets = await ctx.db.sets.where('sessionExerciseId').equals(se.id).toArray();
     const ordinal = Math.max(0, ...sets.filter((s) => s.kind === 'warmup').map((s) => s.ordinal)) + 1;
@@ -1059,5 +1081,28 @@ export async function removeWarmup(ctx: AppContext, setId: string): Promise<void
   await mutateSet(ctx, setId, (s) => {
     if (s.kind !== 'warmup' || s.status === 'done' || s.detail?.performances.some((p) => p.status === 'done')) throw new AppError('INVALID_STATE');
     return { ...s, deleted: true };
+  });
+}
+
+/** Feedback can arrive after the timer starts; its epoch and manual adjustment survive. */
+async function refreshActiveRest(ctx:AppContext,saved:LocalSet) {
+  if(!saved.detail?.rests.some((r)=>r.outcome==='active' && r.recommendationInput)) return;
+  await mutateSet(ctx,saved.id,(s)=>{
+    const d=structuredClone(s.detail!);
+    const performed=d.performances.filter((p)=>p.status==='done');
+    const effort: PerceivedEffort | null=performed.some((p)=>p.effort==='maximal') ? 'maximal' : performed.some((p)=>p.effort==='hard'||p.effort==='too_heavy') ? 'hard' : null;
+    const known=performed.flatMap((p)=>effectiveRir(p.rir,p.effort)===null?[]:[effectiveRir(p.rir,p.effort)!]);
+    d.rests=d.rests.map((r)=>{
+      if(r.outcome!=='active' || !r.recommendationInput) return r;
+      const p=performed.find((x)=>x.id===r.precedingPerformanceId); if(!p) return r;
+      const input={...r.recommendationInput,effort,effortRir:known.length?Math.min(...known):null,current:restPerformance(s,p)};
+      const next=recommendRest(input);
+      if(next.seconds===r.recommendedSeconds && JSON.stringify(next.reasons)===JSON.stringify(r.reasons)) return r;
+      const manual=r.userAdjustmentSeconds ?? r.adjustmentSeconds;
+      return {...r,initialRecommendedSeconds:r.initialRecommendedSeconds??r.recommendedSeconds,recommendationInput:input,recommendedSeconds:next.seconds,reasons:next.reasons,policyVersion:next.version,userAdjustmentSeconds:manual,
+        adjustmentSeconds:Math.max(0,Math.min(300,next.seconds+manual))-next.seconds,
+        recommendationUpdates:[...(r.recommendationUpdates??[]).slice(-9),{at:ctx.clock.now(),seconds:next.seconds,reasons:next.reasons}]};
+    });
+    return {...s,detail:d};
   });
 }

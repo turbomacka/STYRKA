@@ -4,7 +4,7 @@ import { independentIntro, reachSource } from './introScenario';
 
 test('separate strength views preserve independent values, drafts, back navigation, offline saves and profile editing', async ({ page, context }, info) => {
   await signUp(page, uniqueEmail('strength'));
-  await independentIntro(page, context, `docs/evidence/onboarding/${info.project.name}`);
+  await independentIntro(page, context, `docs/evidence/ux-2026-10-18/regression/onboarding/${info.project.name}`);
 });
 
 test('incomplete entries can be postponed and source choice does not delete confirmed entries', async ({ page }) => {
@@ -28,9 +28,10 @@ test('incomplete entries can be postponed and source choice does not delete conf
   await page.getByText('Utgå från mina träningspass', { exact: true }).click();
   await page.getByRole('button', { name: 'Fortsätt', exact: true }).click();
   await page.getByRole('button', { name: 'Skapa min plan', exact: true }).click();
-  await page.getByRole('button', { name: 'Starta dagens pass' }).click();
-  const squat = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: 'Knäböj', exact: true }) });
-  await expect(squat).toContainText('välj startvikt');
+  await page.getByRole('button', { name: 'Öppna passet' }).click();
+  const squat = page.locator('.workout-card').first();
+  await squat.locator('.workout-title').click();
+  await expect(squat.getByRole('button',{name:/Vikt set 1/})).toContainText('Välj vikt');
   await page.getByRole('button', { name: 'Tillbaka', exact: true }).click();
   await page.getByRole('link', { name: 'Profil', exact: true }).click();
   await page.getByRole('link', { name: 'Övningar: nivå, viktsteg och maxvärden' }).click();

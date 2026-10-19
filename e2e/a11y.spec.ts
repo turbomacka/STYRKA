@@ -40,11 +40,11 @@ test('axe + träffytor + reflow på kritiska vyer', async ({ page }) => {
   await onboard(page);
   const views: Array<[string, () => Promise<void>]> = [
     ['S06', async () => { await page.goto('/'); }],
-    ['S07', async () => { await page.getByRole('button', { name: 'Starta dagens pass' }).click(); await expect(page.getByRole('button', { name: 'Starta', exact: true })).toBeEnabled(); }],
-    ['S08', async () => { await page.getByRole('button', { name: 'Starta', exact: true }).click(); await page.getByRole('button', { name: 'Klart, set 1' }).click(); }],
+    ['S07', async () => { await page.getByRole('button', { name: 'Öppna passet' }).click(); await expect(page.getByRole('button', { name: 'Starta passet', exact: true })).toBeEnabled(); }],
+    ['S08', async () => { await page.getByRole('button', { name: 'Starta passet', exact: true }).click(); await page.getByRole('button', { name: 'Registrera set 1' }).click(); }],
     ['S08-editor', async () => { await page.getByRole('button', { name: /Repetitioner set 2/ }).click(); }],
     ['S11', async () => { await page.getByRole('button', { name: 'Avsluta', exact: true }).click(); }],
-    ['S12', async () => { await page.getByRole('button', { name: 'Spara passet' }).click(); await page.getByRole('button', { name: 'Till Idag' }).click(); await page.getByRole('link', { name: 'Utveckling' }).click(); }],
+    ['S12', async () => { await page.getByRole('button', { name: 'Avsluta och spara' }).click(); await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible(); await page.getByRole('link', { name: 'Utveckling' }).click(); }],
     ['S13', async () => { await page.getByRole('link', { name: 'Profil' }).click(); }],
     ['S14', async () => { await page.goto('/profil/begransningar'); }],
     ['S15', async () => { await page.goto('/profil/data'); }],
@@ -66,24 +66,24 @@ test('reflow: 320 CSS px bredd utan horisontell scroll (motsvarar kraftig zoom)'
   await noHorizontalScroll(page, 'S02');
   await onboard(page);
   await noHorizontalScroll(page, 'S06');
-  await page.getByRole('button', { name: 'Starta dagens pass' }).click();
+  await page.getByRole('button', { name: 'Öppna passet' }).click();
   await noHorizontalScroll(page, 'S07');
-  await page.getByRole('button', { name: 'Starta', exact: true }).click();
+  await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
   await page.getByRole('button', { name: /Vikt set 1/ }).click();
   await noHorizontalScroll(page, 'S08-editor');
-  await page.screenshot({ path: 'docs/evidence/screenshots/reflow-320-S08.png', fullPage: true });
+  await page.screenshot({ path: 'docs/evidence/ux-2026-10-18/regression/screenshots/reflow-320-S08.png', fullPage: true });
 });
 
 test('tangentbord: starta pass och logga set utan mus; skärmläsarstatus annonseras en gång', async ({ page, browserName }) => {
   test.skip(browserName === 'webkit', 'Tab-fokus mellan knappar är avstängt som standard i WebKit/Safari.');
   await signUp(page, uniqueEmail('kbd'));
   await onboard(page);
-  await page.getByRole('button', { name: 'Starta dagens pass' }).focus();
+  await page.getByRole('button', { name: 'Öppna passet' }).focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('button', { name: 'Starta', exact: true })).toBeEnabled();
-  await page.getByRole('button', { name: 'Starta', exact: true }).focus();
+  await expect(page.getByRole('button', { name: 'Starta passet', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Starta passet', exact: true }).focus();
   await page.keyboard.press('Enter');
-  const klart = page.getByRole('button', { name: 'Klart, set 1' });
+  const klart = page.getByRole('button', { name: 'Registrera set 1' });
   await expect(klart).toBeVisible();
   // Fokus hamnar på övningsrubriken; tabba fram till Klart.
   for (let i = 0; i < 12 && !(await klart.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press('Tab');
@@ -101,11 +101,11 @@ test.describe('mörkt läge', () => {
     await signUp(page, uniqueEmail('dark'));
     await onboard(page);
     await axe(page, 'S06-mörkt');
-    await page.screenshot({ path: `docs/evidence/screenshots/${info.project.name}/S06-idag-morkt.png`, fullPage: true });
-    await page.getByRole('button', { name: 'Starta dagens pass' }).click();
-    await page.getByRole('button', { name: 'Starta', exact: true }).click();
-    await page.getByRole('button', { name: 'Klart, set 1' }).click();
+    await page.screenshot({ path: `docs/evidence/ux-2026-10-18/regression/screenshots/${info.project.name}/S06-idag-morkt.png`, fullPage: true });
+    await page.getByRole('button', { name: 'Öppna passet' }).click();
+    await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
+    await page.getByRole('button', { name: 'Registrera set 1' }).click();
     await axe(page, 'S08-mörkt');
-    await page.screenshot({ path: `docs/evidence/screenshots/${info.project.name}/S08-trana-morkt.png`, fullPage: true });
+    await page.screenshot({ path: `docs/evidence/ux-2026-10-18/regression/screenshots/${info.project.name}/S08-trana-morkt.png`, fullPage: true });
   });
 });

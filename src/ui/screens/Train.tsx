@@ -1,36 +1,48 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { ExerciseId } from '../../domain/catalog';
 import { exercise } from '../../domain/catalog';
 import { formatKg } from '../../domain/units';
+import { workoutOrder } from '../../application/workout';
 import { EFFORT_LABELS } from '../../domain/effort';
-import { addSet, displayOrder, editSet, logSet, pauseSession, previewSwap, rateSet, resumeSession, swapCandidates, swapExercise, swapExerciseLegacy, undoSet, undoPerformance, type SetValues, type SwapOptions } from '../../application/training';
+import { addSet, editSet, logSet, pauseSession, previewSwap, rateSet, resumeSession, swapCandidates, swapExercise, swapExerciseLegacy, undoSet, undoPerformance, type SetValues, type SwapOptions } from '../../application/training';
 import type { Familiarity } from '../../domain/model';
 import { estimatedMinutesFor } from '../../planner/planner';
-import { Banner, Icon, OfflineBanner, ReasonPopover, ToastWithUndo } from '../components/common';
+import { Banner, Icon, OfflineBanner, ToastWithUndo } from '../components/common';
 import { SetRow } from '../components/SetRow';
-import { EquipmentControl, PerformanceRow, SavedRestTimer, TrainingPreferencesControl, WarmupControl } from '../components/TrainingFlow';
+import { ExecutionControl, PerformanceRow, SavedRestTimer, TrainingPreferencesControl, WarmupControl } from '../components/TrainingFlow';
 import { comparisonKey, defaultConfiguration, SIDE_LABELS, trainingPreferences } from '../../domain/trainingFlow';
 import { SkipExercise } from '../components/SkipExercise';
 import { SubstitutionSheet } from '../components/SubstitutionSheet';
-import { ExerciseSwapSheet, prescriptionText } from '../components/widgets';
+import { ExerciseSwapSheet } from '../components/widgets';
 import { FLAGS, useServices } from '../services';
-import { MODE_SV, SUB, T } from '../strings';
+import { T } from '../strings';
 
 /** S08 Träna: helskärm, en övning i fokus, Pausa/Avsluta alltid synligt. */
 export function Train() {
   const { id } = useParams();
   const { ctx, online } = useServices();
   const nav = useNavigate();
+  const location = useLocation();
+  const [params,setParams]=useSearchParams();
   const session = useLiveQuery(() => ctx.db.sessions.get(id!), [ctx, id]);
   // Ersättare visas på originalets plats (v2); tidigare byten (v1) hamnar sist som förut.
-  const exs = useLiveQuery(async () => displayOrder(await ctx.db.sessionExercises.where('sessionId').equals(id!).toArray()), [ctx, id]);
+  const exs = useLiveQuery(async () => { const rows=await ctx.db.sets.where('sessionId').equals(id!).toArray();return workoutOrder(await ctx.db.sessionExercises.where('sessionId').equals(id!).toArray(), await ctx.db.workoutOrderEvents.where('sessionId').equals(id!).toArray()).filter((e)=>rows.some((s)=>s.sessionExerciseId===e.id&&!s.deleted));}, [ctx, id]);
   const sets = useLiveQuery(() => ctx.db.sets.where('sessionId').equals(id!).toArray(), [ctx, id]);
+  const allExercises = useLiveQuery(() => ctx.db.sessionExercises.where('sessionId').equals(id!).toArray(), [ctx,id]);
   const profile = useLiveQuery(() => ctx.db.profile.get(ctx.userId), [ctx]);
   const settings = useLiveQuery(() => ctx.db.exerciseSettings.toArray(), [ctx]);
   const restrictions = useLiveQuery(() => ctx.db.restrictions.toArray(), [ctx]);
-  const [focus, setFocus] = useState(0);
+  const selectedId=params.get('ovning');
+  let chosenId=selectedId;
+  for(let i=0;i<(allExercises?.length??0);i++) {
+    const replacement=allExercises?.find((e)=>e.id===chosenId)?.replacedById;
+    if(!replacement)break;
+    chosenId=replacement;
+  }
+  const focus=Math.max(0,exs?.findIndex((e)=>e.id===chosenId)??0);
+  const setFocus=(n:number)=>{if(exs?.[n])setParams({ovning:exs[n].id},{replace:true});};
   const [announce, setAnnounce] = useState('');
   const [toast, setToast] = useState<{ msg: string; setId: string; side?: import('../../domain/trainingFlow').PerformanceSide } | null>(null);
   const [failed, setFailed] = useState<Set<string>>(new Set());
@@ -40,8 +52,6 @@ export function Train() {
 
   const current = exs?.[Math.min(focus, (exs?.length ?? 1) - 1)];
   const currentId = current?.id;
-  const currentExercise = current?.exerciseId;
-  const machineProfiles = useLiveQuery(async () => (currentExercise ? [...new Set((await ctx.db.sessionExercises.where('exerciseId').equals(currentExercise).toArray()).map((e) => e.variantKey))] : []), [ctx, currentExercise]);
   const loadCandidates = useCallback(() => swapCandidates(ctx, currentId!), [ctx, currentId]);
   const previewFor = useCallback((to: ExerciseId, o: { familiarity?: Familiarity; variantKey?: string }) => previewSwap(ctx, currentId!, to, o), [ctx, currentId]);
 
@@ -91,26 +101,26 @@ export function Train() {
       <div className="page stack">
         <Banner kind="info">Passet är avslutat.</Banner>
         <button type="button" className="btn block" onClick={() => nav('/')}>
-          Till Idag
+          Till planen
         </button>
       </div>
     );
   }
-  if (!current) return null;
+  if (!current) return <div className="page stack"><h1>Inga övningar kvar</h1><button className="btn" onClick={()=>nav(`/pass/${id}/oversikt`)}>Ändra passet</button><button className="btn primary" onClick={()=>nav(`/pass/${id}/avsluta`)}>Avsluta passet</button></div>;
   const lk = current.snapshot.loadKind;
   const showWarmup = current.configuration?.warmupVisible ?? trainingPreferences(profile?.trainingPreferences).showWarmupSets;
   const mySets = sets.filter((s) => s.sessionExerciseId === current.id && !s.deleted && (s.kind === 'work' || showWarmup)).sort((a, b) => (a.kind === 'warmup' ? 0 : 1) - (b.kind === 'warmup' ? 0 : 1) || a.ordinal - b.ordinal);
-  const firstWork = mySets.find((s) => s.kind === 'work');
-  const activeRest = sets.filter((s) => s.sessionExerciseId === current.id && !s.deleted).flatMap((owner) => (owner.detail?.rests ?? []).filter((rest) => rest.outcome === 'active').map((rest) => ({ owner, rest }))).sort((a,b) => b.rest.startedAt.localeCompare(a.rest.startedAt))[0];
-  const allWork = sets.filter((s) => !s.deleted && s.kind === 'work' && exs.some((e) => e.id === s.sessionExerciseId));
+
+  const activeRest = sets.filter((s) => !s.deleted).flatMap((owner) => (owner.detail?.rests ?? []).filter((rest) => rest.outcome === 'active').map((rest) => ({ owner, rest }))).sort((a,b) => b.rest.startedAt.localeCompare(a.rest.startedAt))[0];
+  const allWork = sets.filter((s) => !s.deleted && s.kind === 'work');
   const doneCount = allWork.filter((s) => s.status === 'done').length;
   const stepGrams = Math.round(((settings?.find((s) => s.exerciseId === current.exerciseId)?.incrementGrams ?? null) ?? exercise(current.exerciseId).defaultIncrementKg * 1000));
   const showRir = profile?.experience !== 'novice';
   const paused = session.status === 'paused';
   const v2 = FLAGS.substitutionV2;
   const remainingMin = estimatedMinutesFor(exs.map((e) => ({ ...e.snapshot, sets: sets.filter((s) => s.sessionExerciseId === e.id && s.kind === 'work' && s.status === 'planned' && !s.deleted).length })));
-  const swappedFrom = v2 && current.snapshot.substitution && current.snapshot.substitutionFrom ? current.snapshot.substitutionFrom : null;
-  const perSide = exercise(current.exerciseId).unilateral && exercise(current.exerciseId).catalogSince !== '1.0.0';
+  const restInstance = activeRest ? exs.find((e)=>e.id===activeRest.owner.sessionExerciseId) : null;
+  const latestDone = mySets.filter((s)=>s.kind==='work'&&s.detail?.performances.some((p)=>p.status==='done')).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0]?.id;
 
   const wrap = async (setId: string, label: string, fn: () => Promise<unknown>) => {
     try {
@@ -159,37 +169,13 @@ export function Train() {
         </div>
         <OfflineBanner online={online} />
         {paused && <Banner kind="info">Passet är pausat. Dina set är sparade.</Banner>}
-        <div className="row wrap small">
-          <span className="chip">{MODE_SV[current.mode]}</span>
-          <span className="muted num">
-            {T.INFO_RECOMMEND}: {prescriptionText({ ...current.snapshot, configuration: current.configuration, kg: firstWork?.targetGrams == null ? null : firstWork.targetGrams / 1000, targetLoadValue: firstWork?.detail?.targetLoadValue, targetSecondLoadValue: firstWork?.detail?.targetSecondLoadValue })}
-          </span>
-        </div>
-        {swappedFrom && (
-          <Banner kind="info">
-            {SUB.SWAPPED(exercise(swappedFrom).nameSv, exercise(current.exerciseId).nameSv)}{' '}
-            {current.snapshot.loadEstimationKind === 'population_prior_low_confidence' ? SUB.SWAPPED_PRIOR : current.snapshot.loadEstimationKind === 'none' ? SUB.SWAPPED_NONE : ''}
-          </Banner>
-        )}
-        {current.snapshot.calibration && (
-          <Banner kind="info">
-            {T.WARN_CAL}
-            {v2 && <span className="block-text">{SUB.CAL_INSTRUCTIONS}</span>}
-          </Banner>
-        )}
+        <div className="row"><button type="button" className="btn grow" onClick={()=>nav(`/pass/${session.id}/oversikt`, { state: { returnTo: location.pathname + location.search } })}>Hela passet</button><button type="button" className="btn grow" onClick={()=>setSwap(true)}><Icon.Swap/> Byt övning</button></div>
         {lk === 'assistance_kg' && <p className="small muted">Assistans: lägre siffra betyder tyngre för dig.</p>}
-        {v2 && current.snapshot.loadBasis === 'per_hand_kg' && <p className="small muted">{SUB.PER_HAND}</p>}
-        {v2 && perSide && <p className="small muted">{SUB.PER_SIDE}</p>}
-        {previous && (
-          <p className="small">
-            <span className="label">{T.INFO_PREVIOUS}:</span> <span className="num">{previous}</span>
-          </p>
-        )}
-        <EquipmentControl key={`equipment:${current.id}`} instance={current} />
-        <details className="card"><summary>Uppvärmning och inställningar</summary><TrainingPreferencesControl instance={current} /></details>
+        {activeRest && restInstance && <SavedRestTimer key={activeRest.rest.id} owner={activeRest.owner} rest={activeRest.rest} sets={sets} instance={restInstance} onStart={(s)=>{const i=exs.findIndex((e)=>e.id===s.sessionExerciseId);if(i>=0)setFocus(i);}}/>}
+        <details><summary>Uppvärmning och utförande</summary><div className="stack"><TrainingPreferencesControl instance={current}/><ExecutionControl instance={current}/>{previous&&<p className="small muted">Senast: {previous}</p>}</div></details>
         <WarmupControl instance={current} visible={showWarmup} count={mySets.filter((s) => s.kind === 'warmup').length} />
         <ul className="card list set-list" aria-label={`Set för ${exercise(current.exerciseId).nameSv}`}>
-          {mySets.map((s, i) => ((s.status !== 'done' || s.detail) ? <PerformanceRow key={s.id} set={s} instance={current} sessionSets={sets} online={online} onSaved={(saved, side) => { const msg = saved.status === 'done' ? `✓ ${saved.kind === 'warmup' ? 'Uppvärmning' : 'Set'} ${saved.ordinal} registrerat på enheten` : '✓ Sidan registrerad. Fortsätt med nästa sida.'; setToast({ msg, setId: saved.id, side }); }} /> :
+          {mySets.map((s, i) => ((s.status !== 'done' || s.detail) ? <PerformanceRow key={s.id} set={s} instance={current} sessionSets={sets} online={online} showEffort={s.id===latestDone} onSaved={(saved, side) => { const msg = saved.status === 'done' ? `✓ ${saved.kind === 'warmup' ? 'Uppvärmning' : 'Set'} ${saved.ordinal} registrerat på enheten` : '✓ Sidan registrerad. Fortsätt med nästa sida.'; setToast({ msg, setId: saved.id, side }); }} /> :
             <SetRow
               key={s.id}
               set={s}
@@ -213,16 +199,14 @@ export function Train() {
             />
           ))}
         </ul>
-        {activeRest && <SavedRestTimer key={activeRest.rest.id} owner={activeRest.owner} rest={activeRest.rest} sets={sets} instance={current} />}
+
         <div className="row wrap">
           <button type="button" className="btn grow" onClick={() => addSet(ctx, current.id).catch(() => say('Kunde inte lägga till set'))}>
             <Icon.Plus /> Lägg till set
           </button>
-          <button type="button" className="btn grow" onClick={() => setSwap(true)}>
-            <Icon.Swap /> Byt övning
-          </button>
+
         </div>
-        <ReasonPopover reasons={current.snapshot.reasons} />
+
         {mySets.some((s) => s.kind === 'work' && s.status !== 'done') && <SkipExercise key={current.id} exerciseId={current.id} name={exercise(current.exerciseId).nameSv} onSkipped={(reason) => { say('Övningen är överhoppad.'); if (reason !== 'discomfort' && focus < exs.length - 1) setFocus(focus + 1); }} />}
         <nav className="row" aria-label="Övningar">
           <button type="button" className="btn grow" disabled={focus === 0} onClick={() => setFocus(focus - 1)}>
@@ -238,23 +222,6 @@ export function Train() {
             </button>
           )}
         </nav>
-        {exs.length > 1 && (
-          <details>
-            <summary>Alla övningar</summary>
-            <ul className="list">
-              {exs.map((e, i) => (
-                <li key={e.id}>
-                  <button type="button" className="btn ghost block" style={{ justifyContent: 'space-between' }} onClick={() => setFocus(i)} aria-current={i === focus ? 'step' : undefined}>
-                    <span>{exercise(e.exerciseId).nameSv}</span>
-                    <span className="num muted">
-                      {sets.filter((s) => s.sessionExerciseId === e.id && s.status === 'done' && !s.deleted).length}/{e.snapshot.sets}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
       </main>
       {toast && <ToastWithUndo message={toast.msg} onUndo={() => { const { setId: sid, side } = toast; setToast(null); void wrap(sid, side && side !== 'both' ? 'Sidan ångrad' : 'Set ångrat', () => side ? undoPerformance(ctx, sid, side) : undoSet(ctx, sid)).catch(() => undefined); }} onDone={() => setToast(null)} />}
       {swap && profile && v2 && (
@@ -263,10 +230,10 @@ export function Train() {
           loadCandidates={loadCandidates}
           preview={previewFor}
           goals={profile.goals}
-          machineProfiles={machineProfiles ?? []}
           onClose={() => setSwap(false)}
           onConfirm={async (to: ExerciseId, o: SwapOptions) => {
-            await swapExercise(ctx, current.id, to, o);
+            const replacement=await swapExercise(ctx, current.id, to, o);
+            setParams({ovning:replacement.sessionExercise.id},{replace:true});
             setSwap(false);
             say(to === current.exerciseId ? `Bytt maskin för ${exercise(to).nameSv}` : `Bytt till ${exercise(to).nameSv}`);
           }}
@@ -280,7 +247,8 @@ export function Train() {
           onClose={() => setSwap(false)}
           onPick={async (to) => {
             try {
-              await swapExerciseLegacy(ctx, current.id, to);
+              const replacement=await swapExerciseLegacy(ctx, current.id, to);
+              setParams({ovning:replacement.id},{replace:true});
               setSwap(false);
               say(`Bytt till ${exercise(to).nameSv}`);
             } catch (e) {

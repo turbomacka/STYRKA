@@ -6,7 +6,7 @@ Gäller **staging**. Produktion kräver att G5 är godkänd och ett separat, utt
 
 Status: steg 1, 3, 4 och 5 utförda. Databas `styrka-staging` (ref `zjjlttbwofohyqmklvkf`), app https://styrka-staging.homeboard-mh.workers.dev via Cloudflare Workers Static Assets (`wrangler.jsonc`; Pages-kommandot i wrangler 4.149 delegerar till Workers). Publicera: `npm run deploy:staging` (läser `.env.staging` som inte versionshanteras och skriver `dist/_headers`). Röktest: `npm run test:staging` och `npx playwright test -c playwright.staging.config.ts`. Steg 2 (auth-URL:er, SMTP) görs i Supabase-dashboarden.
 
-**Rollback av app:** `npx wrangler rollback` (föregående version) eller `npx wrangler versions list` + `npx wrangler versions deploy <id>`.
+**Rollback av app:** versionsåterställning kräver kompatibelt lokalt databasschema. Från UX-uppdateringen 2026-10-19 används Dexie v6. Återpublicera inte en äldre v5-klient över uppgraderade användardatabaser. Ett korrigerat eller återställt bygge måste behålla v6 och transportstödet för ordningshändelser. Se [UX-rapporten](UX_OMARBETNING_2026-10-18.md). För verifierat kompatibla versioner används `npx wrangler rollback` eller `npx wrangler versions deploy <id>`.
 
 1. Supabase: skapa projekt `styrka-staging` i EU-region. Notera projekt-URL och **anon/publishable**-nyckel (aldrig secret/service_role i klient eller CI-loggar).
 2. Auth: aktivera e-post (magic link), sätt Site URL till staging-domänen, redirect-URL:er, rimliga rate limits (lokala testvärden i `supabase/config.toml` gäller inte här), e-postbekräftelse på.
@@ -26,7 +26,7 @@ Status: steg 1, 3, 4 och 5 utförda. Databas `styrka-staging` (ref `zjjlttbwofoh
 ## 3. Rollback och incident (04 §3)
 
 - **Stoppa viktförslag omedelbart:** bygg med `VITE_FLAG_LOAD_RECOMMENDATIONS=false` och redeploya. Historik, loggning och export fungerar; användaren väljer vikt själv.
-- **Frontend-rollback:** återpublicera föregående `dist`-bygge (Pages håller tidigare deployment). Service worker-uppdatering sker först när användaren väljer "Uppdatera"; IndexedDB bevaras.
+- **Frontend-rollback:** återpublicera ett verifierat kompatibelt `dist`-bygge enligt schemavillkoret ovan. Service worker-uppdatering sker först när användaren väljer "Uppdatera"; IndexedDB bevaras. Databasens lokala version får inte sänkas.
 - **Stäng av övningsbyte v2 (CR 2026-10-10-01):** bygg med `VITE_FLAG_SUBSTITUTION_V2=false` och redeploya – tidigare bytesvy används, vetenskapssidan finns kvar. Föredra detta framför rollback till ett bygge före katalog 2.0.0 när användare redan loggat nya övningar (t.ex. frontböj): äldre klienter känner inte igen de nya övningarna i hämtad historik. Migration 004 behöver inte backas (additiv och bakåtkompatibel med äldre klienter).
 - **Databas:** migrationer är framåtriktade; skriv kompenserande migration och testa lokalt först. Inga ändringar av historiska snapshots.
 - **P0** (åtkomst över kontogräns, försvunna pass, tung rekommendation trots spärr): sätt flaggan ovan, vid behov läsläge genom att återkalla `execute` på `public.apply_set_mutation`, informera enligt dataskyddsrutin.

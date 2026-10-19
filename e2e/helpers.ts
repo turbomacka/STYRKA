@@ -119,11 +119,11 @@ export async function onboard(page: Page, opts: { pull?: 'Latsdrag' | 'Assistera
   await page.getByRole('button', { name: 'Fortsätt', exact: true }).click();
   await opts.screenshot?.('S05-intro-4');
   await page.getByRole('button', { name: 'Skapa min plan', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Idag' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Min träningsplan' })).toBeVisible();
 }
 
 export function shooter(page: Page, info: TestInfo) {
-  const dir = `docs/evidence/screenshots/${info.project.name}`;
+  const dir = `docs/evidence/ux-2026-10-18/regression/${info.project.name}`;
   mkdirSync(dir, { recursive: true });
   return async (name: string, opts: { fullPage?: boolean } = {}) => {
     await page.screenshot({ path: `${dir}/${name}.png`, fullPage: opts.fullPage ?? true });

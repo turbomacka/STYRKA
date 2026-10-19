@@ -21,8 +21,8 @@ for (const theme of ['light', 'dark'] as const) test(`DES mobile states and 200%
   await accessible(page); await targets(page);
   await page.evaluate(() => document.documentElement.style.fontSize = '200%'); await fits(page);
   await page.evaluate(() => document.documentElement.style.fontSize = '');
-  await page.getByRole('button', { name: 'Starta dagens pass' }).click(); await page.getByRole('button', { name: 'Starta', exact: true }).click();
-  const log = page.getByRole('button', { name: 'Klart, set 1' }); await expect(log).toBeVisible();
+  await page.getByRole('button', { name: 'Öppna passet' }).click(); await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
+  const log = page.getByRole('button', { name: 'Registrera set 1' }); await expect(log).toBeVisible();
   // Native activation remains on click: a touch down or canceled gesture saves nothing.
   await log.dispatchEvent('pointerdown', { button: 0, isPrimary: true, pointerId: 1 });
   await expect(log).toHaveAttribute('data-pressed', 'true');
@@ -37,7 +37,7 @@ for (const theme of ['light', 'dark'] as const) test(`DES mobile states and 200%
   await log.click();
   await expect(page.getByRole('button', { name: 'Set 1 utfört. Ändra eller ångra' })).toBeVisible();
   await expect(page.locator('.toast')).toHaveText(/registrerat på enheten/);
-  await expect(page.getByText('Sparas när du är uppkopplad').first()).toBeVisible();
+  await expect(page.locator('.toast')).toContainText('registrerat på enheten');
   await context.setOffline(false);
   await page.getByRole('button', { name: /Vikt set 2:/ }).click();
   const weight = page.getByLabel('Vikt (kg)', { exact: true });
@@ -65,10 +65,10 @@ for (const theme of ['light', 'dark'] as const) test(`DES mobile states and 200%
   expect(brokenValues).toEqual([]);
   await page.getByRole('button', { name: /Vikt set 2:/ }).click(); await fits(page);
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.screenshot({ path: `docs/evidence/design-001/after/${info.project.name}/${theme}/10-text-200.png`, fullPage: true, scale: 'css' });
+  await page.screenshot({ path: `docs/evidence/ux-2026-10-18/regression/design-001/after/${info.project.name}/${theme}/10-text-200.png`, fullPage: true, scale: 'css' });
   await page.evaluate(() => document.documentElement.style.fontSize = '');
   await page.getByRole('button', { name: 'Stäng', exact: true }).click();
-  await page.getByRole('button', { name: 'Avsluta', exact: true }).click(); await page.getByRole('button', { name: 'Spara passet', exact: true }).click(); await page.getByRole('button', { name: 'Till Idag', exact: true }).click();
+  await page.getByRole('button', { name: 'Avsluta', exact: true }).click(); await page.getByRole('button', { name: 'Avsluta och spara', exact: true }).click(); await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
   await page.getByRole('link', { name: 'Plan', exact: true }).click();
   const head = page.locator('.plan-row-head').first(); await head.click();
   const note = page.getByLabel('Egen anteckning (privat)').first(); await note.fill('Behåll min anteckning'); await head.click(); await head.click();

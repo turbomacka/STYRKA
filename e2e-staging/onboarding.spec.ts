@@ -27,14 +27,16 @@ for (const source of ['strength_inputs', 'performed_sets'] as const) {
       expect((await client.auth.signInWithPassword({ email, password })).error).toBeNull();
       await signIn(page, email, password);
       await expect(page.getByText('Intro 1/4')).toBeVisible({ timeout: 25_000 });
-      if (source === 'strength_inputs') await independentIntro(page, context, `docs/evidence/onboarding/published/${info.project.name}`);
+      if (source === 'strength_inputs') await independentIntro(page, context, `docs/evidence/ux-2026-10-18/published/onboarding/published/${info.project.name}`);
       else await onboard(page, { estimates: false });
       await expect.poll(async () => (await client.from('profiles').select('training_preferences').eq('user_id', id).single()).data?.training_preferences?.loadRecommendationSource, { timeout: 30_000 }).toBe(source);
       if (source === 'strength_inputs') {
         await expect.poll(async () => (await client.from('user_exercise_profiles').select('strength_inputs').eq('exercise_slug', 'squat').single()).data?.strength_inputs?.length, { timeout: 30_000 }).toBe(3);
       } else {
-        await page.getByRole('button', { name: 'Starta dagens pass' }).click();
-        await expect(page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: 'Knäböj', exact: true }) })).toContainText('välj startvikt');
+        await page.getByRole('button', { name: 'Öppna passet' }).click();
+        const squat = page.locator('.workout-card').filter({ hasText: 'Knäböj' });
+        await squat.locator('.workout-title').click();
+        await expect(squat).toContainText('Välj vikt');
         await page.getByRole('button', { name: 'Tillbaka', exact: true }).click();
         await page.getByRole('link', { name: 'Profil', exact: true }).click();
         await page.getByText('Använd även mina styrkeuppgifter', { exact: true }).click();

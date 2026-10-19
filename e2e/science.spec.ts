@@ -51,7 +51,7 @@ test('SUB18: direktlänk till algoritmregel och källa (DOI) fungerar', async ({
   await expect(page.getByText(/\d+ träffar/)).toBeVisible();
 });
 
-test('inloggad: Profil → Om STYRKA → Vetenskap och metoder; "Om regeln" leder till regelns ankare', async ({ page }) => {
+test('inloggad: vetenskap är tillgänglig i Profil och hålls utanför träningen', async ({ page }) => {
   await signUp(page, uniqueEmail('vet'));
   await onboard(page);
   await page.getByRole('link', { name: 'Profil' }).click();
@@ -59,11 +59,7 @@ test('inloggad: Profil → Om STYRKA → Vetenskap och metoder; "Om regeln" lede
   await expect(page.getByRole('heading', { level: 1, name: 'Vetenskapen bakom STYRKA' })).toBeVisible();
   await page.getByRole('link', { name: /Till Profil|Tillbaka/ }).first().click();
   await page.goto('/');
-  await page.getByRole('button', { name: 'Starta dagens pass' }).click();
-  await expect(page.getByRole('button', { name: 'Starta', exact: true })).toBeEnabled();
-  await page.getByText('Varför det här förslaget?').first().click();
-  await page.getByRole('link', { name: /^Om regeln/ }).first().click();
-  await expect(page).toHaveURL(/\/vetenskap#regel-/);
-  const anchor = new URL(page.url()).hash;
-  await expect(page.locator(anchor)).toBeInViewport();
+  await page.getByRole('button', { name: 'Öppna passet' }).click();
+  await expect(page.getByRole('button', { name: 'Starta passet', exact: true })).toBeEnabled();
+  await expect(page.getByText('Varför det här förslaget?',{exact:true})).toHaveCount(0);
 });

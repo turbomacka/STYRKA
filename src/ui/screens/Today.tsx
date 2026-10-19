@@ -1,12 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { exercise } from '../../domain/catalog';
-import { activeSession, previewNext } from '../../application/training';
+import { previewNext } from '../../application/training';
 import { EmptyState, Icon, OfflineBanner, Warnings } from '../components/common';
-import { prescriptionText } from '../components/widgets';
+import { editableSession, workoutOrder } from '../../application/workout';
 import { useServices } from '../services';
-import { T, TEMPLATE_SV } from '../strings';
-import { CatchUpCard } from '../components/CatchUpCard';
+import { TEMPLATE_SV } from '../strings';
 
 export function SyncLink() {
   const { syncStatus, online } = useServices();
@@ -23,76 +22,25 @@ export function SyncLink() {
   );
 }
 
-/** S06 Idag: en stark CTA (starta/fortsätt), sekundärt spontanpass, uppskattad tid och snabb övningslista. */
-export function Today() {
-  const { ctx, online } = useServices();
-  const nav = useNavigate();
-  const active = useLiveQuery(() => activeSession(ctx), [ctx]);
-  const preview = useLiveQuery(async () => {
-    try { return { plan: await previewNext(ctx), error: false }; }
-    catch { return { plan: null, error: true }; }
-  }, [ctx]);
-  const plan = preview?.plan ?? null;
-  const error = preview?.error ?? false;
-
-  return (
-    <div className="page stack">
-      <div className="row spread">
-        <h1 style={{ margin: 0 }}>Idag</h1>
-        <SyncLink />
-      </div>
-      <OfflineBanner online={online} />
-      {!active && <CatchUpCard />}
-      {active ? (
-        <div className="card hero stack">
-          <p className="label">Pågående pass</p>
-          <h2>{active.kind === 'extra' ? 'Spontanpass' : (TEMPLATE_SV[active.templateKey ?? ''] ?? T.TITLE_NEXT)}</h2>
-          <p className="muted">{active.status === 'paused' ? 'Pausat' : 'Påbörjat'} {new Date(active.startedAt ?? '').toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}. Inget går förlorat om appen stängs.</p>
-          <button type="button" className="btn primary block big" onClick={() => nav(`/pass/${active.id}`)}>
-            Fortsätt passet
-          </button>
-        </div>
-      ) : error ? (
-        <EmptyState title="Kunde inte ta fram ett förslag">
-          <p>Försök igen om en stund. Dina sparade uppgifter är kvar.</p>
-        </EmptyState>
-      ) : plan === null ? (
-        <p aria-busy="true">Tar fram förslag…</p>
-      ) : plan.exercises.length === 0 ? (
-        <>
-          <Warnings codes={plan.warnings} />
-          <EmptyState title="Inget pass att föreslå i dag" action={<Link to="/profil/begransningar" className="btn block">Visa mina begränsningar</Link>}>
-            <p>{T.WARN_EMPTY}</p>
-          </EmptyState>
-        </>
-      ) : (
-        <section className="card hero stack" aria-labelledby="next-title">
-          <p className="label">{T.TITLE_NEXT}</p>
-          <h2 id="next-title">{TEMPLATE_SV[plan.templateKey ?? ''] ?? 'Nästa pass'}</h2>
-          <p className="num muted">Cirka {Math.round(plan.estimatedMinutes)} min · {plan.exercises.length} övningar</p>
-          <ul className="list" aria-label="Övningar i passet">
-            {plan.exercises.map((e) => (
-              <li key={e.exerciseId} className="ex-line">
-                <span>{exercise(e.exerciseId).nameSv}</span>
-                <span className="num muted">{prescriptionText(e)}</span>
-              </li>
-            ))}
-          </ul>
-          <Warnings codes={plan.warnings} />
-          <button type="button" className="btn primary block big" onClick={() => nav('/forhandsvisning')}>
-            {T.CTA_START}
-          </button>
-        </section>
-      )}
-      {!active && (
-        <button type="button" className="btn block" onClick={() => nav('/spontan')}>
-          {T.CTA_EXTRA}
-        </button>
-      )}
-      <Link to="/plan?flik=kommande" className="small">
-        Visa hela planen
-      </Link>
-      <p className="small muted">{T.DISCLAIMER}</p>
-    </div>
-  );
+/** The primary next-workout action, embedded in Plan. */
+export function NextWorkout() {
+  const {ctx,online}=useServices();const nav=useNavigate();
+  const current=useLiveQuery(()=>editableSession(ctx),[ctx]);
+  const currentExercises=useLiveQuery(async()=>{
+    if(!current)return null;
+    const sets=await ctx.db.sets.where('sessionId').equals(current.id).toArray();
+    return workoutOrder(await ctx.db.sessionExercises.where('sessionId').equals(current.id).toArray(),await ctx.db.workoutOrderEvents.where('sessionId').equals(current.id).toArray()).filter((e)=>sets.some((s)=>s.sessionExerciseId===e.id&&!s.deleted));
+  },[ctx,current?.id]);
+  const result=useLiveQuery(async()=>{try{return await previewNext(ctx);}catch{return null;}},[ctx]);
+  const plan=current?.snapshot??result;
+  const started=current&&current.status!=='preview';
+  return <section className="card hero stack no-print" aria-label="Nästa pass">
+    <OfflineBanner online={online}/>
+    <p className="label">{started?'Pågående pass':'Nästa pass'}</p>
+    <h2>{plan?(TEMPLATE_SV[plan.templateKey??'']??'Ditt pass'):'Ditt nästa pass'}</h2>
+    {plan&&<p className="small muted">{(currentExercises??plan.exercises).slice(0,3).map((e)=>exercise(e.exerciseId).nameSv).join(' · ')}</p>}
+    {plan&&<Warnings codes={plan.warnings}/>}
+    {result===null&&!current?<EmptyState title="Kunde inte ta fram passet"><p>Dina sparade uppgifter finns kvar.</p></EmptyState>:<button type="button" className="btn primary block big" disabled={!plan} onClick={()=>nav(current?`/pass/${current.id}${started?'':'/oversikt'}`:'/forhandsvisning')}>{started?'Fortsätt passet':'Öppna passet'}</button>}
+    {!current&&<button type="button" className="btn ghost" onClick={()=>nav('/spontan')}>Träna ett spontanpass</button>}
+  </section>;
 }

@@ -151,8 +151,9 @@ export class SupabaseTransport implements SyncTransport {
     const notes = await optional('notebook_notes');
     const balanceDecisions = await optional('balance_suggestion_decisions');
     // Fetch last: deletion markers dominate any earlier, non-atomic table reads.
+    const workoutOrderEvents = await this.all('workout_order_events', userId);
     const skipEvents = await this.all('exercise_skip_events', userId);
     const deletedWorkouts = (await this.all('deleted_training_sessions', userId)).map((r) => ({ id: r.id as string, sequence: r.sequence as number | null }));
-    return { profile, equipment: equipment.map((e) => e.equipment_slug as string), exerciseProfiles, consents, restrictions, symptoms, programs, sessions, sessionExercises, sets, audits, calibrations, substitutionEvents, planRevisions, notes, balanceDecisions, deletedWorkouts, skipEvents };
+    return { workoutOrderEvents, profile, equipment: equipment.map((e) => e.equipment_slug as string), exerciseProfiles, consents, restrictions, symptoms, programs, sessions, sessionExercises, sets, audits, calibrations, substitutionEvents, planRevisions, notes, balanceDecisions, deletedWorkouts, skipEvents };
   }
 }

@@ -22,14 +22,15 @@ function row(over: Partial<LocalSet> = {}, props: Partial<Parameters<typeof SetR
 describe('SetRow', () => {
   it('visar Set 2 | 80 kg | 5 reps | Klart och loggar förifyllt set med ett tryck', async () => {
     const { onLog } = row();
-    expect(screen.getByText('Set 2')).toBeTruthy();
+    expect(screen.getByText('2')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Vikt set 2: 80 kilo/ })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Klart, set 2' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Registrera set 2' }));
     await waitFor(() => expect(onLog).toHaveBeenCalledWith({ actualGrams: 80_000, actualReps: 5, technique: 'controlled' }));
   });
 
   it('accepterar 102,5 och 102.5 som samma värde; 102,,5 ger inline-fel utan att stänga fältet', async () => {
-    const { onLog } = row();
+    const onPlan=vi.fn(async()=>undefined);
+    const { onLog } = row({}, {onPlan});
     fireEvent.click(screen.getByRole('button', { name: /Vikt set 2/ }));
     const input = screen.getByLabelText('Vikt (kg)') as HTMLInputElement;
     expect(input.inputMode).toBe('decimal');
@@ -37,8 +38,9 @@ describe('SetRow', () => {
     expect(screen.getByRole('alert').textContent).toMatch(/82,5/);
     expect(screen.getByLabelText('Vikt (kg)')).toBeTruthy();
     fireEvent.change(input, { target: { value: '102.5' } });
-    fireEvent.click(screen.getAllByRole('button', { name: /Klart/ }).at(-1)!);
-    await waitFor(() => expect(onLog).toHaveBeenLastCalledWith(expect.objectContaining({ actualGrams: 102_500 })));
+    fireEvent.click(screen.getByRole('button', { name: 'Stäng' }));
+    await waitFor(() => expect(onPlan).toHaveBeenLastCalledWith(expect.objectContaining({ actualGrams: 102_500 })));
+    expect(onLog).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: /Vikt set 2/ }));
   });
 
@@ -52,20 +54,43 @@ describe('SetRow', () => {
   it('kalibrering: utan vikt sparas inget, användaren uppmanas ange vikt', async () => {
     const { onLog } = row({ targetGrams: null });
     expect(screen.getByRole('button', { name: /vikt ej vald/ })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Klart, set 2' }));
-    await waitFor(() => expect(screen.getByText('Ange vikten du använde.')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Registrera set 2' }));
+    await waitFor(() => expect(screen.getByText('Välj vikten du använde.')).toBeTruthy());
     expect(onLog).not.toHaveBeenCalled();
   });
 
   it('utfört set visar bock och kan ångras; status med text, inte bara färg', () => {
     row({ status: 'done', actualGrams: 80_000, actualReps: 5, createQueued: true, syncState: 'queued' }, { online: false });
     expect(screen.getByRole('button', { name: 'Set 2 utfört. Ändra eller ångra' })).toBeTruthy();
-    expect(screen.getByText('Sparas när du är uppkopplad')).toBeTruthy();
+    expect(screen.getByText('Utfört')).toBeTruthy();
   });
 
   it('misslyckad lokal sparning visas tydligt', () => {
     render(<SaveStateChip state="failed_local" online />);
     expect(screen.getByText('Kunde inte sparas')).toBeTruthy();
+  });
+
+  it('failed autosave retains the draft and retries without recording a set', async () => {
+    const onPlan=vi.fn().mockRejectedValueOnce(new Error('quota')).mockResolvedValue(undefined);
+    const {onLog}=row({}, {onPlan});
+    fireEvent.click(screen.getByRole('button',{name:/Vikt set 2/}));
+    fireEvent.change(screen.getByLabelText('Vikt (kg)'),{target:{value:'82,5'}});
+    fireEvent.click(screen.getByRole('button',{name:'Stäng'}));
+    await waitFor(()=>expect(screen.getByRole('button',{name:'Försök igen'})).toBeTruthy());
+    expect((screen.getByLabelText('Vikt (kg)') as HTMLInputElement).value).toBe('82,5');
+    expect(screen.queryByText(/✓ Planen sparad/)).toBeNull();
+    fireEvent.click(screen.getByRole('button',{name:'Försök igen'}));
+    await waitFor(()=>expect(screen.getByText(/✓ Planen sparad/)).toBeTruthy());
+    expect(onPlan).toHaveBeenCalledTimes(2);expect(onLog).not.toHaveBeenCalled();
+  });
+
+  it('independent stack editing uses the same autosave and never records completion',async()=>{
+    const onPlan=vi.fn(async()=>undefined);const {onLog}=row({}, {onPlan,secondLoad:20});
+    fireEvent.click(screen.getByRole('button',{name:/Andra viktstapeln:/}));
+    fireEvent.change(screen.getByLabelText('Andra viktstapeln (kg)'),{target:{value:'22,5'}});
+    fireEvent.click(screen.getByRole('button',{name:'Stäng'}));
+    await waitFor(()=>expect(onPlan).toHaveBeenCalledWith(expect.objectContaining({actualGrams:80000,secondLoadValue:22.5})));
+    expect(onLog).not.toHaveBeenCalled();
   });
 
   it('axe: inga allvarliga brott i setraden', async () => {

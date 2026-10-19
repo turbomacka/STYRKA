@@ -25,9 +25,9 @@ it('DES10–13: delayed local commit, synchronous double activation guard and no
   let resolve!: () => void;
   const onLog = vi.fn(() => new Promise<void>((r) => { resolve = r; }));
   const { container } = render(<ul><SetRow {...props(onLog)} /></ul>);
-  const log = screen.getByRole('button', { name: 'Klart, set 1' });
+  const log = screen.getByRole('button', { name: 'Registrera set 1' });
   act(() => { log.click(); log.click(); });
-  expect(onLog).toHaveBeenCalledTimes(1);
+  await waitFor(()=>expect(onLog).toHaveBeenCalledTimes(1));
   expect(container.querySelector('[data-feedback="saved"]')).toBeNull();
   expect(log.getAttribute('aria-busy')).toBe('true');
   await act(async () => resolve());
@@ -40,10 +40,10 @@ it('DES12: failed commit has no success or haptics; retry works', async () => {
   const vibrate = vi.fn(); Object.defineProperty(navigator, 'vibrate', { configurable: true, value: vibrate }); setHaptics(true);
   const onLog = vi.fn().mockRejectedValueOnce(new Error('disk')).mockResolvedValue(undefined);
   const { container } = render(<ul><SetRow {...props(onLog)} /></ul>);
-  fireEvent.click(screen.getByRole('button', { name: 'Klart, set 1' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Registrera set 1' }));
   await screen.findByRole('alert');
   expect(container.querySelector('[data-feedback="saved"]')).toBeNull(); expect(vibrate).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button', { name: 'Klart, set 1' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Registrera set 1' }));
   await waitFor(() => expect(container.querySelector('[data-feedback="saved"]')).not.toBeNull());
   expect(onLog).toHaveBeenCalledTimes(2); expect(vibrate).toHaveBeenCalledOnce();
 });

@@ -10,6 +10,7 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { CATALOG } from '../../src/domain/catalog';
+import { defaultConfiguration, type SetDetail } from '../../src/domain/trainingFlow';
 
 const ref = readFileSync('supabase/.temp/project-ref', 'utf8').trim();
 const url = `https://${ref}.supabase.co`;
@@ -145,5 +146,31 @@ describe('staging', () => {
     await C.c.from('profiles').insert({ user_id: C.id, adult_confirmed: true });
     expect(((await C.c.rpc('delete_my_account')).data as { status: string }).status).toBe('applied');
     expect((await client().auth.signInWithPassword({ email: C.email, password: PASSWORD })).error).not.toBeNull();
+  });
+
+  it('UX: ordningshändelser är ägaravskilda, append-only och bundna till samma pass', async () => {
+    const se2=randomUUID(), event=randomUUID();
+    expect((await A.c.from('session_exercises').insert({id:se2,user_id:A.id,session_id:sess,exercise_slug:'bench_press',order_index:1,mode:'moderate',band_min:8,band_max:12,target_sets:2})).error).toBeNull();
+    const row={id:event,user_id:A.id,session_id:sess,session_exercise_id:se2,before_id:se,created_at:new Date().toISOString()};
+    expect((await A.c.from('workout_order_events').insert(row)).error).toBeNull();
+    expect((await A.c.from('workout_order_events').select('id').eq('id',event)).data).toEqual([{id:event}]);
+    expect((await B.c.from('workout_order_events').select('id').eq('id',event)).data).toEqual([]);
+    expect((await client().from('workout_order_events').select('id')).data??[]).toEqual([]);
+    expect((await B.c.from('workout_order_events').insert({...row,id:randomUUID(),user_id:B.id})).error).not.toBeNull();
+    expect((await A.c.from('workout_order_events').insert({...row,id:randomUUID(),session_id:randomUUID()})).error).not.toBeNull();
+    expect((await A.c.from('workout_order_events').update({before_id:null}).eq('id',event)).error).not.toBeNull();
+    expect((await A.c.from('workout_order_events').delete().eq('id',event)).error).not.toBeNull();
+  });
+
+  it('UX: sidmål sparas utan prestation och ogiltiga värden avvisas utan att ändra historiken', async () => {
+    const id=randomUUID();
+    const detail:SetDetail={version:1,configuration:defaultConfiguration('squat'),performances:[],rests:[],aborted:false,plannedSides:{both:{grams:82500,reps:6,seconds:null,secondLoad:null}}};
+    expect((await rpc(A,randomUUID(),id,null,{sessionExerciseId:se,ordinal:3,kind:'work',status:'planned',targetKg:'82.500',targetReps:6,detail})).status).toBe('applied');
+    const read=async()=>A.c.from('training_sets').select('status,actual_kg,actual_reps,detail,revision').eq('id',id).single();
+    const saved=await read();expect(saved.error).toBeNull();
+    expect(saved.data).toMatchObject({status:'planned',actual_kg:null,actual_reps:null,detail,revision:1});
+    const invalid=structuredClone(detail);invalid.plannedSides!.both!.grams=-1;
+    expect((await rpc(A,randomUUID(),id,1,{detail:invalid})).status).toBe('rejected');
+    expect((await read()).data).toEqual(saved.data);
   });
 });

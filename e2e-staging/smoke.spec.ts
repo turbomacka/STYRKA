@@ -19,12 +19,14 @@ test('staging: inloggning, intro, pass med synk till staging-databasen, utan CSP
   const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
   expect(error).toBeNull();
   const userId = data.user!.id;
+  const userClient = createClient(`https://${ref}.supabase.co`, keys.find((k) => k.type === 'publishable')!.api_key, { auth: { persistSession: false } });
   const problems: string[] = [];
   page.on('console', (m) => m.type() === 'error' && problems.push(m.text()));
   page.on('pageerror', (e) => problems.push(e.message));
-  const dir = `docs/evidence/design-001/staging/${info.project.name}`;
+  const dir = `docs/evidence/ux-2026-10-18/published/design-001/staging/${info.project.name}`;
   mkdirSync(dir, { recursive: true });
   try {
+    expect((await userClient.auth.signInWithPassword({ email, password })).error).toBeNull();
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'STYRKA' })).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('data-design', 'refined');
@@ -34,9 +36,24 @@ test('staging: inloggning, intro, pass med synk till staging-databasen, utan CSP
     await page.getByRole('button', { name: 'Logga in', exact: true }).click();
     await expect(page.getByText('Intro 1/4')).toBeVisible({ timeout: 20_000 });
     await onboard(page, { multipleEstimates: true });
-    await page.getByRole('button', { name: 'Starta dagens pass' }).click();
-    await page.getByRole('button', { name: 'Starta', exact: true }).click();
-    const firstSet = page.getByRole('button', { name: 'Klart, set 1' });
+    await page.getByRole('button', { name: 'Öppna passet' }).click();
+    const squat = page.locator('.workout-card').filter({ hasText: 'Knäböj' });
+    await squat.locator('.workout-title').click();
+    await squat.getByRole('button', { name: /Vikt set 1:/ }).click();
+    await squat.getByLabel('Vikt (kg)', { exact: true }).fill('82,5');
+    await expect(squat.getByRole('status')).toContainText('Planen sparad');
+    await squat.getByRole('button', { name: 'Stäng', exact: true }).click();
+    await expect.poll(async () => {
+      const r = await userClient.from('training_sets').select('status,target_kg,actual_kg').eq('target_kg', 82.5);
+      expect(r.error).toBeNull(); return r.data;
+    }, { timeout: 30000 }).toEqual([{ status: 'planned', target_kg: 82.5, actual_kg: null }]);
+    await squat.getByRole('button', { name: 'Flytta Knäböj ned' }).click();
+    await expect(page.locator('.workout-card').first()).toContainText('Bänkpress');
+    await squat.getByRole('button', { name: 'Flytta Knäböj upp' }).click();
+    await expect(page.locator('.workout-card').first()).toContainText('Knäböj');
+    await expect.poll(async () => (await userClient.from('workout_order_events').select('id')).data?.length, { timeout: 30000 }).toBe(2);
+    await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
+    const firstSet = page.getByRole('button', { name: 'Registrera set 1' });
     await firstSet.dispatchEvent('pointerdown', { button: 0, isPrimary: true, pointerId: 1 });
     await expect(firstSet).toHaveAttribute('data-pressed', 'true');
     await firstSet.dispatchEvent('pointercancel', { pointerId: 1 });
@@ -45,10 +62,10 @@ test('staging: inloggning, intro, pass med synk till staging-databasen, utan CSP
     await page.context().setOffline(true);
     await firstSet.click();
     await expect(page.locator('.toast')).toContainText('registrerat på enheten');
-    await expect(page.getByText('Sparas när du är uppkopplad').first()).toBeVisible();
+    await expect(page.getByText('Du tränar offline.', { exact: false })).toBeVisible();
     await page.context().setOffline(false);
-    await page.getByRole('button', { name: 'Klart, set 2' }).click();
-    await expect(page.getByText('Synkat').first()).toBeVisible({ timeout: 30_000 });
+    await page.getByRole('button', { name: 'Registrera set 2' }).click();
+    await expect.poll(async () => (await userClient.from('training_sets').select('id').eq('status', 'done')).data?.length, { timeout: 30000 }).toBe(2);
     await page.screenshot({ path: `${dir}/S08-trana.png`, fullPage: true });
     await page.getByRole('button', { name: 'Nästa övning', exact: true }).click();
     await page.getByRole('button', { name: 'Nästa övning', exact: true }).click();
@@ -56,14 +73,12 @@ test('staging: inloggning, intro, pass med synk till staging-databasen, utan CSP
     await page.getByRole('button', { name: 'Hoppa över övningen', exact: true }).click();
     await page.getByRole('button', { name: 'Hann inte', exact: true }).click();
     await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
-    await page.getByRole('button', { name: 'Spara passet' }).click();
+    await page.getByRole('button', { name: 'Avsluta och spara' }).click();
     await page.getByRole('button', { name: 'Använd förslaget nästa pass' }).click();
     await expect(page.getByRole('heading', { name: 'Ditt val för nästa pass' })).toBeVisible();
-    await page.getByRole('button', { name: 'Till Idag' }).click();
+    await expect(page.getByRole('heading', { name: 'Min träningsplan' })).toBeVisible();
     await expect(page.getByRole('link', { name: /Synkstatus: Synkat/ })).toBeVisible({ timeout: 30_000 });
     // Verifiera i staging-databasen via användarens egen session (RLS).
-    const userClient = createClient(`https://${ref}.supabase.co`, keys.find((k) => k.type === 'publishable')!.api_key, { auth: { persistSession: false } });
-    await userClient.auth.signInWithPassword({ email, password });
     const strength = await userClient.from('user_exercise_profiles').select('strength_inputs').eq('exercise_slug', 'squat').single();
     expect(strength.error).toBeNull();
     expect(strength.data?.strength_inputs).toEqual([
@@ -96,6 +111,7 @@ test('staging: inloggning, intro, pass med synk till staging-databasen, utan CSP
     expect((await userClient.from('training_sessions').select('id')).data).toEqual([]);
     expect((await userClient.from('training_sets').select('id')).data).toEqual([]);
     expect((await userClient.from('exercise_skip_events').select('id')).data).toEqual([]);
+    expect((await userClient.from('workout_order_events').select('id')).data).toEqual([]);
     expect((await userClient.from('deleted_training_sessions').select('id')).data).toHaveLength(1);
     await page.reload();
     await expect(page.getByText('Inga avslutade pass ännu.')).toBeVisible();

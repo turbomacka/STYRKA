@@ -89,7 +89,8 @@ it('holds the queue on AUTH_REQUIRED and resumes the same events exactly once af
     await h.sync.refresh();
     await h.sync.refresh();
     expect(await h.db.outbox.count()).toBe(0);
-    expect(h.server.sets.size).toBe(1);
+    expect(h.server.sets.size).toBe(await h.db.sets.count());
+    expect([...h.server.sets.values()].filter((s)=>s.status==='done')).toHaveLength(1);
     expect(send.mock.calls.map((c) => c[0])).toEqual([queuedId, queuedId]);
     expect((await h.sync.status()).state).toBe('idle');
   } finally { h.sync.dispose(); await h.db.delete(); }

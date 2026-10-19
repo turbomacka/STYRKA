@@ -1,3 +1,4 @@
+import { canonicalJson } from '../domain/hash';
 /**
  * SyncService (03 §5.1, 09): spelar upp lokal outbox i FIFO-ordning mot servern.
  * - Stabilt eventId per användarhandling; samma eventId vid retry.
@@ -8,7 +9,7 @@
  */
 import { applyServerSetValues, consentFromRow, exerciseSettingsFromRow, profileFromRow, programFromRow, restrictionFromRow, sessionExerciseFromRow, sessionFromRow, setFromRow, setFullPatch, symptomFromRow, auditFromRow, profileRow, calibrationFromRow, substitutionEventFromRow, noteFromRow, noteRow, planRevisionFromRow, balanceDecisionFromRow } from '../server/mapping';
 import { TransportError } from '../server/transport';
-import { skipEventFromRow } from '../server/mapping';
+import { skipEventFromRow, workoutOrderEventFromRow } from '../server/mapping';
 import type { ConflictEntry, LocalProfile, LocalSet, OutboxEntry, ServerTable, SyncState } from '../storage/db';
 import type { ExerciseId } from '../domain/catalog';
 import type { PlanSnapshot } from '../domain/model';
@@ -204,14 +205,15 @@ export class SyncEngine {
           await db.outbox.update(entry.seq!, { op: { ...op, baseRevision: base } });
         }
         const env = await transport.applySetMutation(entry.eventId, op.setId, base, op.payload);
-        if (env.status === 'applied' || env.status === 'duplicate') {
+        const identical = env.status === 'conflict' && env.server && Object.entries(op.payload).every(([key,value]) => key.endsWith('Kg') && value != null && env.server![key] != null ? Number(value) === Number(env.server![key]) : canonicalJson(value ?? null) === canonicalJson(env.server![key] ?? null));
+        if (env.status === 'applied' || env.status === 'duplicate' || identical) {
           await db.transaction('rw', [db.outbox, db.sets], async () => {
             await db.outbox.delete(entry.seq!);
             const remaining = await db.outbox.where('recordId').equals(op.setId).count();
             const s = await db.sets.get(op.setId);
             if (s) await db.sets.put({ ...s, serverRevision: env.revision ?? s.serverRevision, syncState: remaining ? 'queued' : 'synced' });
           });
-          return env.status;
+          return identical ? 'duplicate' : env.status as 'applied' | 'duplicate';
         }
         if (env.status === 'conflict' && env.code === 'REVISION_CONFLICT') {
           await db.transaction('rw', [db.outbox, db.sets, db.conflicts], async () => {
@@ -329,7 +331,7 @@ export class SyncEngine {
     const localTables: Record<ServerTable, string> = {
       profiles: 'profile', user_exercise_profiles: 'exerciseSettings', health_consents: 'consents',
       restriction_rules: 'restrictions', programs: 'programs', training_sessions: 'sessions',
-      session_exercises: 'sessionExercises', symptom_reports: 'symptoms', recommendation_audits: 'audits',
+      workout_order_events: 'workoutOrderEvents', session_exercises: 'sessionExercises', symptom_reports: 'symptoms', recommendation_audits: 'audits',
       user_exercise_calibrations: 'calibrations', session_exercise_substitution_events: 'substitutionEvents',
       plan_revisions: 'planRevisions', notebook_notes: 'notes', balance_suggestion_decisions: 'balanceDecisions',
       exercise_skip_events: 'skipEvents',
@@ -445,7 +447,7 @@ export class SyncEngine {
       }
     }
     const seIndex = new Map(snap.sessionExercises.map((se) => [se.id as string, { sessionId: se.session_id as string, exerciseId: se.exercise_slug as ExerciseId }]));
-    await db.transaction('rw', [db.profile, db.exerciseSettings, db.restrictions, db.symptoms, db.consents, db.programs, db.sessions, db.sessionExercises, db.sets, db.audits, db.meta, db.calibrations, db.substitutionEvents, db.outbox, db.conflicts, db.planRevisions, db.notes, db.balanceDecisions, db.skipEvents], async () => {
+    await db.transaction('rw', [db.profile, db.exerciseSettings, db.restrictions, db.symptoms, db.consents, db.programs, db.sessions, db.sessionExercises, db.sets, db.audits, db.meta, db.calibrations, db.substitutionEvents, db.outbox, db.conflicts, db.planRevisions, db.notes, db.balanceDecisions, db.skipEvents, db.workoutOrderEvents], async () => {
       for (const d of snap.deletedWorkouts ?? []) await purgeWorkout(db, d);
       const deleted = new Set((await deletedWorkouts(db)).map((d) => d.id));
       // A snapshot started before local deletion must not bring any of its children back.
@@ -516,6 +518,7 @@ export class SyncEngine {
       for (const old of beforeSkipEvents) if (wasSynced(old) && !skipIds.has(old.id) && sameValue(old, await db.skipEvents.get(old.id))) await db.skipEvents.delete(old.id);
       for (const r of snap.skipEvents) if (!pendingErase && !beforeSkipEvents.some((e) => e.id === r.id) && !(await db.skipEvents.get(r.id as string))) await db.skipEvents.put(skipEventFromRow(r));
       await cleanCalibrations(db);
+      for (const r of snap.workoutOrderEvents ?? []) if (!deleted.has(r.session_id as string) && !(await db.workoutOrderEvents.get(r.id as string))) await db.workoutOrderEvents.put(workoutOrderEventFromRow(r));
       await db.meta.put({ key: 'lastPullAt', value: this.ctx.clock.now() });
     });
     this.emit();

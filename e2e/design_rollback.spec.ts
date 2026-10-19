@@ -6,9 +6,9 @@ test('DES rollback: classic theme and functional set/card without migration', as
   await signUp(page, uniqueEmail('des-classic')); await onboard(page);
   await expect(page.locator('html')).toHaveAttribute('data-design', 'classic');
   expect(await page.locator('html').evaluate((el) => getComputedStyle(el).getPropertyValue('--accent').trim())).toBe('#0b5cad');
-  await page.getByRole('button', { name: 'Starta dagens pass' }).click(); await page.getByRole('button', { name: 'Starta', exact: true }).click();
-  await page.getByRole('button', { name: 'Klart, set 1' }).click(); await expect(page.getByRole('button', { name: 'Set 1 utfört. Ändra eller ångra' })).toBeVisible();
-  await page.getByRole('button', { name: 'Avsluta', exact: true }).click(); await page.getByRole('button', { name: 'Spara passet', exact: true }).click(); await page.getByRole('button', { name: 'Till Idag', exact: true }).click();
+  await page.getByRole('button', { name: 'Öppna passet' }).click(); await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
+  await page.getByRole('button', { name: 'Registrera set 1' }).click(); await expect(page.getByRole('button', { name: 'Set 1 utfört. Ändra eller ångra' })).toBeVisible();
+  await page.getByRole('button', { name: 'Avsluta', exact: true }).click(); await page.getByRole('button', { name: 'Avsluta och spara', exact: true }).click(); await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
   await page.getByRole('link', { name: 'Plan', exact: true }).click(); const head = page.locator('.plan-row-head').first();
   await head.click(); await expect(page.getByLabel('Egen anteckning (privat)')).toBeVisible();
   await head.click(); await expect(page.getByLabel('Egen anteckning (privat)')).not.toBeVisible();

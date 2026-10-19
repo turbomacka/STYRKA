@@ -45,7 +45,7 @@ test('slow first fetch and server failure never turn an existing account into a 
     await expect(second.getByRole('heading', { name: 'Vi kunde inte hämta dina uppgifter' })).toBeVisible();
     await second.unroute('**/rest/v1/profiles?*');
     await second.getByRole('button', { name: 'Försök igen' }).click();
-    await expect(second.getByRole('heading', { name: 'Idag', exact: true })).toBeVisible();
+    await expect(second.getByRole('heading', { name: 'Min träningsplan', exact: true })).toBeVisible();
     await expect(second.getByText('Intro 1/4')).toHaveCount(0);
   } finally { release(); await fresh.close(); }
 });
@@ -55,10 +55,10 @@ test('401 during sync offers reauthentication and preserves a logged set through
   await signUp(page, email);
   await onboard(page);
   await expect(page.getByText('Synkat', { exact: true })).toBeVisible({ timeout: 20_000 });
-  await page.getByRole('button', { name: 'Starta dagens pass' }).click();
-  await page.getByRole('button', { name: 'Starta', exact: true }).click();
+  await page.getByRole('button', { name: 'Öppna passet' }).click();
+  await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
   await page.route('**/rest/v1/rpc/apply_set_mutation', (route) => route.fulfill({ status: 401, contentType: 'application/json', body: '{"code":"PGRST301","message":"JWT expired"}' }));
-  await page.getByRole('button', { name: 'Klart, set 1' }).click();
+  await page.getByRole('button', { name: 'Registrera set 1' }).click();
   await expect(page.getByRole('button', { name: 'Set 1 utfört. Ändra eller ångra' })).toBeVisible();
   const sessionUrl = page.url();
   await page.goto('/synk');

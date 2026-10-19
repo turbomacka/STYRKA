@@ -31,7 +31,8 @@ it('real sync preserves per-side feedback, removal, snapshots and timestamps; ow
   await rateSet(c1,set.id,null,'left');expect(await s1.syncNow()).toMatchObject({rejected:0,conflicts:0});await s2.pull();
   const after=(await c2.db.sets.get(set.id))!;
   expect(after.detail?.performances.map((p)=>p.effort)).toEqual(['easy',null]);
-  expect(after.detail?.rests).toEqual(before.detail?.rests);
+  expect(after.detail!.rests[0].startedAt).toBe(before.detail!.rests[0].startedAt);
+  expect(after.detail!.rests[0].recommendedSeconds).toBe(before.detail!.rests[0].recommendedSeconds-30);
   expect(after.detail?.performances.map((p)=>[p.id,p.completedAt,p.equipment])).toEqual(before.detail?.performances.map((p)=>[p.id,p.completedAt,p.equipment]));
   const other=new SupabaseTransport(b.client);
   expect((await other.applySetMutation(randomUUID(),set.id,after.serverRevision,{perceivedEffort:'maximal'}))).toMatchObject({status:'rejected',code:'NOT_FOUND'});

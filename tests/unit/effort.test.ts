@@ -141,7 +141,9 @@ it('failed effort writes roll back without losing the completed set or touching 
   await expect(rateSet(h.ctx,id,'maximal')).rejects.toThrow();
   expect(await h.db.sets.get(id)).toEqual(before);
   await rateSet(h.ctx,id,'maximal');
-  expect((await h.db.sets.get(id))?.detail?.rests).toEqual(before?.detail?.rests);
+  const rest=(await h.db.sets.get(id))!.detail!.rests[0];
+  expect(rest.startedAt).toBe(before!.detail!.rests[0].startedAt);
+  expect(rest.recommendedSeconds).toBe(before!.detail!.rests[0].recommendedSeconds+30);
 });
 
 it('legacy answers remain usable, clear correctly in conflicts, and high-rep max is not silently estimated', async () => {

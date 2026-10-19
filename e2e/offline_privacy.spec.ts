@@ -32,26 +32,26 @@ test('29: flygplansläge hela passet + omladdning offline + återanslutning ⇒ 
   await signUp(page, email);
   await onboard(page);
   await swReady(page);
-  await expect(page.getByRole('heading', { name: 'Idag' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Min träningsplan' })).toBeVisible();
   await expect(page.getByText('Synkat')).toBeVisible({ timeout: 20_000 });
 
   await context.setOffline(true);
-  await page.getByRole('button', { name: 'Starta dagens pass' }).click();
-  await page.getByRole('button', { name: 'Starta', exact: true }).click();
+  await page.getByRole('button', { name: 'Öppna passet' }).click();
+  await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
   await expect(page.getByText('Du tränar offline.')).toBeVisible();
-  await page.getByRole('button', { name: 'Klart, set 1' }).click();
-  await page.getByRole('button', { name: 'Klart, set 2' }).click();
+  await page.getByRole('button', { name: 'Registrera set 1' }).click();
+  await page.getByRole('button', { name: 'Registrera set 2' }).click();
   await page.getByRole('button', { name: 'Nästa övning' }).click();
-  await page.getByRole('button', { name: 'Klart, set 1' }).click();
-  await expect(page.getByText('Sparas när du är uppkopplad').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Registrera set 1' }).click();
+  await expect(page.getByText('Du tränar offline.')).toBeVisible();
   await shot('G3-offline-set-sparade-lokalt');
 
   // Oväntad omstart offline: appen laddas från service worker, passet finns kvar.
   await page.reload();
   await expect(page.getByRole('button', { name: 'Set 1 utfört. Ändra eller ångra' })).toBeVisible();
   await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
-  await page.getByRole('button', { name: 'Spara passet' }).click();
-  await page.getByRole('button', { name: 'Till Idag' }).click();
+  await page.getByRole('button', { name: 'Avsluta och spara' }).click();
+  await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
   await expect(page.getByText(/sparade lokalt/)).toBeVisible();
   await shot('G3-offline-idag-ko');
 
@@ -76,9 +76,9 @@ test('32: utloggning med osynkade data varnar; nästa användare på enheten ser
   const userA = (await q<{ id: string }>(`select id from auth.users where email=$1`, [emailA]))[0].id;
   // Servern onåbar (motsvarar dålig täckning): skrivningar stannar i den lokala kön.
   await context.route('**/rest/v1/**', (r) => r.abort());
-  await page.getByRole('button', { name: 'Starta dagens pass' }).click();
-  await page.getByRole('button', { name: 'Starta', exact: true }).click();
-  await page.getByRole('button', { name: 'Klart, set 1' }).click();
+  await page.getByRole('button', { name: 'Öppna passet' }).click();
+  await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
+  await page.getByRole('button', { name: 'Registrera set 1' }).click();
   await page.goto('/profil/data');
   await expect(page.getByText(/finns bara på den här enheten/)).toBeVisible();
   await shot('S15-utloggning-varning');

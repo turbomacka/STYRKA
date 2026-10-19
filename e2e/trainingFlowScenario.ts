@@ -2,55 +2,46 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, type BrowserContext, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 async function fits(page: Page) { expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true); }
-async function openEquipment(page: Page) {
-  const panel = page.locator('.equipment-panel');
-  if (!(await panel.getAttribute('open') !== null)) await panel.locator('summary').first().click();
-  return panel;
-}
-export async function runTrainingFlow(page: Page, context: BrowserContext, dir: string) {
+export async function runTrainingFlow(page: Page, context: BrowserContext, dir: string, offlineReload = true) {
   mkdirSync(dir, { recursive: true });
-  await page.getByRole('button',{ name: 'Starta dagens pass' }).click(); await page.getByRole('button',{ name: 'Starta', exact: true }).click();
+  await page.getByRole('button',{ name: 'Öppna passet' }).click(); await page.getByRole('button',{ name: 'Starta passet', exact: true }).click();
   await expect(page.locator('.train-head h1')).toContainText('Knäböj');
   await expect(page.getByRole('heading',{ name: /Uppvärmning/ })).toHaveCount(0);
-  const equipment = await openEquipment(page);
-  await equipment.getByText('Detaljer om utrustningen',{ exact:true }).click();
-  await equipment.getByLabel('Stångens egenvikt (kg), om känd').fill('20');
-  await equipment.getByRole('button',{ name:'Spara utförande och utrustning' }).click();
-  await expect(equipment.getByRole('status')).toHaveText(/Sparat/);
-  await equipment.locator('summary').first().click();
-  await page.getByText('Uppvärmning och inställningar',{ exact:true }).click();
+  await page.getByText('Uppvärmning och utförande',{exact:true}).click();
   await page.getByLabel('Visa uppvärmningsset',{ exact:true }).check();
   await expect(page.getByRole('heading',{ name:/Uppvärmning/ })).toBeVisible();
   const warm = page.getByRole('listitem',{ name:'Uppvärmning 1', exact:true });
-  await expect(warm).toBeVisible(); await warm.getByRole('button',{ name:'Klart, set 1', exact:true }).click();
+  await page.getByRole('button',{name:'Lägg till uppvärmningsset',exact:true}).click();
+  await expect(warm).toBeVisible();await warm.getByRole('button',{name:/Vikt set 1/}).click();await warm.getByLabel('Vikt (kg)',{exact:true}).fill('20');await warm.getByRole('button',{name:'Stäng',exact:true}).click();
+  await warm.getByRole('button',{ name:'Registrera set 1', exact:true }).click();
   await expect(warm.getByRole('button',{ name:'Set 1 utfört. Ändra eller ångra' })).toBeVisible();
   const working = page.getByRole('listitem',{ name:'Arbetsset 1', exact:true });
-  await working.getByRole('button',{ name:'Klart, set 1', exact:true }).click();
+  await working.getByRole('button',{ name:'Registrera set 1', exact:true }).click();
   await expect(page.locator('.train-head')).toContainText('1/');
   await page.evaluate(() => window.scrollTo(0,0));
   await page.screenshot({ path:`${dir}/warmup-light.png`, fullPage:true, scale:'css' });
   await page.getByLabel('Visa uppvärmningsset',{ exact:true }).uncheck();
   await expect(warm).toHaveCount(0);
+  await page.getByText('Uppvärmning och utförande',{exact:true}).click();
   await page.getByRole('button',{ name:'Nästa övning', exact:true }).click();
   await page.getByRole('button',{ name:'Nästa övning', exact:true }).click();
   await expect(page.locator('.train-head h1')).toContainText('Latsdrag');
-  const cable = await openEquipment(page);
-  await cable.getByRole('combobox',{ name:'Utförande', exact:true }).selectOption('sequential');
-  await cable.getByLabel('Namn på utrustning (valfritt)').fill('Kabelstation 1');
-  await cable.getByRole('button',{ name:'Spara utförande och utrustning' }).click();
-  await expect(cable.getByRole('status')).toHaveText(/Sparat/);
-  await cable.locator('summary').first().click();
+  await page.getByText('Uppvärmning och utförande',{exact:true}).click();
+  await page.getByText('Utförande och sida',{exact:true}).click();
+  await page.getByRole('combobox',{name:'Utförande',exact:true}).selectOption('sequential');
+  await page.getByText('Uppvärmning och utförande',{exact:true}).click();
+  const existingTimer=page.getByRole('region',{name:'Vilotimer'});if(await existingTimer.isVisible())await existingTimer.getByRole('button',{name:'Dölj timer'}).click();
   const first = page.getByRole('listitem',{ name:'Arbetsset 1', exact:true });
   await expect(first).toContainText('Höger');
   await first.getByRole('button',{ name:/Vikt set 1:/ }).click();
   await first.getByLabel('Vikt (kg)',{ exact:true }).fill('30');
   await first.getByLabel('Repetitioner',{ exact:true }).fill('10');
-  await first.getByRole('button',{ name:'Klart', exact:true }).click();
+  await first.getByRole('button',{name:'Stäng',exact:true}).click();await first.getByRole('button',{name:'Registrera set 1',exact:true}).click();
   await expect(first).toContainText('Vänster');
   await expect(page.getByRole('region',{ name:'Vilotimer' })).toHaveCount(0);
   await first.getByRole('button',{ name:/Repetitioner set 1:/ }).click();
   await first.getByLabel('Repetitioner',{ exact:true }).fill('8');
-  await first.getByRole('button',{ name:'Klart', exact:true }).click();
+  await first.getByRole('button',{name:'Stäng',exact:true}).click();await first.getByRole('button',{name:'Registrera set 1',exact:true}).click();
   await expect(first).toContainText('Båda sidor klara');
   await page.locator('.toast').getByRole('button',{ name:'Ångra', exact:true }).click();
   await expect(first).not.toContainText('Båda sidor klara');
@@ -58,7 +49,7 @@ export async function runTrainingFlow(page: Page, context: BrowserContext, dir: 
   await expect(first.getByRole('button',{ name:'Ändra vänster, set 1' })).toHaveCount(0);
   await first.getByRole('button',{ name:/Repetitioner set 1:/ }).click();
   await first.getByLabel('Repetitioner',{ exact:true }).fill('8');
-  await first.getByRole('button',{ name:'Klart', exact:true }).click();
+  await first.getByRole('button',{name:'Stäng',exact:true}).click();await first.getByRole('button',{name:'Registrera set 1',exact:true}).click();
   await expect(first).toContainText('Båda sidor klara');
   const timer = page.getByRole('region',{ name:'Vilotimer' }); await expect(timer).toBeVisible();
   await page.evaluate(() => window.scrollTo(0,0));
@@ -66,14 +57,14 @@ export async function runTrainingFlow(page: Page, context: BrowserContext, dir: 
   const before = Number((await timer.getByRole('timer').getAttribute('aria-label'))!.split(' ')[0]);
   await timer.getByRole('button',{ name:'+30 s', exact:true }).click();
   await expect.poll(async () => Number((await timer.getByRole('timer').getAttribute('aria-label'))!.split(' ')[0])).toBeGreaterThan(before + 20);
-  await page.evaluate(async () => { await navigator.serviceWorker.ready; });
-  await context.setOffline(true); await page.reload();
+  if(offlineReload){await page.evaluate(async () => { await navigator.serviceWorker.ready; });await context.setOffline(true);}
+  await page.reload();
   // The workout resumes on the first exercise. Return to the cable; its timestamp-based timer survives.
-  await page.getByRole('button',{ name:'Nästa övning', exact:true }).click(); await page.getByRole('button',{ name:'Nästa övning', exact:true }).click();
+  await expect(page.locator('.train-head h1')).toContainText('Latsdrag');
   await expect(first).toContainText('10 reps'); await expect(first).toContainText('8 reps'); await expect(timer).toBeVisible();
   await timer.getByRole('button',{ name:'Börja nästa set', exact:true }).click();
   await expect(timer).toHaveCount(0);
-  await expect(page.getByRole('listitem',{ name:'Arbetsset 2', exact:true })).toContainText('Pågår');
+  await page.getByRole('listitem',{name:'Arbetsset 2',exact:true}).getByText('Fler setval',{exact:true}).click();await expect(page.getByRole('listitem',{ name:'Arbetsset 2', exact:true })).toContainText('Pågår');
   await page.emulateMedia({ colorScheme:'dark', reducedMotion:'reduce' });
   await fits(page);
   const a11y = await new AxeBuilder({ page }).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();
@@ -81,10 +72,10 @@ export async function runTrainingFlow(page: Page, context: BrowserContext, dir: 
   await page.evaluate(() => document.documentElement.style.fontSize = '200%'); await fits(page);
   await page.evaluate(() => document.documentElement.style.fontSize = '');
   await page.evaluate(() => window.scrollTo(0,0));
-  await page.screenshot({ path:`${dir}/unilateral-offline.png`, fullPage:true, scale:'css' });
+  await page.screenshot({ path:`${dir}/unilateral-${offlineReload?'offline':'online-reload'}.png`, fullPage:true, scale:'css' });
   await context.setOffline(false);
-  await page.getByRole('button',{ name:'Avsluta', exact:true }).click(); await page.getByRole('button',{ name:'Spara passet', exact:true }).click();
-  await page.getByRole('button',{ name:'Till Idag', exact:true }).click(); await page.getByRole('link',{ name:'Utveckling', exact:true }).click();
+  await page.getByRole('button',{ name:'Avsluta', exact:true }).click(); await page.getByRole('button',{ name:'Avsluta och spara', exact:true }).click();
+  await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible(); await page.getByRole('link',{ name:'Utveckling', exact:true }).click();
   await page.getByText('Set, sidor och uppvärmning',{ exact:true }).click();
   await expect(page.locator('.training-history').first()).toContainText('Uppvärmning');
   await page.getByRole('combobox',{ name:'Övning', exact:true }).selectOption('lat_pulldown');
@@ -92,7 +83,7 @@ export async function runTrainingFlow(page: Page, context: BrowserContext, dir: 
   await expect(page.getByLabel('Jämförelseserie')).toContainText('Höger'); await expect(page.getByLabel('Jämförelseserie')).toContainText('Vänster');
   await page.getByLabel('Välj datapunkt').selectOption('0');
   await expect(page.locator('.chart-tooltip')).toContainText('Höger · 10 reps');
-  await page.getByRole('combobox',{ name:'Jämförelseserie', exact:true }).selectOption({ label:'Kabelstation 1 · En sida i taget · Vänster' });
+  const left=await page.getByLabel('Jämförelseserie').locator('option').filter({hasText:/Vänster/}).first().getAttribute('value');await page.getByLabel('Jämförelseserie').selectOption(left!);
   // Wait for the new asynchronous series to replace the selected right-side point.
   await expect(page.locator('.chart-tooltip')).toContainText('Tryck på en punkt');
   await page.getByLabel('Välj datapunkt').selectOption('0');

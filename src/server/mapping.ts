@@ -484,3 +484,10 @@ export function substitutionEventFromRow(r: Record<string, unknown>): LocalSubst
     syncState: 'synced',
   };
 }
+
+export function workoutOrderEventRow(userId: string, e: import('../storage/db').LocalWorkoutOrderEvent): Record<string, unknown> {
+  return { id:e.id,user_id:userId,session_id:e.sessionId,session_exercise_id:e.sessionExerciseId,before_id:e.beforeId,created_at:e.createdAt };
+}
+export function workoutOrderEventFromRow(r: Record<string, unknown>): import('../storage/db').LocalWorkoutOrderEvent {
+  return { id:r.id as string,sessionId:r.session_id as string,sessionExerciseId:r.session_exercise_id as string,beforeId:r.before_id as string|null,createdAt:r.created_at as string,syncState:'synced' };
+}

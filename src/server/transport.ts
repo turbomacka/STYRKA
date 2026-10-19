@@ -34,6 +34,7 @@ export type ProfilePatchResult = { status: 'applied'; revision: number } | { sta
 
 /** Rådata från servern (snake_case-rader) för hydrering av ny enhet. */
 export type ServerSnapshot = {
+  workoutOrderEvents?: Record<string, unknown>[];
   skipEvents?: Record<string, unknown>[];
   deletedWorkouts?: Array<{ id: string; sequence: number | null }>;
   profile: Record<string, unknown> | null;

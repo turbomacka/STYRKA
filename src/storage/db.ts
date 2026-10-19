@@ -263,6 +263,8 @@ export type LocalSkipEvent = {
   createdAt: string; syncState: SyncState;
 };
 
+export type LocalWorkoutOrderEvent = { id: string; sessionId: string; sessionExerciseId: string; beforeId: string | null; createdAt: string; syncState: SyncState };
+
 export type OutboxOp =
   | { type: 'exerciseConfig'; exerciseId: string; configuration: import('../domain/trainingFlow').ExerciseConfiguration }
   | { type: 'deleteWorkout'; sessionId: string; sequence: number | null }
@@ -274,7 +276,7 @@ export type OutboxOp =
   | { type: 'rpc'; name: 'erase_health_data' }
   | { type: 'note'; noteId: string; row: Record<string, unknown>; baseRevision?: number };
 
-export type ServerTable = 'exercise_skip_events' | 'profiles' | 'user_exercise_profiles' | 'health_consents' | 'restriction_rules' | 'programs' | 'training_sessions' | 'session_exercises' | 'symptom_reports' | 'recommendation_audits' | 'user_exercise_calibrations' | 'session_exercise_substitution_events' | 'plan_revisions' | 'notebook_notes' | 'balance_suggestion_decisions';
+export type ServerTable = 'workout_order_events' | 'exercise_skip_events' | 'profiles' | 'user_exercise_profiles' | 'health_consents' | 'restriction_rules' | 'programs' | 'training_sessions' | 'session_exercises' | 'symptom_reports' | 'recommendation_audits' | 'user_exercise_calibrations' | 'session_exercise_substitution_events' | 'plan_revisions' | 'notebook_notes' | 'balance_suggestion_decisions';
 
 export type OutboxEntry = {
   seq?: number;
@@ -301,6 +303,7 @@ export type ConflictEntry = {
 export type MetaEntry = { key: string; value: unknown };
 
 export class StyrkaDB extends Dexie {
+  workoutOrderEvents!: Table<LocalWorkoutOrderEvent, string>;
   meta!: Table<MetaEntry, string>;
   profile!: Table<LocalProfile, string>;
   exerciseSettings!: Table<LocalExerciseSettings, string>;
@@ -354,6 +357,7 @@ export class StyrkaDB extends Dexie {
       balanceDecisions: 'id, candidateKey, basisKey',
     });
     this.version(5).stores({ skipEvents: 'id, sessionId, sessionExerciseId, createdAt' });
+    this.version(6).stores({ workoutOrderEvents: 'id, sessionId, createdAt' });
   }
 }
 

@@ -87,7 +87,7 @@ export class FakeServer implements SyncTransport {
     if (!ledger.has(sessionId)) ledger.set(sessionId, { id: sessionId, sequence });
     const exIds = new Set([...this.table('session_exercises').values()].filter((e) => e.session_id === sessionId).map((e) => e.id));
     for (const [id, s] of this.sets) if (exIds.has(s.sessionExerciseId)) this.sets.delete(id);
-    for (const table of ['session_exercises', 'recommendation_audits', 'notebook_notes', 'session_exercise_substitution_events', 'exercise_skip_events']) {
+    for (const table of ['session_exercises', 'recommendation_audits', 'notebook_notes', 'session_exercise_substitution_events', 'exercise_skip_events', 'workout_order_events']) {
       for (const [id, r] of this.table(table)) if (r.session_id === sessionId) this.table(table).delete(id);
     }
     this.table('training_sessions').delete(sessionId);
@@ -167,6 +167,7 @@ export class FakeServer implements SyncTransport {
     }));
     return {
       skipEvents: rows('exercise_skip_events'),
+      workoutOrderEvents: rows('workout_order_events'),
       deletedWorkouts: rows('deleted_training_sessions') as Array<{ id: string; sequence: number | null }>,
       profile: this.profiles.get(userId) ?? null,
       equipment: this.equipment.get(userId) ?? [],

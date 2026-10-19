@@ -29,6 +29,10 @@ export type SetPerformance = {
   equipment: EquipmentProfile; executionMode: ExecutionMode; comparisonKey: string;
 };
 export type RestRecord = {
+  initialRecommendedSeconds?: number;
+  recommendationInput?: import('./restPolicy').RestInput;
+  userAdjustmentSeconds?: number;
+  recommendationUpdates?: Array<{ at: string; seconds: number; reasons: string[] }>;
   id: string; precedingPerformanceId: string; followingPerformanceId: string | null;
   followingSetId: string | null; type: 'between_sides' | 'between_sets' | 'warmup' | 'before_work';
   startedAt: string; endedAt: string | null; recommendedSeconds: number; actualSeconds: number | null;
@@ -36,6 +40,7 @@ export type RestRecord = {
   outcome: 'active' | 'started' | 'unobserved' | 'dismissed' | 'session_ended';
 };
 export type SetDetail = {
+  plannedSides?: Partial<Record<PerformanceSide, { grams: number | null; reps: number | null; seconds: number | null; secondLoad: number | null }>>;
   targetLoadValue?: number | null; targetSecondLoadValue?: number | null;
   version: 1; configuration: ExerciseConfiguration; performances: SetPerformance[]; rests: RestRecord[];
   aborted: boolean;

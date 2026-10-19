@@ -33,7 +33,9 @@ test('staging: integrated training, offline reload and exact remote side/warmup/
     await page.getByRole('button', { name: 'Logga in', exact: true }).click();
     await expect(page.getByText('Intro 1/4')).toBeVisible({ timeout: 20000 });
     await onboard(page);
-    await runTrainingFlow(page, context, `docs/evidence/training-flow/staging/${info.project.name}`);
+    const offlineReload = info.project.name !== 'staging-iphone';
+    if (!offlineReload) info.annotations.push({ type: 'limitation', description: 'Windows WebKit uses online reload; physical iPhone offline QA remains.' });
+    await runTrainingFlow(page, context, `docs/evidence/ux-2026-10-18/published/training-flow/staging/${info.project.name}`, offlineReload);
     expect((await client.auth.signInWithPassword({ email, password })).error).toBeNull();
     await expect.poll(async () => {
       const r = await client.from('training_sets').select('kind,status,detail');
@@ -50,7 +52,7 @@ test('staging: integrated training, offline reload and exact remote side/warmup/
       { side: 'right', load: 30, reps: 10 }, { side: 'left', load: 30, reps: 8 },
     ]);
     expect(new Set(cable.performances.map((p) => p.id)).size).toBe(2);
-    expect(cable.performances.every((p) => p.equipment.name === 'Kabelstation 1')).toBe(true);
+    expect(cable.performances.every((p) => p.equipment.unit === 'kg')).toBe(true);
     expect(cable.rests).toHaveLength(1);
     expect(cable.rests[0]).toMatchObject({ type: 'between_sets', adjustmentSeconds: 30, outcome: 'started' });
     expect(cable.rests[0].actualSeconds).toBeGreaterThanOrEqual(0);
@@ -59,7 +61,7 @@ test('staging: integrated training, offline reload and exact remote side/warmup/
     expect(profile.error).toBeNull();
     const prefs = profile.data!.training_preferences as TrainingPreferences;
     expect(prefs.showWarmupSets).toBe(false);
-    expect(prefs.equipmentProfiles.some((p) => p.name === 'Kabelstation 1')).toBe(true);
+    expect(prefs.equipmentProfiles).toEqual([]);
     expect((await client.from('training_sessions').select('status')).data).toEqual([{ status: 'partial' }]);
     expect(cspErrors).toEqual([]);
     expect(pageErrors).toEqual([]);

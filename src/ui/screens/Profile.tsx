@@ -6,7 +6,7 @@ import type { Experience } from '../../domain/decision_engine';
 import type { ExerciseId } from '../../domain/catalog';
 import { ALL_EQUIPMENT, EQUIPMENT_LABEL_SV, OFFERED_CATALOG, exercise, type EquipmentSlug } from '../../domain/catalog';
 import { formatKg, parseKg } from '../../domain/units';
-import { patchProfile, removePermanentSubstitution, setActiveEquipmentProfile, setStrengthInputs, strengthInputsFromSettings, updateExerciseSettings } from '../../application/profile';
+import { patchProfile, removePermanentSubstitution, setStrengthInputs, strengthInputsFromSettings, updateExerciseSettings } from '../../application/profile';
 import { Banner, PageHeader, Segmented, Stepper } from '../components/common';
 import { FLAGS, useServices } from '../services';
 import { EXPERIENCE_SV } from '../strings';
@@ -34,7 +34,6 @@ export function Profile() {
   const pull = (p.substitutions.lat_pulldown ?? 'lat_pulldown') as 'lat_pulldown' | 'assisted_pullup' | 'pullup';
   // Permanenta byten ("Använd framöver"); vertikalt drag har egen kontroll ovan.
   const permanent = (Object.entries(p.substitutions) as Array<[ExerciseId, ExerciseId | undefined]>).filter(([from, to]) => to && from !== 'lat_pulldown') as Array<[ExerciseId, ExerciseId]>;
-  const machines = Object.entries(p.equipmentProfiles ?? {}) as Array<[ExerciseId, string]>;
   const act = async (fn: () => Promise<unknown>, ok: string) => {
     try {
       await fn();
@@ -55,7 +54,7 @@ export function Profile() {
         <Segmented label="Erfarenhet" value={p.experience} onChange={(v: Experience) => save({ experience: v })} options={(Object.keys(EXPERIENCE_SV) as Experience[]).map((v) => ({ value: v, label: EXPERIENCE_SV[v] }))} />
         <Segmented label="Vertikalt drag" value={pull} onChange={(v) => save({ substitutions: { ...p.substitutions, lat_pulldown: v === 'lat_pulldown' ? undefined : v } })} options={[{ value: 'lat_pulldown', label: 'Latsdrag' }, { value: 'assisted_pullup', label: 'Assisterade chins' }, { value: 'pullup', label: 'Chins' }]} />
       </div>
-      {FLAGS.substitutionV2 && (permanent.length > 0 || machines.length > 0) && (
+      {FLAGS.substitutionV2 && (permanent.length > 0) && (
         <section className="card stack" aria-labelledby="bytta-ovningar">
           <h2 id="bytta-ovningar">Bytta övningar</h2>
           <p className="small muted">Gäller kommande pass. Tidigare pass och din historik ändras inte.</p>
@@ -68,20 +67,6 @@ export function Profile() {
                   </span>
                   <button type="button" className="btn" onClick={() => act(() => removePermanentSubstitution(ctx, from), `${exercise(from).nameSv} är återställd från nästa pass.`)}>
                     Återställ {exercise(from).nameSv.toLowerCase()}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {machines.length > 0 && (
-            <ul className="list" aria-label="Maskinprofiler">
-              {machines.map(([ex, key]) => (
-                <li key={ex} className="row spread wrap">
-                  <span>
-                    {exercise(ex).nameSv}: maskin <strong>{key}</strong>
-                  </span>
-                  <button type="button" className="btn" onClick={() => act(() => setActiveEquipmentProfile(ctx, ex, 'default'), 'Standardmaskinen används från nästa pass.')}>
-                    Använd standardmaskin
                   </button>
                 </li>
               ))}

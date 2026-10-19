@@ -74,7 +74,7 @@ describe('offline local-first', () => {
     expect(await h2.db.outbox.count()).toBe(0);
     const serverDone = [...server.sets.values()].filter((x) => x.status === 'done');
     expect(serverDone.length).toBe(5);
-    expect(new Set([...server.sets.keys()])).toEqual(new Set(toDo.map((x) => x.id)));
+    expect(new Set([...server.sets.keys()])).toEqual(new Set(sets.map((x) => x.id)));
     expect(server.table('training_sessions').get(s.id)?.status).toBe('partial');
   });
 
@@ -118,11 +118,11 @@ describe('offline local-first', () => {
     B.db = bDb;
     const bSync = new SyncEngine(B.ctx);
     await bSync.pull();
-    expect((await bDb.sets.get(set.id))?.serverRevision).toBe(1);
+    expect((await bDb.sets.get(set.id))?.serverRevision).toBe(2);
     // B ändrar online, A ändrar offline-baserat på gammal revision.
     await editSet(B.ctx, set.id, { actualReps: 6 });
     await bSync.syncNow();
-    expect(server.sets.get(set.id)?.revision).toBe(2);
+    expect(server.sets.get(set.id)?.revision).toBe(3);
     await editSet(A.ctx, set.id, { actualReps: 4 });
     const r = await A.sync.syncNow();
     expect(r.conflicts).toBe(1);
@@ -140,7 +140,7 @@ describe('offline local-first', () => {
     // Välj "min version".
     await A.sync.resolveConflict(conflicts[0].id, 'mine');
     await A.sync.syncNow();
-    expect(server.sets.get(set.id)).toMatchObject({ actualReps: 4, revision: 3 });
+    expect(server.sets.get(set.id)).toMatchObject({ actualReps: 4, revision: 4 });
     expect(await A.sync.conflicts()).toHaveLength(0);
     // Ny konflikt: välj serverns version.
     await editSet(B.ctx, set.id, { actualReps: 7 }); // B bygger på rev 2 ⇒ konflikt på B
@@ -148,7 +148,7 @@ describe('offline local-first', () => {
     const bc = await bSync.conflicts();
     expect(bc).toHaveLength(1);
     await bSync.resolveConflict(bc[0].id, 'server');
-    expect((await bDb.sets.get(set.id))).toMatchObject({ actualReps: 4, serverRevision: 3, syncState: 'synced' });
+    expect((await bDb.sets.get(set.id))).toMatchObject({ actualReps: 4, serverRevision: 4, syncState: 'synced' });
     expect(server.sets.get(set.id)?.actualReps).toBe(4);
   });
 
@@ -176,7 +176,7 @@ describe('offline local-first', () => {
     const undone = await undoSet(h.ctx, set.id);
     expect([undone.status, undone.actualReps, undone.occurredAt]).toEqual(['planned', null, null]);
     await h.sync.syncNow();
-    expect(h.server.sets.get(set.id)).toMatchObject({ status: 'planned', actualReps: null, revision: 2 });
+    expect(h.server.sets.get(set.id)).toMatchObject({ status: 'planned', actualReps: null, revision: 3 });
     await finishSession(h.ctx, s.id, { status: 'partial' });
     const next = await previewNext(h.ctx);
     // Ingen exponering registrerad ⇒ rotationen flyttas inte (inget utfört arbetsset).

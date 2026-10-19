@@ -31,6 +31,8 @@ export type ExportBundle = {
   /** Tillägg ÄA-BAL-001: dina beslut om balansförslag. */
   balanceDecisions: unknown[];
   skippedExerciseDecisions: unknown[];
+  workoutOrderEvents: unknown[];
+  workoutFeedback: unknown[];
 };
 
 const strip = <T extends { syncState?: unknown }>(x: T) => {
@@ -48,7 +50,7 @@ export async function exportJson(ctx: AppContext): Promise<ExportBundle> {
     db.restrictions.toArray(),
     db.symptoms.toArray(),
     db.programs.toArray(),
-    db.sessions.orderBy('startedAt').toArray(),
+    db.sessions.toArray(),
     db.sessionExercises.toArray(),
     db.sets.toArray(),
     db.audits.toArray(),
@@ -72,7 +74,7 @@ export async function exportJson(ctx: AppContext): Promise<ExportBundle> {
     restrictions: restrictions.map(strip),
     symptomReports: symptoms.map(strip),
     programs: programs.map(strip),
-    sessions: sessions.map((s) => ({
+    sessions: sessions.sort((a,b)=>(a.startedAt??a.clientCreatedAt).localeCompare(b.startedAt??b.clientCreatedAt)).map((s) => ({
       ...strip(s),
       exercises: exs
         .filter((e) => e.sessionId === s.id)
@@ -86,6 +88,8 @@ export async function exportJson(ctx: AppContext): Promise<ExportBundle> {
     planRevisions: revisions.sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(strip),
     balanceDecisions: balanceDecisions.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)).map(strip),
     skippedExerciseDecisions: (await db.skipEvents.toArray()).map(strip),
+    workoutOrderEvents: (await db.workoutOrderEvents.toArray()).map(strip),
+    workoutFeedback: (await db.meta.where('key').startsWith('workout-feedback:').toArray()).map((x)=>x.value),
   };
 }
 

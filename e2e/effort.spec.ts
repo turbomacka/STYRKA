@@ -5,13 +5,13 @@ import { onboard, signUp, uniqueEmail } from './helpers';
 
 test('optional set feelings survive edits and offline reload; initial strength is a separate reference', async ({page,context},info) => {
   test.setTimeout(120_000);
-  const dir=`docs/evidence/effort/${info.project.name}`; mkdirSync(dir,{recursive:true});
+  const dir=`docs/evidence/ux-2026-10-18/effort/${info.project.name}`; mkdirSync(dir,{recursive:true});
   await signUp(page,uniqueEmail('effort')); await onboard(page);
-  await page.getByRole('button',{name:'Starta dagens pass'}).click();
-  await page.getByRole('button',{name:'Starta',exact:true}).click();
+  await page.getByRole('button',{name:'Öppna passet'}).click();
+  await page.getByRole('button',{name:'Starta passet',exact:true}).click();
   const first=page.getByRole('listitem',{name:'Arbetsset 1',exact:true});
   const second=page.getByRole('listitem',{name:'Arbetsset 2',exact:true});
-  await first.getByRole('button',{name:'Klart, set 1',exact:true}).click();
+  await first.getByRole('button',{name:'Registrera set 1',exact:true}).click();
   const feedback=first.getByRole('group',{name:'Hur kändes setet? Set 1',exact:true});
   await expect(first.getByRole('button',{name:'Set 1 utfört. Ändra eller ångra'})).toBeVisible();
   await expect(feedback.locator('[aria-pressed]')).toHaveCount(5);
@@ -35,14 +35,14 @@ test('optional set feelings survive edits and offline reload; initial strength i
   // Correcting the actual result asks again rather than reusing an old feeling.
   await first.getByRole('button',{name:'Set 1 utfört. Ändra eller ångra'}).click();
   await first.getByLabel('Vikt (kg)',{exact:true}).fill('75');
-  await first.getByRole('button',{name:'Ändra set',exact:true}).click();
+  await first.getByRole('button',{name:'Stäng',exact:true}).click();
   await expect(feedback.locator('[aria-pressed="true"]')).toHaveCount(0);
   await feedback.getByRole('button',{name:'Senare',exact:true}).click();
   // The explicit max answer applies only to this actual 80 kg x 6 set (96 kg e1RM).
   await second.getByRole('button',{name:/Vikt set 2:/}).click();
   await second.getByLabel('Vikt (kg)',{exact:true}).fill('80');
   await second.getByLabel('Repetitioner',{exact:true}).fill('6');
-  await second.getByRole('button',{name:'Klart',exact:true}).click();
+  await second.getByRole('button',{name:'Stäng',exact:true}).click();await second.getByRole('button',{name:'Registrera set 2',exact:true}).click();
   await second.getByRole('button',{name:/Maxansträngning/}).click();
   await expect(second).toContainText('Känsla: Maxansträngning');
   await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
@@ -56,8 +56,8 @@ test('optional set feelings survive edits and offline reload; initial strength i
   await expect(second).toContainText('Känsla: Maxansträngning');
   await context.setOffline(false);
   await page.getByRole('button',{name:'Avsluta',exact:true}).click();
-  await page.getByRole('button',{name:'Spara passet',exact:true}).click();
-  await page.getByRole('button',{name:'Till Idag',exact:true}).click();
+  await page.getByRole('button',{name:'Avsluta och spara',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
   await page.getByRole('link',{name:'Utveckling',exact:true}).click();
   await expect(page.locator('.latest-strength')).toContainText('Senaste maxskattning: 96 kg');
   await expect(page.locator('.latest-strength')).toContainText('Från registrerat set');

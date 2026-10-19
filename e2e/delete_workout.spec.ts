@@ -5,14 +5,12 @@ import { onboard, signUp, uniqueEmail } from './helpers';
 test('radera registrerat pass: avbryt, bekräfta offline, historik och omladdning', async ({ page, context }) => {
   await signUp(page, uniqueEmail('delete'));
   await onboard(page);
-  await page.getByRole('link', { name: 'Visa hela planen' }).click();
-  await page.getByRole('button', { name: /^Pass 1 · / }).click();
   await page.getByRole('button', { name: 'Öppna passet' }).click();
-  await page.getByRole('button', { name: 'Starta', exact: true }).click();
-  await page.getByRole('button', { name: 'Klart, set 1' }).click();
+  await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
+  await page.getByRole('button', { name: 'Registrera set 1' }).click();
   await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
-  await page.getByRole('button', { name: 'Spara passet' }).click();
-  await page.getByRole('button', { name: 'Till Idag' }).click();
+  await page.getByRole('button', { name: 'Avsluta och spara' }).click();
+  await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
   await page.getByRole('link', { name: 'Plan', exact: true }).click();
   await page.getByRole('radio', { name: 'Genomförda' }).click();
   await page.getByRole('button', { name: /^Pass 1 · / }).click();

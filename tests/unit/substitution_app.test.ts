@@ -92,7 +92,7 @@ describe('övningsbyte i pågående pass', () => {
     // Utfört knäböjsset ligger kvar på knäböj, oförändrat.
     expect(await h.db.sets.get(first.id)).toMatchObject({ exerciseId: 'squat', sessionExerciseId: squat.id, status: 'done' });
     // Oanvända planerade knäböjsset är borta lokalt (de hade aldrig synkats).
-    expect((await setsOf(h, squat)).map((x) => x.id)).toEqual([first.id]);
+    expect((await setsOf(h, squat)).filter((x)=>!x.deleted).map((x) => x.id)).toEqual([first.id]);
     const newSets = await setsOf(h, fs);
     expect(newSets.length).toBe(fs.snapshot.sets);
     expect(newSets.every((x) => x.exerciseId === 'front_squat' && x.targetGrams === 57_500)).toBe(true);
@@ -211,7 +211,7 @@ describe('övningsbyte i pågående pass', () => {
     expect((await A.sync.syncNow()).stoppedBy).toBeNull();
     const rb = await B.sync.syncNow();
     expect(rb.conflicts).toBe(1);
-    expect(server.sets.get(aSet.id)).toMatchObject({ actualReps: 5, revision: 1 });
+    expect(server.sets.get(aSet.id)).toMatchObject({ actualReps: 5, revision: 2 });
     expect([...server.table('session_exercises').values()].filter((r) => r.session_id === s.id && r.exercise_slug === 'front_squat')).toHaveLength(1);
     expect([...server.table('session_exercise_substitution_events').values()]).toHaveLength(1);
     const conflicts = await B.sync.conflicts();
@@ -245,8 +245,8 @@ describe('övningsbyte i pågående pass', () => {
     expect(await h2.db.outbox.count()).toBe(0);
     expect([...server.table('session_exercises').values()].filter((r) => r.exercise_slug === 'goblet_squat')).toHaveLength(1);
     expect([...server.table('session_exercise_substitution_events').keys()]).toEqual([event.id]);
-    expect([...server.sets.values()].filter((x) => x.sessionExerciseId === fs.id)).toHaveLength(1);
-    expect(server.sets.get(g1.id)).toMatchObject({ actualKg: '16.000', actualReps: 8, revision: 1 });
+    expect([...server.sets.values()].filter((x) => x.sessionExerciseId === fs.id && x.status==='done')).toHaveLength(1);
+    expect(server.sets.get(g1.id)).toMatchObject({ actualKg: '16.000', actualReps: 8, revision: 2 });
   });
 
   it('SUB14: hantelpress 24 kg per hand bevaras genom UI-data, synk, export och analys', async () => {
