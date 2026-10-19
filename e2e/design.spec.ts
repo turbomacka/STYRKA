@@ -19,6 +19,28 @@ for (const theme of ['light', 'dark'] as const) test(`DES mobile states and 200%
   await page.setViewportSize({ width: 390, height: 844 });
   await signUp(page, uniqueEmail('des')); await onboard(page);
   await accessible(page); await targets(page);
+  // State transitions must not briefly combine enabled text with a disabled background.
+  const action = page.getByRole('button', { name: 'Öppna passet', exact: true });
+  const ratios = await action.evaluate(async (el) => {
+    const button = el as HTMLButtonElement;
+    const luminance = (rgb: string) => {
+      const c = rgb.match(/[\d.]+/g)!.slice(0, 3).map(Number).map(v => v / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
+      return c[0] * .2126 + c[1] * .7152 + c[2] * .0722;
+    };
+    button.disabled = true;
+    // Finish any previous transition, then sample the entire enable transition.
+    button.getAnimations().forEach(a => a.finish());
+    void getComputedStyle(button).backgroundColor;
+    button.disabled = false;
+    const samples: number[] = [];
+    for (let i = 0; i < 10; i++) {
+      const s = getComputedStyle(button), a = luminance(s.color), b = luminance(s.backgroundColor);
+      samples.push((Math.max(a,b) + .05) / (Math.min(a,b) + .05));
+      await new Promise(requestAnimationFrame);
+    }
+    return samples;
+  });
+  expect(Math.min(...ratios), 'primary action contrast while enabling').toBeGreaterThanOrEqual(4.5);
   await page.evaluate(() => document.documentElement.style.fontSize = '200%'); await fits(page);
   await page.evaluate(() => document.documentElement.style.fontSize = '');
   await page.getByRole('button', { name: 'Öppna passet' }).click(); await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
@@ -48,6 +70,18 @@ for (const theme of ['light', 'dark'] as const) test(`DES mobile states and 200%
   // Test keyboard return focus explicitly; Safari does not focus buttons on a touch/click.
   await swap.focus(); await swap.press('Enter');
   const dialog = page.getByRole('dialog'); await expect(dialog).toBeVisible(); await accessible(page);
+  const startingOpacity = await dialog.evaluate(el => {
+    // Restart the real CSS animation so this also checks its first frame on slow CI.
+    const panel = el as HTMLElement;
+    panel.style.animation = 'none';
+    void getComputedStyle(panel).animationName;
+    panel.style.animation = '';
+    const animation = el.getAnimations().find(a => a instanceof CSSAnimation && a.animationName === 'sheet-enter');
+    if (!animation) return Number(getComputedStyle(el).opacity);
+    animation.pause(); animation.currentTime = 0;
+    const opacity = Number(getComputedStyle(el).opacity); animation.finish(); return opacity;
+  });
+  expect(startingOpacity, 'dialog text retains full contrast throughout entry').toBe(1);
   // Focus trapping is verified in desktop Chromium, not claimed as VoiceOver/Safari device QA.
   if (info.project.name === 'desktop-keyboard') {
     const buttons = dialog.locator('button:enabled'); await buttons.last().focus(); await page.keyboard.press('Tab');

@@ -144,6 +144,12 @@ npx playwright test e2e/substitution.spec.ts e2e/workout_ux.spec.ts e2e/training
 npx playwright test e2e/a11y.spec.ts --project=android-chrome --grep "axe" --repeat-each=2
 ```
 
+### Kontrast under tillståndsövergångar
+
+Den första GitHub-körningen inför publicering (39266110902) godkände bygg-/enhetstestjobbet och 61 databastester. Webbläsardelen gav 125 godkända, 11 avsiktligt hoppade och två kontrastfel. Felen berodde på att knappens bakgrund bytte färg långsammare än texten samt att panelens inanimation tonade ned hela innehållet. Ett nytt reproduktionstest mätte som lägst 1,17:1 under knappövergången. Färgbyte sker nu samtidigt och panelen behåller full opacitet; kort tryckrespons och förflyttning bevaras. Regressionstestet kontrollerar både övergångens bildrutor och panelens första animationsbildruta i båda teman.
+
+Efter rättningen: design- och tillgänglighetskörningen på tre plattformar gav **17 godkända, ett avsiktligt hoppat** (WebKit Tab-fokus). Typecheck och lint godkända.
+
 ### Interaktionskostnad
 
 Öppna och starta dagens pass: två tryck. Registrera föreslagna värden: ett tryck. Ändra vikt/reps: tryck på värdet och skriv; ingen sparknapp krävs. Byt känd övning: Byt övning, välj alternativ, bekräfta; första användningen kan behöva ett frivilligt bekantskapssvar. Hela passöversikten: ett tryck. Från aktiv träning till sparat pass och uppdaterad plan: Avsluta, Avsluta och spara; inga ytterligare grundflödesbekräftelser.

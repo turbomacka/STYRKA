@@ -89,7 +89,8 @@ html[data-design='refined'] {
   .btn.icon { flex: 0 0 var(--tap); }
   .btn.big { font-size: 1.125rem; }
   .btn:disabled { opacity: 1; background: var(--surface-raised); color: var(--text-secondary); border-color: var(--border); }
-  button, a.btn, summary { touch-action: manipulation; transition: transform var(--motion-release) var(--easing-standard), box-shadow var(--motion-release) var(--easing-standard), background-color var(--motion-release) var(--easing-standard); }
+  /* Switch text and background together so state changes preserve contrast. */
+  button, a.btn, summary { touch-action: manipulation; transition: transform var(--motion-release) var(--easing-standard), box-shadow var(--motion-release) var(--easing-standard); }
   [data-pressed='true']:not(:disabled) { transform: scale(.985); box-shadow: inset 0 0 0 100vmax var(--press-overlay); transition-duration: var(--motion-press); }
   :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
   input[aria-invalid='true'] { border: 2px solid var(--danger); }
@@ -172,7 +173,7 @@ html[data-design='refined'] {
     .set-row .val { font-size: 1.125rem; }
   }
 }
-@keyframes sheet-enter { from { opacity: .7; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes sheet-enter { from { transform: translateY(6px); } to { transform: none; } }
 @keyframes point-enter { from { opacity: 0; } to { opacity: .75; } }
 @media (max-width: 22rem) {
   html[data-design='refined'] {
