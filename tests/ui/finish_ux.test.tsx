@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, cleanup } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { harness, onboard, type Harness } from '../unit/appHarness';
-import { previewNext, recordPerformance, startSession } from '../../src/application/training';
+import { configureExercise, previewNext, recordPerformance, startSession } from '../../src/application/training';
 import { Finish } from '../../src/ui/screens/Finish';
 
 const mocked=vi.hoisted(()=>({services:{} as unknown,refresh:vi.fn()}));
@@ -11,13 +11,18 @@ vi.mock('../../src/application/trainingPlan',async(importOriginal)=>({...await i
 let h:Harness;
 afterEach(async()=>{cleanup();vi.clearAllMocks();h?.sync.dispose();await h?.db.delete();});
 
-it('H: planning failure after finish preserves committed training and retries only planning',async()=>{
+it.each(['bilateral', 'sequential'] as const)('H: planning failure after %s training preserves committed performances and retries only planning',async(executionMode)=>{
   h=harness();await onboard(h);
   mocked.services={ctx:h.ctx,online:true};
   mocked.refresh.mockRejectedValueOnce(new Error('planner unavailable')).mockResolvedValue({});
   const session=await startSession(h.ctx,await previewNext(h.ctx));
-  const set=(await h.db.sets.where('sessionId').equals(session.id).toArray())[0];
-  await recordPerformance(h.ctx,set.id,'both',{});
+  const instance=(await h.db.sessionExercises.where('sessionId').equals(session.id).toArray()).find(e=>e.exerciseId==='lat_pulldown')!;
+  await configureExercise(h.ctx,instance.id,{...instance.configuration!,executionMode});
+  const set=(await h.db.sets.where('sessionId').equals(session.id).toArray()).find(s=>s.sessionExerciseId===instance.id&&s.ordinal===1)!;
+  const sides=executionMode==='bilateral'?['both'] as const:['right','left'] as const;
+  for(const side of sides) await recordPerformance(h.ctx,set.id,side,{actualGrams:30000,actualReps:10});
+  const performances=(await h.db.sets.get(set.id))!.detail!.performances;
+  expect(performances.map(p=>p.side)).toEqual([...sides]);
   render(<MemoryRouter initialEntries={[`/pass/${session.id}/avsluta`]}><Routes><Route path="/pass/:id/avsluta" element={<Finish/>}/><Route path="/" element={<h1>Min träningsplan</h1>}/></Routes></MemoryRouter>);
   fireEvent.click(await screen.findByRole('button',{name:'Avsluta och spara'}));
   await screen.findByText('Träningen är sparad. Nästa pass kunde inte räknas fram just nu.');
@@ -28,4 +33,5 @@ it('H: planning failure after finish preserves committed training and retries on
   await screen.findByRole('heading',{name:'Min träningsplan'});
   await waitFor(()=>expect(mocked.refresh).toHaveBeenCalledTimes(2));
   expect((await h.db.sessions.get(session.id))!.revision).toBe(revision);
+  expect((await h.db.sets.get(set.id))!.detail!.performances).toEqual(performances);
 });
