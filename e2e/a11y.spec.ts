@@ -78,7 +78,11 @@ test('tangentbord: starta pass och logga set utan mus; skärmläsarstatus annons
   test.skip(browserName === 'webkit', 'Tab-fokus mellan knappar är avstängt som standard i WebKit/Safari.');
   await signUp(page, uniqueEmail('kbd'));
   await onboard(page);
-  await page.getByRole('button', { name: 'Öppna passet' }).focus();
+  const open = page.getByRole('button', { name: 'Öppna passet' });
+  // focus() does not wait for a disabled button to become enabled. The plan loads asynchronously.
+  await expect(open).toBeEnabled();
+  await open.focus();
+  await expect(open).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('button', { name: 'Starta passet', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Starta passet', exact: true }).focus();
