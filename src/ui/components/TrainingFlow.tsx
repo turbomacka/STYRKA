@@ -117,16 +117,32 @@ export function WarmupControl({ instance, visible, count }: { instance: LocalSes
 }
 
 /** Simple execution choices; existing equipment snapshots are preserved verbatim. */
-export function ExecutionControl({ instance }: { instance: LocalSessionExercise }) {
+export function ExecutionControl({ instance, onPendingChange }: { instance: LocalSessionExercise; onPendingChange?: (exerciseId: string, pending: boolean) => void }) {
   const { ctx } = useServices();
   const [error, setError] = useState('');
+  const [pending, setPending] = useState<ExerciseConfiguration | null>(null);
+  const saving = useRef(false);
   const c = instance.configuration ?? defaultConfiguration(instance.exerciseId);
   const modes = executionDefinition(instance.exerciseId).supported;
+  // Keep set controls disabled until the committed configuration is rendered, not just until the write resolves.
+  useEffect(() => {
+    if (pending && JSON.stringify(c) === JSON.stringify(pending)) {
+      saving.current = false; setPending(null); onPendingChange?.(instance.id, false);
+    }
+  }, [c, pending, instance.id, onPendingChange]);
+  useEffect(() => () => { if (saving.current) onPendingChange?.(instance.id, false); }, [instance.id, onPendingChange]);
   if (modes.length === 1 && c.executionMode === 'bilateral') return null;
-  const update = async (patch: Partial<ExerciseConfiguration>) => { try { await configureExercise(ctx, instance.id, { ...c, ...patch }, false); setError(''); } catch { setError('Kunde inte ändra utförandet. Registrerade sidor behålls.'); } };
-  return <details className="execution-options"><summary>Utförande och sida</summary><div className="stack">
+  const update = async (patch: Partial<ExerciseConfiguration>) => {
+    if (saving.current) return;
+    const next = { ...c, ...patch };
+    saving.current = true; setPending(next); onPendingChange?.(instance.id, true);
+    try { await configureExercise(ctx, instance.id, next, false); setError(''); }
+    catch { saving.current = false; setPending(null); onPendingChange?.(instance.id, false); setError('Kunde inte ändra utförandet. Registrerade sidor behålls.'); }
+  };
+  return <details className="execution-options"><summary>Utförande och sida</summary><fieldset className="training-set-controls stack" disabled={!!pending}>
     <label className="field">Utförande<select value={c.executionMode} onChange={(e) => void update({ executionMode: e.target.value as ExerciseConfiguration['executionMode'] })}>{modes.map((mode) => <option key={mode} value={mode}>{EXECUTION_LABELS[mode]}</option>)}</select></label>
     {c.executionMode !== 'bilateral' && <><label className="field">Börja med<select value={c.startingSide} onChange={(e) => void update({ startingSide: e.target.value as 'right' | 'left' })}><option value="right">Höger</option><option value="left">Vänster</option></select></label><label className="check-row"><input type="checkbox" checked={c.betweenSidesSeconds > 0} onChange={(e) => void update({ betweenSidesSeconds:e.target.checked ? 30 : 0 })} /> Vila mellan sidorna</label></>}
+    {pending && <p role="status" className="small muted">Ändrar utförande…</p>}
     {error && <p role="alert">{error}</p>}
-  </div></details>;
+  </fieldset></details>;
 }

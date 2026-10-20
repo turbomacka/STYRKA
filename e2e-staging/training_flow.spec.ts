@@ -66,7 +66,7 @@ test('staging: integrated training, offline reload and exact remote side/warmup/
     expect(cspErrors).toEqual([]);
     expect(pageErrors).toEqual([]);
   } finally {
-    await context.setOffline(false);
+    await context.setOffline(false).catch(() => {});
     const cleanup = await admin.auth.admin.deleteUser(userId);
     expect(cleanup.error).toBeNull();
   }

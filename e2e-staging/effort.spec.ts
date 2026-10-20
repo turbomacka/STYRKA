@@ -88,6 +88,6 @@ test('published effort: independent sides, offline save, removal, server validat
     await expect(page.locator('.chart path[stroke-dasharray]')).toHaveCount(0);
     await page.screenshot({path:`${dir}/progress.png`,fullPage:true}); expect(problems).toEqual([]);
   } finally {
-    await context.setOffline(false); expect((await admin.auth.admin.deleteUser(userId)).error).toBeNull();
+    await context.setOffline(false).catch(() => {}); expect((await admin.auth.admin.deleteUser(userId)).error).toBeNull();
   }
 });

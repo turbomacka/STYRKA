@@ -25,7 +25,16 @@ for (const scenario of [
     const userId = created.data.user!.id;
     const client = createClient(url, keys.find((k) => k.type === 'publishable')!.api_key, { auth });
     const problems: string[] = [];
-    page.on('pageerror', (error) => problems.push(error.message));
+    let reloading = false;
+    page.on('pageerror', (error) => {
+      // Windows WebKit reports the fetch canceled by page.reload as a page error.
+      // Only that deliberate navigation window is exempt; persisted rows are checked below.
+      if (reloading && info.project.name === 'staging-iphone' && error.stack?.includes(`Fetch API cannot load ${url}/rest/v1/session_exercises?on_conflict=id due to access control checks.`)) {
+        info.annotations.push({ type: 'navigation-abort', description: 'WebKit canceled an in-flight exercise write on reload; server persistence is verified after recovery.' });
+        return;
+      }
+      problems.push(error.message);
+    });
     page.on('console', (message) => {
       if (message.type() === 'error' && /Content Security Policy|CSP|Refused/i.test(message.text())) problems.push(message.text());
     });
@@ -57,7 +66,8 @@ for (const scenario of [
       const bench = page.locator('.workout-card').filter({hasText:'Bänkpress'});
       const mode=scenario.mode==='Tung'?'heavy':scenario.mode==='Medel'?'moderate':'light';
       await expect(bench).toHaveAttribute('data-mode',mode);
-      await page.reload();
+      reloading = true;
+      try { await page.reload(); } finally { reloading = false; }
       await expect(bench).toHaveAttribute('data-mode',mode);
       await expect(page.getByText('Varför det här förslaget?',{exact:true})).toHaveCount(0);
       const dir = `docs/evidence/ux-2026-10-18/published/recovery/staging/${info.project.name}`;
@@ -67,9 +77,13 @@ for (const scenario of [
       await expect(page.locator('.train-head h1')).toHaveText('Bänkpress');
       await first.getByRole('button', { name: 'Registrera set 1', exact: true }).click();
       await expect(page.getByRole('button', { name: 'Set 1 utfört. Ändra eller ångra', exact: true })).toBeVisible();
+      if (!offlineReload) await expect.poll(async () => {
+        const r = await client.from('training_sets').select('id').eq('status', 'done');
+        expect(r.error).toBeNull(); return r.data?.length;
+      }, { timeout: 30000 }).toBe(2);
       expect(problems).toEqual([]);
     } finally {
-      await context.setOffline(false);
+      await context.setOffline(false).catch(() => {});
       await client.auth.signOut();
       expect((await admin.auth.admin.deleteUser(userId)).error).toBeNull();
       const removed = await admin.auth.admin.getUserById(userId);

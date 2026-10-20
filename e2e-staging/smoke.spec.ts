@@ -77,7 +77,8 @@ test('staging: inloggning, intro, pass med synk till staging-databasen, utan CSP
     await page.getByRole('button', { name: 'Använd förslaget nästa pass' }).click();
     await expect(page.getByRole('heading', { name: 'Ditt val för nästa pass' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Min träningsplan' })).toBeVisible();
-    await expect(page.getByRole('link', { name: /Synkstatus: Synkat/ })).toBeVisible({ timeout: 30_000 });
+    await expect.poll(async () => (await userClient.from('training_sessions').select('status')).data?.map(s => s.status), { timeout: 30000 }).toEqual(['partial']);
+    await expect.poll(async () => (await userClient.from('exercise_skip_events').select('action')).data?.map(r => r.action).sort(), { timeout: 30000 }).toEqual(['accepted', 'skipped']);
     // Verifiera i staging-databasen via användarens egen session (RLS).
     const strength = await userClient.from('user_exercise_profiles').select('strength_inputs').eq('exercise_slug', 'squat').single();
     expect(strength.error).toBeNull();
@@ -126,7 +127,7 @@ test('staging: inloggning, intro, pass med synk till staging-databasen, utan CSP
     const sw = await page.evaluate(async () => !!(await navigator.serviceWorker.getRegistration()));
     expect(sw).toBe(true);
   } finally {
-    await page.context().setOffline(false);
+    await page.context().setOffline(false).catch(() => {});
     await admin.auth.admin.deleteUser(userId);
   }
 });

@@ -210,3 +210,5 @@ html[data-design='refined'] {
   html[data-design='refined'] .set-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
   html[data-design='refined'] .set-row :is(.set-no,.log,.done-mark) { grid-column:1/-1; }
 }
+
+.training-set-controls { border: 0; padding: 0; margin: 0; min-width: 0; }

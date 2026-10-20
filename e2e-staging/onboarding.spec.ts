@@ -46,7 +46,7 @@ for (const source of ['strength_inputs', 'performed_sets'] as const) {
       }
       expect(problems).toEqual([]);
     } finally {
-      await context.setOffline(false); await client.auth.signOut();
+      await context.setOffline(false).catch(() => {}); await client.auth.signOut();
       expect((await admin.auth.admin.deleteUser(id)).error).toBeNull();
       const removed = await admin.auth.admin.getUserById(id);
       expect(removed.data.user).toBeNull(); expect(removed.error?.status).toBe(404);

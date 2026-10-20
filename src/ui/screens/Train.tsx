@@ -27,10 +27,16 @@ export function Train() {
   const location = useLocation();
   const [params,setParams]=useSearchParams();
   const session = useLiveQuery(() => ctx.db.sessions.get(id!), [ctx, id]);
-  // Ersättare visas på originalets plats (v2); tidigare byten (v1) hamnar sist som förut.
-  const exs = useLiveQuery(async () => { const rows=await ctx.db.sets.where('sessionId').equals(id!).toArray();return workoutOrder(await ctx.db.sessionExercises.where('sessionId').equals(id!).toArray(), await ctx.db.workoutOrderEvents.where('sessionId').equals(id!).toArray()).filter((e)=>rows.some((s)=>s.sessionExerciseId===e.id&&!s.deleted));}, [ctx, id]);
-  const sets = useLiveQuery(() => ctx.db.sets.where('sessionId').equals(id!).toArray(), [ctx, id]);
-  const allExercises = useLiveQuery(() => ctx.db.sessionExercises.where('sessionId').equals(id!).toArray(), [ctx,id]);
+  // Read prescriptions and execution mode from one snapshot; never mix old sides with a new configuration.
+  const workout = useLiveQuery(() => ctx.db.transaction('r', [ctx.db.sets, ctx.db.sessionExercises, ctx.db.workoutOrderEvents], async () => {
+    const sets = await ctx.db.sets.where('sessionId').equals(id!).toArray();
+    const allExercises = await ctx.db.sessionExercises.where('sessionId').equals(id!).toArray();
+    const events = await ctx.db.workoutOrderEvents.where('sessionId').equals(id!).toArray();
+    return { sets, allExercises, exercises: workoutOrder(allExercises, events).filter((e) => sets.some((s) => s.sessionExerciseId === e.id && !s.deleted)) };
+  }), [ctx, id]);
+  const sets = workout?.sets, allExercises = workout?.allExercises, exs = workout?.exercises;
+  const [pendingExecution, setPendingExecution] = useState<string | null>(null);
+  const executionPending = useCallback((exerciseId: string, pending: boolean) => setPendingExecution((current) => pending ? exerciseId : current === exerciseId ? null : current), []);
   const profile = useLiveQuery(() => ctx.db.profile.get(ctx.userId), [ctx]);
   const settings = useLiveQuery(() => ctx.db.exerciseSettings.toArray(), [ctx]);
   const restrictions = useLiveQuery(() => ctx.db.restrictions.toArray(), [ctx]);
@@ -172,7 +178,8 @@ export function Train() {
         <div className="row"><button type="button" className="btn grow" onClick={()=>nav(`/pass/${session.id}/oversikt`, { state: { returnTo: location.pathname + location.search } })}>Hela passet</button><button type="button" className="btn grow" onClick={()=>setSwap(true)}><Icon.Swap/> Byt övning</button></div>
         {lk === 'assistance_kg' && <p className="small muted">Assistans: lägre siffra betyder tyngre för dig.</p>}
         {activeRest && restInstance && <SavedRestTimer key={activeRest.rest.id} owner={activeRest.owner} rest={activeRest.rest} sets={sets} instance={restInstance} onStart={(s)=>{const i=exs.findIndex((e)=>e.id===s.sessionExerciseId);if(i>=0)setFocus(i);}}/>}
-        <details><summary>Uppvärmning och utförande</summary><div className="stack"><TrainingPreferencesControl instance={current}/><ExecutionControl instance={current}/>{previous&&<p className="small muted">Senast: {previous}</p>}</div></details>
+        <details><summary>Uppvärmning och utförande</summary><div className="stack"><TrainingPreferencesControl instance={current}/><ExecutionControl key={current.id} instance={current} onPendingChange={executionPending}/>{previous&&<p className="small muted">Senast: {previous}</p>}</div></details>
+        <fieldset className="training-set-controls" disabled={pendingExecution === current.id} aria-busy={pendingExecution === current.id}>
         <WarmupControl instance={current} visible={showWarmup} count={mySets.filter((s) => s.kind === 'warmup').length} />
         <ul className="card list set-list" aria-label={`Set för ${exercise(current.exerciseId).nameSv}`}>
           {mySets.map((s, i) => ((s.status !== 'done' || s.detail) ? <PerformanceRow key={s.id} set={s} instance={current} sessionSets={sets} online={online} showEffort={s.id===latestDone} onSaved={(saved, side) => { const msg = saved.status === 'done' ? `✓ ${saved.kind === 'warmup' ? 'Uppvärmning' : 'Set'} ${saved.ordinal} registrerat på enheten` : '✓ Sidan registrerad. Fortsätt med nästa sida.'; setToast({ msg, setId: saved.id, side }); }} /> :
@@ -199,6 +206,7 @@ export function Train() {
             />
           ))}
         </ul>
+        </fieldset>
 
         <div className="row wrap">
           <button type="button" className="btn grow" onClick={() => addSet(ctx, current.id).catch(() => say('Kunde inte lägga till set'))}>
