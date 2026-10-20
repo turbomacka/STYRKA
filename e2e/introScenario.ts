@@ -54,6 +54,14 @@ export async function independentIntro(page: Page, context: BrowserContext, dir:
   await page.setViewportSize({ width: 320, height: 700 });
   await page.evaluate(() => document.documentElement.style.fontSize = '200%');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
+  // No page overflow does not rule out overlapping labels within the progress grid.
+  expect(await page.locator('.intro-lifts li, .intro-progress li').evaluateAll(items => items.every(item => {
+    const cell = item.getBoundingClientRect();
+    return [...item.children].every(child => {
+      const box = child.getBoundingClientRect();
+      return box.left >= cell.left - 1 && box.right <= cell.right + 1 && box.top >= cell.top - 1 && box.bottom <= cell.bottom + 1;
+    });
+  }))).toBe(true);
   await page.screenshot({ path: `${dir}/entry-320-200percent.png`, fullPage: true, animations: 'disabled' });
   await page.evaluate(() => document.documentElement.style.fontSize = '');
   const a11y = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();

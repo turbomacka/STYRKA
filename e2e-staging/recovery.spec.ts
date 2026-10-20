@@ -83,9 +83,14 @@ for (const scenario of [
       }, { timeout: 30000 }).toBe(2);
       expect(problems).toEqual([]);
     } finally {
+      // Stop the browser's sync worker before deleting its disposable account.
+      await page.close().catch(() => {});
       await context.setOffline(false).catch(() => {});
       await client.auth.signOut();
-      expect((await admin.auth.admin.deleteUser(userId)).error).toBeNull();
+      await expect.poll(async () => {
+        const result = await admin.auth.admin.deleteUser(userId);
+        return result.error === null || result.error.status === 404;
+      }, { timeout: 15000, intervals: [500, 1000, 2000] }).toBe(true);
       const removed = await admin.auth.admin.getUserById(userId);
       expect(removed.data.user).toBeNull();
       expect(removed.error?.status).toBe(404);

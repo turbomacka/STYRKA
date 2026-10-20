@@ -2,7 +2,7 @@
 .intro-page > * + *, .intro-content > * + *, .intro-footer > * + * { margin-top: 0; }
 .intro-page > .intro-footer { margin-top: auto; }
 .intro-progress p { margin: 0 0 8px; }
-.intro-progress ol { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; font-size: .8125rem; color: var(--text-2); }
+.intro-progress ol { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 5em), 1fr)); gap: 8px; font-size: .8125rem; color: var(--text-2); }
 .intro-progress li { display: grid; gap: 8px; min-width: 0; overflow-wrap: anywhere; }
 .intro-progress li > span:first-child { height: 4px; border-radius: 4px; background: var(--border); }
 .intro-progress li[aria-current], .intro-progress li.past { color: var(--accent); }
@@ -24,9 +24,9 @@
 [data-selected] > .choice-dot { border: 6px solid var(--accent); }
 .intro-kind { display: flex; justify-content: space-between; align-items: center; text-align: left; min-height: 64px; padding: 16px; gap: 12px; }
 .intro-kind .small, .intro-line { display: block; }
-.intro-lifts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); list-style: none; margin: 0; padding: 0 0 8px; gap: 8px; color: var(--text-2); font-size: .875rem; }
-.intro-lifts li { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.intro-lifts li > span:first-child { display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid var(--control-border, var(--border)); border-radius: 50%; }
+.intro-lifts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 6em), 1fr)); list-style: none; margin: 0; padding: 0 0 8px; gap: 8px; color: var(--text-2); font-size: .875rem; }
+.intro-lifts li { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; overflow-wrap: anywhere; }
+.intro-lifts li > span:first-child { display: grid; place-items: center; width: max(26px, 1.75em); height: max(26px, 1.75em); flex-shrink: 0; border: 1px solid var(--control-border, var(--border)); border-radius: 50%; }
 .intro-lifts li[aria-current] { font-weight: 700; color: var(--accent); }
 .intro-entry input { font-size: 1.25rem; min-height: 56px; }
 .intro-entry [data-invalid] input { border-color: var(--danger); }
