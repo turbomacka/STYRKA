@@ -1,0 +1,116 @@
+{
+  "checkedAt": "2026-10-20T20:03:27.148Z",
+  "url": "https://styrka-staging.homeboard-mh.workers.dev",
+  "sourceCommit": "83e4dc368c8d82e8955f930f15c57df12d06b103",
+  "ciUrl": "https://github.com/turbomacka/STYRKA/actions/runs/39486320793",
+  "ciConclusion": "success",
+  "version": "e5743fb2-aead-49d3-806c-97fe8e58b007",
+  "deployment": "178b87c0-fd29-4cfd-b5f3-8efcd974c56f",
+  "publishedAt": "2026-10-20T20:01:33.937667Z",
+  "trafficPercent": 100,
+  "previousVersion": "cfc30250-32e8-499d-b48b-6c346a14b04d",
+  "schemaChanges": true,
+  "migrations": [
+    "20261018150155",
+    "20261018200423"
+  ],
+  "historicalRowsRewritten": false,
+  "localSchemaVersion": 6,
+  "assets": [
+    {
+      "file": "favicon.svg",
+      "bytes": 388,
+      "sha256": "df43d45d8e674cf9c7b39942550dcb869f9443021dd01408e087ad95fec53bbd",
+      "matchesLocalBuild": true
+    },
+    {
+      "file": "icon-192.png",
+      "bytes": 778,
+      "sha256": "6ad53a9d8dcc46f7c7413c958298b89794222db210fb5a68cef44ffa723d9c3c",
+      "matchesLocalBuild": true
+    },
+    {
+      "file": "icon-512.png",
+      "bytes": 5490,
+      "sha256": "a7a15b52c46f01d4b8a5f2cdf722c43de0c020f526ad81763d0c168e367f7ee1",
+      "matchesLocalBuild": true
+    },
+    {
+      "file": "index.html",
+      "bytes": 1258,
+      "sha256": "b3da66706cc21f08fef985b788df219162dfa0d19e668bdbaf806d60afead50c",
+      "matchesLocalBuild": true
+    },
+    {
+      "file": "manifest.webmanifest",
+      "bytes": 502,
+      "sha256": "78674f34b80f1bc4ff5bae1385394cad9f7bf04d9337692f814b37a2cb68d5dc",
+      "matchesLocalBuild": true
+    },
+    {
+      "file": "sw.js",
+      "bytes": 1584,
+      "sha256": "addad8cc10733818ad5f59037a0fd2d7e603541fdc73eff36d1c8522d9bfd926",
+      "matchesLocalBuild": true
+    },
+    {
+      "file": "workbox-2fbc6a65.js",
+      "bytes": 15026,
+      "sha256": "39c2e6ae44c3f29666f6a328b6523bf13a053a1d95c74af8ddea82b1045b0b6e",
+      "matchesLocalBuild": true
+    },
+    {
+      "file": "assets/index-BW423WqL.js",
+      "bytes": 1071602,
+      "sha256": "4c2430045cfde9795e8fa4596b362c4a73290b87900abd6fad07d3f80ff0c207",
+      "matchesLocalBuild": true
+    },
+    {
+      "file": "assets/index-Q9613qg4.css",
+      "bytes": 33533,
+      "sha256": "bffb000b0ccd6de90ed06fb9dc69739cbd24fc062859a25687c6f465b6b94c10",
+      "matchesLocalBuild": true
+    },
+    {
+      "file": "assets/rolldown-runtime-CbXtAM7H.js",
+      "bytes": 589,
+      "sha256": "bbf7c5086ae414dc3f33777e3eebf16ea8631325b8bb4690d25091c03567f31a",
+      "matchesLocalBuild": true
+    },
+    {
+      "file": "assets/Science-DABJs4w2.js",
+      "bytes": 53504,
+      "sha256": "84ae18dcc0473a9c95aa9d9afaec97f1e782c14e61c20e0745ef008d78f1b849",
+      "matchesLocalBuild": true
+    },
+    {
+      "file": "assets/workbox-window.prod.es5-Bd17z0YL.js",
+      "bytes": 5653,
+      "sha256": "17bcc17d60dc78f927834b880c39649b03af46fd1f5cdbb8c42c5ae2b515dce9",
+      "matchesLocalBuild": true
+    }
+  ],
+  "headers": {
+    "content-security-policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://zjjlttbwofohyqmklvkf.supabase.co; font-src 'self'; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+    "cache-control": "public, max-age=0, must-revalidate",
+    "x-content-type-options": "nosniff",
+    "referrer-policy": "no-referrer",
+    "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+    "x-robots-tag": "noindex, nofollow"
+  },
+  "validation": {
+    "unitAndComponentPassed": 407,
+    "databasePassed": 61,
+    "referenceChecksPassed": 26,
+    "ciBrowserPassed": 127,
+    "ciBrowserIntentionallySkipped": 11,
+    "ciFailed": 0,
+    "stagingApiPassed": 10,
+    "publishedBrowserPassed": 18,
+    "publishedBrowserFailed": 0,
+    "publishedBrowserDurationMinutes": 4.7,
+    "publishedScreenshots": 36,
+    "disposableAccountRemovalVerified": true,
+    "physicalDeviceTestingCompleted": false
+  }
+}

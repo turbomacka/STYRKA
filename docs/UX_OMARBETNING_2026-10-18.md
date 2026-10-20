@@ -47,7 +47,7 @@ Ingen ny produktionspublicering ingår. G5 och behov av verkliga enhetstester kv
 - [Apple – Feedback](https://developer.apple.com/design/human-interface-guidelines/feedback): vägledning för tydlig återkoppling; implementationen anpassas till en webbapp.
 - [Supabase – Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security): ägarkontroll och explicita rättigheter för nya tabeller.
 
-## Levererad implementation (18–19 oktober 2026)
+## Levererad implementation (18–20 oktober 2026)
 
 ### Sammanhängande pass
 
@@ -150,6 +150,22 @@ Den första GitHub-körningen inför publicering (39266110902) godkände bygg-/e
 
 Efter rättningen: design- och tillgänglighetskörningen på tre plattformar gav **17 godkända, ett avsiktligt hoppat** (WebKit Tab-fokus). Typecheck och lint godkända.
 
+### Efterkontroll av publiceringen och byte till ensidigt utförande
+
+Första kontrollen mot den publicerade adressen gav 15 godkända och tre avvikelser. Ett test inväntade en borttagen synklänk; det verifierar nu de faktiska serverposterna. Ett WebKit-anrop avbröts precis vid testets avsiktliga omladdning; endast detta specifika navigeringsavbrott undantas och testet kräver att den återhämtade synkningen lagrar även nästa set på servern.
+
+Det tredje fallet visade ett verkligt tidsproblem: direkt efter ändrat utförande kunde en viktredigering öppnas i den gamla sidvyn och sedan stängas när den nya konfigurationen renderades. Träningsvyn läser nu övningar och set i samma databastransaktion och avaktiverar setkontrollerna tills det sparade utförandet visas. Ett misslyckat byte återaktiverar de ursprungliga kontrollerna. Två nya komponentintegrationstester täcker fördröjd lagring och lagringsfel. Beräkningsregler och lagringsschema är oförändrade av denna rättning.
+
+Lokalt efter rättningen: 406 enhets-/komponenttester godkända; fokuserad mobilkontroll 11 godkända och ett avsiktligt hoppat WebKit-fall; lint och typkontroll godkända. Städningen av tillfälliga testkonton fungerar även när webbläsaren har stängts efter timeout. Det kvarvarande kontot från den avbrutna körningen identifierades från just testets trace, raderades och verifierades borttaget. Inga riktiga användarkonton berördes.
+
+De tre avvikelsefallen kördes därefter mot kandidatbygget lokalt med riktig stagingdatabas, i både Chromium/Android-format och WebKit/iPhone-format: **6/6 godkända**. Detta är en separat kandidatkontroll, inte evidens för att korrigeringen redan var publicerad.
+
+Två efterföljande CI-körningar upptäckte felaktiga testantaganden. Tangentbordstestet försökte fokusera knappen innan planberäkningen aktiverat den; testet inväntar nu både aktivering och fokus och passerade fem lokala upprepningar. Avslutstestet antog att databasens första set var bilateralt, trots att slumpmässiga ID:n kan ge en annan ordning. Det väljer nu en bestämd övning och kontrollerar både bilateralt och ensidigt utförande, inklusive att exakt samma prestationer bevaras efter ett återförsök av planberäkningen. Inga produktregler ändrades för att få dessa tester att passera.
+
+Efter den gröna CI-körningen 39442447840 publicerades klienträttningen. Kontrollen mot den adressen gav 17 godkända fall och ett städningsfel: radering av ett syntetiskt testkonto fick ett tillfälligt databasfel efter att träningsscenariot hade passerat. Testet stänger nu webbläsarsidan före radering och gör ett begränsat återförsök; slutkontrollen kräver fortfarande att kontot är borta. Det kvarvarande kontot identifierades från just den misslyckade körningens trace och verifierades borttaget.
+
+Bildgranskningen upptäckte även överlappande övningsnamn i onboarding vid 320 px och 200 procent text. Sidans totala bredd och axe-kontrollen hade inte upptäckt överlappningen inom rutnätet. Stegindikatorerna anpassar nu kolumnantalet till textstorleken och de numrerade markörerna växer med texten. En ny geometrisk kontroll kräver att varje etikett ryms inom sin egen ruta. Det fullständiga onboardingfallet med denna kontroll passerade lokalt i både Chromium och WebKit, **2/2**. Bilden vid 200 procent granskades också visuellt.
+
 ### Interaktionskostnad
 
 Öppna och starta dagens pass: två tryck. Registrera föreslagna värden: ett tryck. Ändra vikt/reps: tryck på värdet och skriv; ingen sparknapp krävs. Byt känd övning: Byt övning, välj alternativ, bekräfta; första användningen kan behöva ett frivilligt bekantskapssvar. Hela passöversikten: ett tryck. Från aktiv träning till sparat pass och uppdaterad plan: Avsluta, Avsluta och spara; inga ytterligare grundflödesbekräftelser.
@@ -165,20 +181,31 @@ Efterbilder finns i `evidence/ux-2026-10-18/`, inklusive Plan, passöversikt, ak
 - [Sparat pass och nästa plan, mörkt](evidence/ux-2026-10-18/iphone-webkit/finish-plan-dark.png)
 - [Ensidigt set och vila](evidence/ux-2026-10-18/training-flow/iphone-webkit/unilateral-rest-light.png)
 
+Slutliga bilder från den publicerade versionen finns i [published/](evidence/ux-2026-10-18/published/), inklusive [onboarding vid 200 procent text](evidence/ux-2026-10-18/published/onboarding/published/staging-android/entry-320-200percent.png). Den mappen innehåller 36 skärmbilder från slutkörningen.
+
 Helhetsbilder av långa sidor kan placera fasta fält mitt i bilden vid webbläsarens helsidesfångst. Bilden av mobilens synliga yta används därför även för granskning av den faktiska träningsvyn.
 
 Kontrollerna omfattar axe, tangentbord, minst 48 px primära träffytor, 320 px bredd, 200 procent text och reducerad rörelse. Automatiska kontroller och granskade bilder ersätter inte VoiceOver eller användbarhetstest med riktiga personer.
 
 Windows WebKit med iPhone-format är emulering. Service worker-offline fungerar inte i denna testmiljö; där kontrolleras återställning efter online-omladdning. Faktisk Safari/iPhone-PWA, låst skärm, fysisk Android, systemtextstorlek, haptisk känsla och upprepad användning på gym återstår. Ingen generell iPhone-vibration införs; befintlig frivillig haptikadapter behålls. Appen är tyst.
 
-Inget fält-INP vid 75:e percentilen har mätts. Bygget varnar fortfarande för ett stort JavaScript-paket: huvudfilen är 1 070 979 byte minifierad före komprimering i det verifierade bygget. Ingen ny animation läggs på sparandets kritiska väg och inget animationsbibliotek har tillförts. Kvantitativa prestandapåståenden på riktiga mobiler görs inte.
+Inget fält-INP vid 75:e percentilen har mätts. Bygget varnar fortfarande för ett stort JavaScript-paket: huvudfilen är 1 071 602 byte minifierad före komprimering i det verifierade bygget. Ingen ny animation läggs på sparandets kritiska väg och inget animationsbibliotek har tillförts. Kvantitativa prestandapåståenden på riktiga mobiler görs inte.
 
 ## Införande och återställning
 
-Koden är lokalt implementerad och testad. Ingen push, fjärrmigration eller offentlig produktionspublicering har gjorts inom denna ändring.
+Uppdateringen är pushad till `turbomacka/STYRKA` och publicerad på den befintliga [stagingadressen](https://styrka-staging.homeboard-mh.workers.dev) den 19 oktober 2026, med verifierad klienträttning den 20 oktober, efter användarens uttryckliga publiceringsuppdrag. Ingen separat produktionsmiljö har skapats.
 
-Bedömning: implementationen är redo för kontrollerad staging-verifiering efter migrationskontroll. Fullständigt produktionsgodkännande kan inte ges utifrån emulering; verkliga telefoner, hjälpmedel och kvarstående releasegrindar behöver verifieras.
+- Publicerad källkod: `83e4dc368c8d82e8955f930f15c57df12d06b103` (UX-implementation, kontrastkorrigering, säkert byte av utförande, anpassning för textförstoring och stabiliserade regressionstester).
+- [CI 39486320793](https://github.com/turbomacka/STYRKA/actions/runs/39486320793): godkänd. 407 enhets-/komponenttester, 61 databastester, 26 referenskontroller, 127 webbläsarfall godkända och 11 avsiktligt hoppade. Inga misslyckade fall. Lint, typkontroll, bygge, hemlighetsskanning och beroendeaudit godkända; audit rapporterade noll sårbarheter.
+- Migrationerna `20261018150155` och `20261018200423` applicerade före klienten och verifierade i fjärrhistoriken. Inga historiska träningsrader har skrivits om eller raderats av migrationerna.
+- API-provning mot staging: **10/10 godkända**, inklusive ägarisolering, append-only ordningshändelser, sidmålsvalidering, idempotens och kontoradering. Endast syntetiska konton användes.
+- Slutlig webbläsarkontroll mot den publicerade adressen: **18/18 godkända i en sammanhängande körning**, nio i Chromium/Android-format och nio i WebKit/iPhone-format (4,7 minuter). Inloggning, båda onboardingvalen, sidprestationer, frivillig uppvärmning, vila, ansträngningssvar, återställning, historik och faktisk serversynkning verifierades. Samtliga syntetiska testkonton verifierades raderade. Den publicerade 200-procentsbilden granskades visuellt.
+- Cloudflare-version: `e5743fb2-aead-49d3-806c-97fe8e58b007`, 100 procent av trafiken. Tolv hämtade appfiler matchar lokalt bygge med SHA-256, inklusive index, CSS, JavaScript och service worker. CSP och säkerhetsheaders kontrollerade. Maskinläsbar [publiceringsevidens](evidence/ux-2026-10-18/deployment.json).
 
-Vid godkänt införande ska servermigrationerna appliceras före den nya klienten. Uppdateringen behöver kontrolleras mot staging och därefter på riktiga enheter enligt befintliga releasegrindar. En återställning måste **behålla Dexie v6-schemat och transportstödet**; publicera inte en gammal v5-klient direkt över en redan uppgraderad lokal databas. Serverändringarna är additiva och behöver inte rullas tillbaka eller radera data.
+Säkerhetsrådgivaren visar samma tre befintliga varningar före och efter migrationerna, inga nya: exekveringsrätt för `public.rls_auto_enable()` för [anon](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable) respektive [inloggade](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable), samt [avstängt skydd mot läckta lösenord](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection). Dessa driftinställningar ändrades inte som del av UX-publiceringen.
+
+Bedömning: implementationen är införd i den befintliga stagingmiljön. Fullständigt produktionsgodkännande kan inte ges utifrån emulering; verkliga telefoner, hjälpmedel och kvarstående releasegrindar behöver verifieras.
+
+Servermigrationerna applicerades före den nya klienten. Uppdateringen behöver fortsatt kontrolleras på riktiga enheter enligt befintliga releasegrindar. En återställning måste **behålla Dexie v6-schemat och transportstödet**; publicera inte en gammal v5-klient direkt över en redan uppgraderad lokal databas. Serverändringarna är additiva och behöver inte rullas tillbaka eller radera data.
 
 Befintliga juridiska/vetenskapliga produktgrindar är inte avgjorda genom dessa kodtester. De aktuella UX-ändringarna tillför ingen ny behörighet eller extern datainsamling.
