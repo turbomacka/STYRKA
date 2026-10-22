@@ -103,6 +103,7 @@ export function TrainingPreferencesControl() {
   const [error, setError] = useState('');
   const [saveState,setSaveState]=useState<'idle'|'saving'|'saved'>('idle');
   const update = async (changes: Partial<typeof prefs>) => { const next = { ...prefs, ...changes }; setDraft(next); setSaveState('saving'); try { await patchProfile(ctx, { trainingPreferences: next }); setError(''); setSaveState('saved'); } catch { setSaveState('idle'); setDraft(null); setError('Kunde inte spara inställningen.'); } };
+  if (!profile) return <p className="small muted" aria-busy="true">Laddar inställningarna…</p>;
   return <div className="stack"><label className="check-row"><input type="checkbox" checked={prefs.showWarmupSets} onChange={(e) => void update({ showWarmupSets: e.target.checked })} /> Visa uppvärmningsset</label>
     {<><label className="check-row"><input type="checkbox" checked={prefs.adaptiveRestEnabled} onChange={(e) => void update({ adaptiveRestEnabled: e.target.checked })} /> Anpassa viloförslag efter registrerad prestation</label><label className="field">Förvald startsida<select value={prefs.defaultStartingSide} onChange={(e) => void update({ defaultStartingSide: e.target.value as 'right' | 'left' })}><option value="right">Höger</option><option value="left">Vänster</option></select></label></>}
     {saveState!=='idle' && <p role="status" className="small muted">{saveState==='saving'?'Sparar inställningen…':'Inställningen är sparad.'}</p>}
