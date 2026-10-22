@@ -21,7 +21,6 @@ async function openExercise() {
   const instance = (await h.db.sessionExercises.where('sessionId').equals(session.id).toArray()).find(e => e.exerciseId === 'lat_pulldown')!;
   render(<MemoryRouter initialEntries={[`/pass/${session.id}/trana?ovning=${instance.id}`]}><Routes><Route path="/pass/:id/trana" element={<Train />} /></Routes></MemoryRouter>);
   await screen.findByRole('heading', { name: 'Latsdrag' });
-  fireEvent.click(screen.getByText('Uppvärmning och utförande'));
   fireEvent.click(screen.getByText('Utförande och sida'));
   return within(screen.getByRole('listitem', { name: 'Arbetsset 1' }));
 }

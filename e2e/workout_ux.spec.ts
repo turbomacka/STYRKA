@@ -5,7 +5,7 @@ import { signUp, onboard, uniqueEmail } from './helpers';
 
 test('A–J: plan, autosave, register, effort, persistent rest, swap, reduce, undo and finish',async({page,context},info)=>{
   test.setTimeout(150000);
-  const dir=`docs/evidence/ux-2026-10-18/${info.project.name}`;mkdirSync(dir,{recursive:true});
+  const dir=`docs/evidence/adaptive-2026-10-22/${info.project.name}`;mkdirSync(dir,{recursive:true});
   await page.emulateMedia({colorScheme:'light'});
   await signUp(page,uniqueEmail('workout-ux'));await onboard(page);
   await expect(page.getByRole('navigation',{name:'Huvudmeny'}).getByRole('link')).toHaveCount(3);
@@ -64,6 +64,7 @@ test('A–J: plan, autosave, register, effort, persistent rest, swap, reduce, un
   await expect(page.locator('.train-head h1')).toHaveText('Frontböj');
   await page.getByRole('button',{name:'Nästa övning',exact:true}).click();
   await expect(page.locator('.train-head h1')).toHaveText('Bänkpress');
+  await expect(timer).toHaveCount(0);
   const focused=await page.locator('.train-head h1').textContent();
   await page.getByRole('button',{name:'Hela passet'}).click();
   await page.getByRole('button',{name:'Fortsätt träna'}).click();
@@ -78,6 +79,9 @@ test('A–J: plan, autosave, register, effort, persistent rest, swap, reduce, un
   await page.getByRole('button',{name:'Fortsätt träna'}).click();
   await page.getByRole('button',{name:'Avsluta',exact:true}).click();
   await page.getByRole('button',{name:'Avsluta och spara'}).click();
+  await expect(page.getByRole('heading',{name:'Så påverkas nästa pass'})).toBeVisible();
+  await page.screenshot({path:dir+'/replanning.png',fullPage:true});
+  await page.getByRole('button',{name:'Till planen',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
   await expect(page.getByText('Passet är sparat',{exact:true})).toBeVisible();
   await page.screenshot({path:`${dir}/finish-plan-dark.png`,fullPage:true});

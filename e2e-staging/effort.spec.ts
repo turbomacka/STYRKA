@@ -22,7 +22,7 @@ test('published effort: independent sides, offline save, removal, server validat
   const problems:string[]=[];
   page.on('pageerror',e=>problems.push(e.message));
   page.on('console',m=>{if(m.type()==='error' && /Content Security Policy|CSP|Refused/i.test(m.text()))problems.push(m.text());});
-  const dir=`docs/evidence/ux-2026-10-18/published/effort/staging/${info.project.name}`; mkdirSync(dir,{recursive:true});
+  const dir=`docs/evidence/adaptive-2026-10-22/published/effort/staging/${info.project.name}`; mkdirSync(dir,{recursive:true});
   const rows=async()=>{
     const r=await client.from('training_sets').select('id,ordinal,revision,perceived_effort,rir,detail').eq('status','done').order('ordinal');
     expect(r.error).toBeNull(); return r.data! as Array<{id:string;ordinal:number;revision:number;perceived_effort:string|null;rir:number|null;detail:SetDetail}>;
@@ -71,6 +71,8 @@ test('published effort: independent sides, offline save, removal, server validat
     await page.emulateMedia({colorScheme:'dark'}); await expect(page.locator('.toast')).toHaveCount(0,{timeout:10000});
     await page.screenshot({path:`${dir}/side-feedback.png`,fullPage:true});
     await page.getByRole('button',{name:'Avsluta',exact:true}).click(); await page.getByRole('button',{name:'Avsluta och spara',exact:true}).click();
+    await expect(page.getByRole('heading', { name: 'Så påverkas nästa pass' })).toBeVisible();
+    await page.getByRole('button', { name: 'Till planen', exact: true }).click();
     await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible(); await page.getByRole('link',{name:'Utveckling',exact:true}).click();
     const localMax = await page.evaluate(({userId,setId}) => new Promise<unknown>((resolve,reject) => {
       const request=indexedDB.open(`styrka_${userId}`);

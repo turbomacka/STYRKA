@@ -30,6 +30,8 @@ it.each(['bilateral', 'sequential'] as const)('H: planning failure after %s trai
   expect((await h.db.sets.get(set.id))!.status).toBe('done');
   const revision=saved!.revision;
   fireEvent.click(screen.getByRole('button',{name:'Försök beräkna igen'}));
+  await screen.findByRole('heading',{name:'Så påverkas nästa pass'});
+  fireEvent.click(screen.getByRole('button',{name:'Till planen'}));
   await screen.findByRole('heading',{name:'Min träningsplan'});
   await waitFor(()=>expect(mocked.refresh).toHaveBeenCalledTimes(2));
   expect((await h.db.sessions.get(session.id))!.revision).toBe(revision);

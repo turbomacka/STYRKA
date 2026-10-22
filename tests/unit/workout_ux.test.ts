@@ -104,7 +104,7 @@ it('feedback has eight distinct evidence categories and avoids recent repeats',(
 it('finish feedback is stable across reload and never invents an improvement from onboarding estimates',async()=>{
   const h=await setup('squat',false);for(const s of h.sets)await recordPerformance(h.ctx,s.id,'both',{});
   await finishSession(h.ctx,h.session.id);const first=await savedWorkoutFeedback(h.ctx,h.session.id);
-  expect(first.category).toBe('complete');expect(await savedWorkoutFeedback(h.ctx,h.session.id)).toEqual(first);
+  expect(first.category).toBe('first');expect(await savedWorkoutFeedback(h.ctx,h.session.id)).toEqual(first);
   await deleteWorkout(h.ctx,h.session.id);expect(await h.db.meta.get(`workout-feedback:${h.session.id}`)).toBeUndefined();
 });
 

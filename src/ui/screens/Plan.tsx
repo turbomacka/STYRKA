@@ -1,3 +1,4 @@
+import {HistoryCorrection} from '../components/HistoryCorrection';
 import { NextWorkout, SyncLink } from './Today';
 import type { SavedWorkoutFeedback } from '../../application/workoutFeedback';
 import { PerformanceHistory } from '../components/TrainingHistory';
@@ -14,7 +15,7 @@ import type { PlanSnapshot } from '../../domain/model';
 import { formatKg } from '../../domain/units';
 import { activeSession, previewNext } from '../../application/training';
 import { CHANGE_TYPE_SV, getFuturePlan, getNote, getWorkoutDetail, getWorkoutHistory, lastPerformed, NOTE_MAX_LENGTH, PLAN_HORIZONS, planRevisions, saveNote, type NoteTarget, type PlanSlot, type WorkoutDetail, type WorkoutSummary } from '../../application/trainingPlan';
-import type { LocalPlanRevision, LocalSession, LocalSet } from '../../storage/db';
+import type { LocalPlanRevision, LocalSession, LocalSessionExercise, LocalSet } from '../../storage/db';
 import { Banner, Expandable, Icon, Segmented } from '../components/common';
 import { prescriptionText } from '../components/widgets';
 import { DeleteWorkout } from '../components/DeleteWorkout';
@@ -318,7 +319,7 @@ function Reference({ exerciseId, variantKey, loadKind, perHand }: { exerciseId: 
 
 function Done({ printing, onPrinted }: { printing: { includeNotes: boolean } | null; onPrinted: () => void }) {
   const { ctx } = useServices();
-  const changeKey = useLiveQuery(async () => `${await ctx.db.sessions.count()}|${await ctx.db.sets.count()}`, [ctx]);
+  const changeKey = useLiveQuery(async () => JSON.stringify((await ctx.db.sets.toArray()).map(s=>[s.id,s.status,s.deleted,s.actualGrams,s.actualReps,s.actualSeconds,s.detail?.performances])), [ctx]);
   const [items, setItems] = useState<WorkoutSummary[] | null>(null);
   const [next, setNext] = useState<string | null>(null);
   const [all, setAll] = useState(false);
@@ -401,7 +402,7 @@ function DoneRow({ w, printing }: { w: WorkoutSummary; printing: { includeNotes:
                 </p>
                 <ul className="list small">
                   {sets.map((x, i) => (
-                    <SetLine key={x.id} set={x} no={i + 1} lk={se.snapshot.loadKind} perHand={se.snapshot.loadBasis === 'per_hand_kg'} />
+                    <SetLine key={x.id} instance={se} set={x} no={i + 1} lk={se.snapshot.loadKind} perHand={se.snapshot.loadBasis === 'per_hand_kg'} />
                   ))}
                 </ul>
               </div>
@@ -415,11 +416,11 @@ function DoneRow({ w, printing }: { w: WorkoutSummary; printing: { includeNotes:
   );
 }
 
-function SetLine({ set: x, no, lk, perHand }: { set: LocalSet; no: number; lk: LoadKind; perHand: boolean }) {
+function SetLine({ set: x, no, lk, perHand, instance }: { instance: LocalSessionExercise; set: LocalSet; no: number; lk: LoadKind; perHand: boolean }) {
   if (x.detail) {
     const d = x.detail, e = d.configuration.equipment;
     const target = d.targetLoadValue != null ? `${d.targetLoadValue.toLocaleString('sv-SE')}${d.targetSecondLoadValue != null ? ` / ${d.targetSecondLoadValue.toLocaleString('sv-SE')}` : ''} ${e.unit === 'level' ? 'nivå' : 'kg'} × ${x.targetReps} reps` : x.targetGrams === null && lk !== 'duration_sec' && lk !== 'reps_only' ? 'egen belastning' : loadText(x.targetGrams,x.targetReps,x.targetSeconds,lk,e.measurement === 'per_dumbbell');
-    return <li className="set-line"><PerformanceHistory set={x} /><span className="small muted">{PLAN.RECOMMENDED_THEN}: {target}</span></li>;
+    return <li className="set-line"><PerformanceHistory set={x} /><span className="small muted">{PLAN.RECOMMENDED_THEN}: {target}</span><HistoryCorrection set={x} instance={instance}/></li>;
   }
   const corrected = x.status === 'done' && x.occurredAt !== null && Date.parse(x.updatedAt) - Date.parse(x.occurredAt) > 1000;
   const status = x.status === 'done' ? PLAN.PERFORMED : x.status === 'skipped' ? 'Överhoppat' : 'Inte utfört';
@@ -435,6 +436,7 @@ function SetLine({ set: x, no, lk, perHand }: { set: LocalSet; no: number; lk: L
         {' '}
         ({PLAN.RECOMMENDED_THEN}: {x.targetGrams === null && lk !== 'duration_sec' && lk !== 'reps_only' ? 'egen vikt' : loadText(x.targetGrams, x.targetReps, x.targetSeconds, lk, perHand)})
       </span>
+      <HistoryCorrection set={x} instance={instance}/>
     </li>
   );
 }

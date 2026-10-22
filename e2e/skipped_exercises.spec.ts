@@ -17,7 +17,7 @@ test('orsak till överhopp, tydligt förslag, godkännande och ångra på mobil'
   await page.getByRole('button', { name: 'Hann inte', exact: true }).click();
   await expect(page.getByText(/Sidolyft i kabel – överhoppat: hann inte/)).toBeVisible();
   await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
-  await page.getByRole('button', { name: 'Avsluta och spara', exact: true }).click();
+  await page.getByRole('button', { name: 'Avsluta och spara', exact: true }).click(); await expect(page.getByRole('heading',{name:'Så påverkas nästa pass'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
   const proposal = page.getByRole('region', { name: 'Anpassning av nästa pass' });
   await expect(proposal.getByRole('heading', { name: 'Ett förslag efter förra passet' })).toBeVisible();
   await expect(proposal).toContainText('Sidolyft i kabel prioriteras');

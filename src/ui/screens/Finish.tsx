@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { compareSessionRecommendations, type ReplanningFeedback } from '../../application/replanningFeedback';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ALL_AREAS, AREA_LABEL_SV, exercise, type Area } from '../../domain/catalog';
@@ -33,7 +34,16 @@ export function Finish() {
   const [done, setDone] = useState<null | { status: string; offer: boolean; text: string }>(null);
   const saving=useRef(false),symptomSaved=useRef(false);
   const [calculating,setCalculating]=useState(false);
+  const [steps, setSteps] = useState(0);
+  const [comparison, setComparison] = useState<ReplanningFeedback | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (session && ['completed','partial','abandoned'].includes(session.status) && !done && !saving.current) {
+      setDone({status:session.status,offer:session.kind==='extra'&&!session.countsAsPlannedAt,text:'Dina registrerade set är sparade.'});
+      setErr('Passet finns sparat. Beräkna kommande rekommendationer från dina lokala data.');
+    }
+  }, [session, done]);
 
   if (!session || !sets || !exs) return <p className="page" aria-busy="true">Laddar…</p>;
   const active = exs.filter((e) => !e.replacedById);
@@ -44,8 +54,13 @@ export function Finish() {
   const minutes = session.startedAt ? Math.max(1, Math.round((Date.now() - Date.parse(session.startedAt)) / 60000)) : null;
 
   async function returnToPlan() {
-    setCalculating(true);setErr(null);
-    try { await refreshFuturePlan(ctx); nav(`/?klart=${id}`,{replace:true}); }
+    setCalculating(true);setErr(null);setDone((d)=>d ? {...d,offer:false}:d);
+    try {
+      setSteps(0);
+      await refreshFuturePlan(ctx, { onProgress: (step) => setSteps(step === 'inputs' ? 1 : step === 'computed' ? 2 : 3) });
+      setComparison(await compareSessionRecommendations(ctx, id!));
+      setSteps(4);
+    }
     catch { setErr('Träningen är sparad. Nästa pass kunde inte räknas fram just nu.'); }
     finally { setCalculating(false); }
   }
@@ -71,7 +86,11 @@ export function Finish() {
   }
   if(done)return <div className="page stack">
     <h1>Passet är sparat</h1><p className="finish-feedback">{done.text}</p>
-    {calculating&&<p role="status" aria-busy="true">Förbereder nästa pass…</p>}
+    <section aria-label="Omplanering" aria-busy={calculating}>
+      <ol>{['Genomförd träning', 'Belastning och återhämtning', 'Kommande rekommendationer', 'Uppdaterad plan'].map((label,i) => <li key={label}>{steps > i ? '✓ ' : ''}{label}{calculating && steps === i ? ' …' : ''}</li>)}</ol>
+      <p role="status">{calculating ? 'Beräknar från sparade träningsdata…' : comparison ? 'Beräkningen är klar.' : ''}</p>
+    </section>
+    {comparison && !calculating && <section className="card stack"><h2>Så påverkas nästa pass</h2><ul>{comparison.messages.map((text) => <li key={text}>{text}</li>)}</ul><p className="small muted">Jämförelsen visar nästa pass med och utan passets registrerade träning, vid samma tidpunkt. Förslagen kan ändras när du öppnar nästa pass.</p><button type="button" className="btn primary" onClick={() => nav(`/?klart=${id}`, { replace:true })}>Till planen</button></section>}
     {done.offer&&!calculating&&<div className="card stack"><p>Räkna spontanpasset som ditt ordinarie pass?</p><button type="button" className="btn primary" disabled={busy} onClick={async()=>{setBusy(true);try{await countExtraAsPlanned(ctx,id!);await returnToPlan();}catch{setErr('Passet är sparat. Kunde inte ändra hur det räknas.');}finally{setBusy(false);}}}>Räkna som ordinarie</button><button type="button" className="btn" onClick={()=>void returnToPlan()}>Behåll som spontanpass</button></div>}
     {err&&<><Banner kind="warn">{err}</Banner><button type="button" className="btn" disabled={calculating} onClick={()=>void returnToPlan()}>Försök beräkna igen</button><button type="button" className="btn" onClick={()=>nav(`/?klart=${id}`,{replace:true})}>Till planen</button></>}
   </div>;

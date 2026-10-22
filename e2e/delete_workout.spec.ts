@@ -9,7 +9,7 @@ test('radera registrerat pass: avbryt, bekräfta offline, historik och omladdnin
   await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
   await page.getByRole('button', { name: 'Registrera set 1' }).click();
   await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
-  await page.getByRole('button', { name: 'Avsluta och spara' }).click();
+  await page.getByRole('button', { name: 'Avsluta och spara' }).click(); await expect(page.getByRole('heading',{name:'Så påverkas nästa pass'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
   await page.getByRole('link', { name: 'Plan', exact: true }).click();
   await page.getByRole('radio', { name: 'Genomförda' }).click();

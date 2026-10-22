@@ -39,7 +39,15 @@ export type RestRecord = {
   adjustmentSeconds: number; reasons: string[]; policyVersion: string;
   outcome: 'active' | 'started' | 'unobserved' | 'dismissed' | 'session_ended';
 };
+export type RecordedState = {
+  status: SetStatus; deleted: boolean; grams: number|null; reps: number|null; seconds: number|null;
+  rir: number|null; technique: Technique|null; effort: PerceivedEffort|null;
+  sides: Array<Pick<SetPerformance,'id'|'side'|'status'|'loadValue'|'secondLoadValue'|'repetitions'|'seconds'|'rir'|'technique'|'comparisonKey'> & {unit: EquipmentProfile['unit']; measurement: LoadMeasurement; effort: PerceivedEffort|null}>;
+};
 export type SetDetail = {
+  recordingChanges?: Array<{id:string;at:string;before:RecordedState;afterHash:string}>;
+  /** Absent on legacy/manual rows: never infer ownership of old warmups. */
+  warmupProposal?: { policyVersion: string; managed: boolean; suppressed?: boolean };
   plannedSides?: Partial<Record<PerformanceSide, { grams: number | null; reps: number | null; seconds: number | null; secondLoad: number | null }>>;
   targetLoadValue?: number | null; targetSecondLoadValue?: number | null;
   version: 1; configuration: ExerciseConfiguration; performances: SetPerformance[]; rests: RestRecord[];

@@ -14,7 +14,7 @@ for (const scenario of [{ feeling: 'Lätt', nextMode: 'Tung' }, { feeling: 'Lago
     await first.getByRole('button',{name:scenario.feeling==='Maxansträngning'?/Maxansträngning/:scenario.feeling,exact:scenario.feeling!=='Maxansträngning'}).click();
     await expect(first).toContainText(`Känsla: ${scenario.feeling}`);
     await page.getByRole('button',{name:'Avsluta',exact:true}).click();
-    await page.getByRole('button',{name:'Avsluta och spara',exact:true}).click();
+    await page.getByRole('button',{name:'Avsluta och spara',exact:true}).click(); await expect(page.getByRole('heading',{name:'Så påverkas nästa pass'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
     await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
     await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
     await context.setOffline(true);
@@ -26,7 +26,7 @@ for (const scenario of [{ feeling: 'Lätt', nextMode: 'Tung' }, { feeling: 'Lago
       await expect(bench).toHaveAttribute('data-mode',scenario.nextMode==='Tung'?'heavy':scenario.nextMode==='Medel'?'moderate':'light');
       await expect(page.getByText('Varför det här förslaget?',{exact:true})).toHaveCount(0);
       expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+1)).toBe(true);
-      const dir=`docs/evidence/ux-2026-10-18/regression/recovery/${info.project.name}`;mkdirSync(dir,{recursive:true});
+      const dir=`docs/evidence/adaptive-2026-10-22/regression/ux-2026-10-18/regression/recovery/${info.project.name}`;mkdirSync(dir,{recursive:true});
       await page.screenshot({path:`${dir}/${scenario.feeling==='Lätt'?'easy':scenario.feeling==='Lagom'?'normal':'maximal'}.png`,fullPage:true});
       await page.getByRole('button',{name:'Starta passet',exact:true}).click();
       await expect(page.locator('.train-head h1')).toHaveText('Bänkpress');

@@ -28,11 +28,11 @@ describe('evidensregister', () => {
     const additions = EVIDENCE.sources.slice(register.sources.length);
     expect(additions.map((s) => s.source_id)).toEqual(EVIDENCE.registryAdditions.flatMap((a) => a.source_ids));
     for (const s of additions) {
-      expect(s.added_in, s.source_id).toBe('EVIDENS/2.1.0');
+      expect(EVIDENCE.registryAdditions.find((a)=>a.source_ids.includes(s.source_id))?.version).toBe(s.added_in);
       expect(s.doi, s.source_id).toMatch(/^10\.\d{4,9}\/\S+$/);
       expect(s.public_url).toMatch(/^https:\/\//);
       expect(s.supported_claim_sv && s.limitations_sv && s.design && s.population, s.source_id).toBeTruthy();
-      expect(EVIDENCE.balanceMethod.source_ids).toContain(s.source_id);
+      expect(EVIDENCE.balanceMethod.source_ids.includes(s.source_id) || EVIDENCE.claims.some((c)=>c.source_ids.includes(s.source_id))).toBe(true);
     }
     for (const s of EVIDENCE.sources.slice(0, register.sources.length)) expect(s.added_in, s.source_id).toBeUndefined();
     for (const r of register.sources) {
@@ -55,7 +55,7 @@ describe('evidensregister', () => {
   });
 
   it('påståendena är exakt registrets (id, källor, klassning, regel-id) och kartläggs till befintliga metodregler', () => {
-    expect(EVIDENCE.claims.map((c) => c.claim_id)).toEqual(register.claims.map((c) => c.id));
+    expect(EVIDENCE.claims.slice(0,register.claims.length).map((c) => c.claim_id)).toEqual(register.claims.map((c) => c.id));
     const rules = new Set(EVIDENCE.rules.map((r) => r.rule_id));
     for (const r of register.claims) {
       const c = EVIDENCE.claims.find((x) => x.claim_id === r.id)!;

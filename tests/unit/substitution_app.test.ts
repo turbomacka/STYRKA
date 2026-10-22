@@ -114,24 +114,23 @@ describe('övningsbyte i pågående pass', () => {
       engineVersion: ENGINE_VERSION,
       substitutionCatalogVersion: SUBSTITUTION_CATALOG_VERSION,
       algorithmRuleVersion: RULESET_VERSION,
-      loadEstimationKind: 'population_prior_low_confidence',
-      userOverride: false,
+      loadEstimationKind: 'calibration',
+      userOverride: true,
     });
     expect(event.sourceEvidenceIds.length).toBeGreaterThan(0);
-    expect(event.reasonCodes).toContain('SUB_POPULATION_PRIOR_LOW_CONFIDENCE');
+    expect(event.reasonCodes).toContain('STARTING_LOAD_TRANSFER');
     expect(event.createdAt).toBe(h.clock.now());
     // Synk: ersättare, set och revisionspost på servern.
     expect((await h.sync.syncNow()).stoppedBy).toBeNull();
     expect(h.server.table('session_exercises').get(fs.id)).toMatchObject({ exercise_slug: 'front_squat', load_basis: 'total_kg' });
-    expect(h.server.table('session_exercise_substitution_events').get(event.id)).toMatchObject({ choice_scope: 'today', load_estimation_kind: 'population_prior_low_confidence', user_override: false, event_id: event.id });
+    expect(h.server.table('session_exercise_substitution_events').get(event.id)).toMatchObject({ choice_scope: 'today', load_estimation_kind: 'calibration', user_override: true, event_id: event.id });
     expect(h.server.sets.get(first.id)).toMatchObject({ sessionExerciseId: squat.id, status: 'done' });
   });
 
-  it('hjälpskattning kräver bekräftad startvikt; ändrad vikt markeras som användarval', async () => {
+  it('förslag kan korrigeras direkt; ändrad vikt markeras som användarval', async () => {
     const h = harness();
     await onboard(h);
     const { se } = await startWith(h, 'squat');
-    await expect(swapExercise(h.ctx, se.id, 'front_squat', { familiarity: 'familiar' })).rejects.toMatchObject({ code: 'VALIDATION_ERROR', field: 'CONFIRM_START_WEIGHT' });
     const { event, sessionExercise } = await swapExercise(h.ctx, se.id, 'front_squat', { familiarity: 'familiar', startGrams: 50_000 });
     expect(event.userOverride).toBe(true);
     expect((await setsOf(h, sessionExercise)).map((x) => x.targetGrams)).toEqual(Array(sessionExercise.snapshot.sets).fill(50_000));
@@ -141,16 +140,16 @@ describe('övningsbyte i pågående pass', () => {
     await expect(swapExercise(h.ctx, se.id, 'goblet_squat')).rejects.toMatchObject({ code: 'INVALID_STATE' });
   });
 
-  it('SUB03 i appen: okänd vana ⇒ ingen siffra; kalibrering med användarvald vikt', async () => {
+  it('SUB03 i appen: okänd vana får ett korrigerbart startförslag', async () => {
     const h = harness();
     await onboard(h);
     const { se } = await startWith(h, 'squat');
     const cands = await swapCandidates(h.ctx, se.id);
     const fsCand = [...cands.suggested, ...cands.more].find((c) => c.exerciseId === 'front_squat')!;
-    expect(fsCand.result.needsFamiliarity).toBe(true);
+    expect(fsCand.result.needsFamiliarity).toBe(false);
     const { sessionExercise } = await swapExercise(h.ctx, se.id, 'front_squat');
-    expect(sessionExercise.snapshot).toMatchObject({ kg: null, calibration: true, loadEstimationKind: 'none', calibrationSuggestionKg: null });
-    expect((await setsOf(h, sessionExercise)).every((x) => x.targetGrams === null)).toBe(true);
+    expect(sessionExercise.snapshot).toMatchObject({ kg: 47.5, calibration: true, loadEstimationKind: 'calibration', calibrationSuggestionKg: null });
+    expect((await setsOf(h, sessionExercise)).every((x) => x.targetGrams === 47500)).toBe(true);
   });
 
   it('§2.1 p.7/§3.3: efter första kalibreringssetet förifylls resten; "för tungt" ⇒ ett steg lättare; aldrig automatisk höjning', async () => {
@@ -255,7 +254,7 @@ describe('övningsbyte i pågående pass', () => {
     const { s, se } = await startWith(h, 'bench_press');
     const { sessionExercise: db } = await swapExercise(h.ctx, se.id, 'dumbbell_bench_press', { familiarity: 'familiar', startGrams: 24_000 });
     expect(db.snapshot.loadBasis).toBe('per_hand_kg');
-    expect(db.snapshot.calibrationSuggestionKg).toBe(24); // SUB04: 0,83 × 100 × 0,60 / 2, nedåt till 2 kg
+    expect(db.snapshot.kg).toBe(20); // SUB04: 0,83 × 100 × 0,60 / 2, nedåt till 2 kg
     for (const set of await setsOf(h, db)) await logSet(h.ctx, set.id, { actualGrams: 24_000, actualReps: 8, rir: 2 });
     await finishSession(h.ctx, s.id);
     await h.sync.syncNow();

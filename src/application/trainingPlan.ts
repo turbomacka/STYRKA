@@ -1,9 +1,9 @@
+import { STARTING_LOAD_VERSION } from '../domain/startingLoad';
 /**
  * ÄA-PLAN-001 "Min träningsplan": levande framtidsplan, planrevisioner, träningsdagbok och anteckningar.
  *
  * Inga nya träningsregler: framtidssekvensen tas fram genom att anropa den befintliga, deterministiska planeraren
- * (`planRegular`) för kommande rotationsplatser. Endast struktur sparas (övning, nivå, set, repetitionsintervall,
- * tid) – aldrig framtida vikter. Nästa pass rekommenderas alltid live av befintlig `previewNext` (samma som Idag).
+ * (`planRegular`) för kommande rotationsplatser. Struktur och preliminära belastningsförslag sparas med versionsmärkt källa. Nästa pass rekommenderas alltid live av befintlig `previewNext` (samma som Idag).
  * Genomförda pass och set läses ur befintliga tabeller och ändras aldrig härifrån.
  */
 import type { ExerciseId, LoadDisplayBasis, LoadKind } from '../domain/catalog';
@@ -36,6 +36,11 @@ export const NOTE_MAX_LENGTH = 2000;
 export type SlotStatus = 'ready' | 'provisional' | 'structural';
 
 export type PlanSlotExercise = {
+  /** Provisional values at this revision's documented 72-hour structural horizon. */
+  kg?: number | null;
+  targetSeconds?: number | null;
+  reasons?: string[];
+  recommendation?: import('../domain/model').PlannedExercise['recommendation'];
   exerciseId: ExerciseId;
   variantKey: string;
   role: Role;
@@ -135,12 +140,12 @@ async function planInputs(ctx: AppContext): Promise<PlanInputs> {
     symptoms: hashOf(input.symptoms),
     settings: hashOf(input.exerciseSettings),
     history: hashOf(history),
-    versions: hashOf([ENGINE_VERSION, PLANNER_VERSION, RULESET_VERSION, CATALOG_VERSION, SUBSTITUTION_CATALOG_VERSION, TEMPLATE_VERSION]),
+    versions: hashOf([ENGINE_VERSION, PLANNER_VERSION, RULESET_VERSION, CATALOG_VERSION, SUBSTITUTION_CATALOG_VERSION, TEMPLATE_VERSION, STARTING_LOAD_VERSION]),
   };
   return { input, programId: program?.id ?? null, rotationIndex: program?.rotationIndex ?? 0, frequency: input.profile.plannedSessionsPerWeek, baseSequence: seq.size + 1, parts, inputsHash: hashOf({ parts, rotation: program?.rotationIndex ?? 0 }) };
 }
 
-/** Deterministisk framtidssekvens: befintlig planerare per kommande rotationsplats. Inga vikter sparas. */
+/** Deterministisk framtidssekvens: befintlig planerare per kommande rotationsplats. Värdena är preliminära vid den dokumenterade 72-timmarshorisonten. */
 function computeSlots(ctx: AppContext, pi: PlanInputs, count: number, offset = 0): PlanSlot[] {
   const out: PlanSlot[] = [];
   for (let k = offset; k < offset + count; k++) {
@@ -158,6 +163,7 @@ function computeSlots(ctx: AppContext, pi: PlanInputs, count: number, offset = 0
       status: k === 0 ? 'ready' : k <= PROVISIONAL_SLOTS ? 'provisional' : 'structural',
       planStatus: plan.status,
       exercises: plan.exercises.map((e) => ({
+        kg: e.kg, targetSeconds: e.targetSeconds, reasons: e.reasons, recommendation: e.recommendation,
         exerciseId: e.exerciseId,
         variantKey: e.variantKey ?? 'default',
         role: e.role,
@@ -193,7 +199,7 @@ const PART_CHANGE: Record<string, (typeof CHANGE_ORDER)[number]> = {
   history: 'HISTORY_CHANGED',
 };
 /** Ändringar som alltid ger en spårbar revision (§5.2), även om kommande pass råkar bli oförändrade. */
-const ALWAYS_REVISE = new Set(['SESSION_COMPLETED', 'EXTRA_COUNTED_AS_PLANNED', 'EXTRA_SESSION_COMPLETED', 'SUBSTITUTION_CHANGED', 'PROFILE_CHANGED', 'RESTRICTION_CHANGED', 'SYMPTOM_CHANGED', 'ALGORITHM_VERSION_CHANGED']);
+const ALWAYS_REVISE = new Set(['SESSION_COMPLETED', 'EXTRA_COUNTED_AS_PLANNED', 'EXTRA_SESSION_COMPLETED', 'SUBSTITUTION_CHANGED', 'PROFILE_CHANGED', 'RESTRICTION_CHANGED', 'SYMPTOM_CHANGED', 'ALGORITHM_VERSION_CHANGED', 'HISTORY_CHANGED', 'EXERCISE_SETTINGS_CHANGED']);
 
 export const CHANGE_TYPE_SV: Record<string, string> = {
   CATCH_UP_CHANGED: 'Val efter överhoppad övning ändrat',
@@ -210,7 +216,7 @@ export const CHANGE_TYPE_SV: Record<string, string> = {
   HISTORY_CHANGED: 'Träningshistorik ändrad',
 };
 
-const slotShape = (s: PlanSlot) => JSON.stringify([s.templateKey, s.estimatedMinutes, s.exercises.map((e) => [e.exerciseId, e.variantKey, e.mode, e.sets, e.bandMin, e.bandMax, e.calibration])]);
+const slotShape = (s: PlanSlot) => JSON.stringify([s.templateKey, s.estimatedMinutes, s.exercises.map((e) => [e.exerciseId, e.variantKey, e.mode, e.sets, e.bandMin, e.bandMax, e.calibration, e.reps, e.kg, e.targetSeconds])]);
 
 function summarize(changeTypes: string[], prev: LocalPlanRevision | null, slots: PlanSlot[]): string {
   const parts: string[] = [];
@@ -223,7 +229,7 @@ function summarize(changeTypes: string[], prev: LocalPlanRevision | null, slots:
   if (prev) {
     const old = new Map((prev.slots as PlanSlot[]).map((s) => [s.slotSequence, slotShape(s)]));
     const changed = slots.filter((s) => old.has(s.slotSequence) && old.get(s.slotSequence) !== slotShape(s)).length;
-    parts.push(changed ? `${changed} kommande pass ändrade (övningar, set eller tid).` : 'Inga kommande pass ändrades.');
+    parts.push(changed ? `${changed} kommande pass ändrade (övningar, set eller tid).` : 'Passens struktur och preliminära rekommendationer är oförändrade.');
   }
   return [changeTypes.map((c) => CHANGE_TYPE_SV[c] ?? c).join(', ') + '.', ...parts].join(' ');
 }
@@ -261,6 +267,7 @@ const locks = new WeakMap<object, Promise<LocalPlanRevision | null>>();
 export type RefreshOptions = {
   /** Uttryckliga användarbeslut som ska synas i revisionens orsakskoder (t.ex. USER_ACCEPTED_BALANCE_SUGGESTION). */
   extraReasons?: string[];
+  onProgress?: (completed: 'inputs' | 'computed' | 'saved') => void;
 };
 
 export function refreshFuturePlan(ctx: AppContext, opts: RefreshOptions = {}): Promise<LocalPlanRevision | null> {
@@ -275,18 +282,21 @@ async function refreshFuturePlanNow(ctx: AppContext, opts: RefreshOptions = {}):
   const { db, userId } = ctx;
   if (!(await db.profile.get(userId))?.onboardingCompletedAt) return null;
   const pi = await planInputs(ctx);
+  opts.onProgress?.('inputs');
   const latest = await latestRevision(ctx);
-  if (latest && latest.inputsHash === pi.inputsHash) return latest;
+  if (latest && latest.inputsHash === pi.inputsHash) { opts.onProgress?.('computed'); opts.onProgress?.('saved'); return latest; }
   const checked = (await db.meta.get(`planChecked:${latest?.id ?? ''}`))?.value;
-  if (latest && checked === pi.inputsHash) return latest;
+  if (latest && checked === pi.inputsHash) { opts.onProgress?.('computed'); opts.onProgress?.('saved'); return latest; }
   const changeTypes = latest ? CHANGE_ORDER.filter((c) => Object.entries(PART_CHANGE).some(([part, t]) => t === c && latest.inputParts[part] !== pi.parts[part])) : [];
   // Ett genomfört spontanpass räknat som ordinarie redovisas som det, inte dessutom som "ordinarie pass genomfört".
   const types: string[] = changeTypes.includes('EXTRA_COUNTED_AS_PLANNED') ? changeTypes.filter((c) => c !== 'SESSION_COMPLETED' && c !== 'EXTRA_SESSION_COMPLETED') : [...changeTypes];
   const slots = computeSlots(ctx, pi, STORED_HORIZON);
   const contentHash = hashOf(slots);
+  opts.onProgress?.('computed');
   if (latest && latest.contentHash === contentHash && !types.some((t) => ALWAYS_REVISE.has(t))) {
-    // Ingen förändring av kommande pass (t.ex. ett rättat set): ingen ny revision, men kom ihåg kontrollen.
+    // Ingen relevant förändring av kommande pass: ingen ny revision, men kom ihåg kontrollen.
     await db.meta.put({ key: `planChecked:${latest.id}`, value: pi.inputsHash });
+    opts.onProgress?.('saved');
     return latest;
   }
   const changeType = latest ? (types[0] ?? 'HISTORY_CHANGED') : 'INITIAL';
@@ -317,6 +327,7 @@ async function refreshFuturePlanNow(ctx: AppContext, opts: RefreshOptions = {}):
     await db.outbox.add(outbox(ctx, rev.id, { type: 'upsert', table: 'plan_revisions', row: planRevisionRow(userId, rev), immutable: true }));
   });
   ctx.onQueued?.();
+  opts.onProgress?.('saved');
   return (await db.planRevisions.get(rev.id)) ?? rev;
 }
 

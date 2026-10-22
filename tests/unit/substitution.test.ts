@@ -50,7 +50,8 @@ describe('substitutionskatalog = replacement_seed.json 1.2.0 (enda källa) + slu
         const res = planReplacement(input({ exerciseSettings: ALL_ESTIMATES }), { from: plan(f, { kg: 60, mode: 'moderate', sets: 2, reps: 8, estimatedOneRM: 80 }), to: t, others: [], familiarity: 'familiar' });
         expect(res.status, `${f}->${t}`).toBe('ok');
         expect([res.planned!.calibrationSuggestionKg, res.requiresConfirmation, res.planned!.substitution!.prior], `${f}->${t}`).toEqual([null, false, undefined]);
-        expect(res.planned!.kg, `${f}->${t}: inga kilo från ursprungsövningen`).not.toBe(60);
+        const changed = planReplacement(input({ exerciseSettings: ALL_ESTIMATES }), { from: plan(f, { kg: 200, mode: 'moderate', sets: 2, reps: 8, estimatedOneRM: 300 }), to: t, others: [], familiarity: 'familiar' });
+        expect(res.planned!.kg).toBe(changed.planned!.kg); // Source forecast is never observed strength.
       }
     }
     // RDL ↔ trap bar visas med tydlig information om skild träningseffekt och belastningsfördelning.
@@ -162,16 +163,17 @@ describe('§5 SUB-fall (domän/planerare)', () => {
     expect(r.planned!.calibrationSuggestionKg).toBeNull();
   });
 
-  it('SUB02: knäböj 1RM 120, van vid frontböj, inga måldata ⇒ e1RM 96, första förslag 57,5 kg (låg säkerhet, redigerbart)', () => {
+  it('SUB02: knäböj 1RM 120, van vid frontböj, inga måldata ⇒ första förslag 47,5 kg utan påstådd maxstyrka (låg säkerhet, redigerbart)', () => {
     const r = planReplacement(input({ exerciseSettings: [est('squat', 120)] }), { from: squatHeavy, to: 'front_squat', others: [], familiarity: 'familiar' });
     expect(r.status).toBe('ok');
-    expect(r.requiresConfirmation).toBe(true);
+    expect(r.requiresConfirmation).toBe(false);
     const p = r.planned!;
-    expect(p.loadEstimationKind).toBe('population_prior_low_confidence');
-    expect(p.calibrationSuggestionKg).toBe(57.5);
-    expect(p.substitution!.prior).toMatchObject({ ratio: 0.8, sourceE1rm: 120, tentativeE1rm: 96, pct: 0.6, perHand: false });
-    expect([p.kg, p.calibration, p.confidence]).toEqual([null, true, 'low']);
-    expect(p.reasons).toContain('SUB_POPULATION_PRIOR_LOW_CONFIDENCE');
+    expect(p.loadEstimationKind).toBe('calibration');
+    expect(p.kg).toBe(47.5);
+    expect(p.recommendation).toMatchObject({source:'transfer', sourceExerciseId:'squat', confidence:'low'});
+    expect(p.estimatedOneRM).toBeNull();
+    expect([p.kg, p.calibration, p.confidence]).toEqual([47.5, true, 'low']);
+    expect(p.reasons).toContain('STARTING_LOAD_TRANSFER');
     expect(p.substitution!.evidenceIds).toEqual(expect.arrayContaining(['davis2020', 'gullett2009']));
   });
 
@@ -189,23 +191,23 @@ describe('§5 SUB-fall (domän/planerare)', () => {
     }
     // Inaktiv regel påverkar inte.
     const inactive = planReplacement(input({ exerciseSettings: [est('squat', 120)], restrictions: [{ ...cases[2], active: false }] }), { from: squatHeavy, to: 'front_squat', others: [], familiarity: 'familiar' });
-    expect(inactive.planned!.calibrationSuggestionKg).toBe(57.5);
+    expect(inactive.planned!.kg).toBe(47.5);
   });
 
-  it('SUB03: samma men okänd/ingen vana ⇒ ingen automatisk siffra, manuell kalibrering', () => {
+  it('SUB03: samma men okänd vana får samma försiktiga och korrigerbara provbelastning', () => {
     const unknown = planReplacement(input({ exerciseSettings: [est('squat', 120)] }), { from: squatHeavy, to: 'front_squat', others: [] });
-    expect(unknown.needsFamiliarity).toBe(true);
-    expect([unknown.planned!.kg, unknown.planned!.calibrationSuggestionKg, unknown.planned!.loadEstimationKind]).toEqual([null, null, 'none']);
+    expect(unknown.needsFamiliarity).toBe(false);
+    expect([unknown.planned!.kg, unknown.planned!.calibrationSuggestionKg, unknown.planned!.loadEstimationKind]).toEqual([47.5, null, 'calibration']);
     const novice = planReplacement(input({ exerciseSettings: [est('squat', 120)] }), { from: squatHeavy, to: 'front_squat', others: [], familiarity: 'unfamiliar' });
     expect(novice.needsFamiliarity).toBe(false);
-    expect([novice.planned!.kg, novice.planned!.calibrationSuggestionKg, novice.planned!.calibration]).toEqual([null, null, true]);
+    expect([novice.planned!.kg, novice.planned!.calibrationSuggestionKg, novice.planned!.calibration]).toEqual([47.5, null, true]);
   });
 
-  it('SUB04: bänkpress e1RM 100 → hantelpress, vana, steg 2 kg per hantel ⇒ 83 kg totalt, 24 kg per hantel', () => {
+  it('SUB04: bänkpress e1RM 100 → hantelpress, vana, steg 2 kg per hantel ⇒ 20 kg per hantel som försiktigt startförslag', () => {
     const r = planReplacement(input({ exerciseSettings: [est('bench_press', 100)] }), { from: benchHeavy, to: 'dumbbell_bench_press', others: [], familiarity: 'familiar' });
     const p = r.planned!;
-    expect(p.calibrationSuggestionKg).toBe(24);
-    expect(p.substitution!.prior).toMatchObject({ ratio: 0.83, tentativeE1rm: 83, perHand: true, pct: 0.6 });
+    expect(p.kg).toBe(20);
+    expect(p.recommendation?.source).toBe('transfer'); expect(p.estimatedOneRM).toBeNull();
     expect(p.loadBasis).toBe('per_hand_kg');
     expect(p.incrementKg).toBe(2);
   });
@@ -277,7 +279,7 @@ describe('§5 SUB-fall (domän/planerare)', () => {
       { ...ok, confidence: 'medium' },
       { ...ok, calibration: false },
       { ...ok, kg: 57.5 },
-      { ...ok, reasons: ok.reasons.filter((r) => r !== 'SUB_POPULATION_PRIOR_LOW_CONFIDENCE') },
+      { ...ok, reasons: ok.reasons.filter((r) => r !== 'STARTING_LOAD_TRANSFER') },
       { ...ok, loadEstimationKind: 'target_estimated' },
       { ...ok, loadEstimationKind: 'none' },
     ];
@@ -309,7 +311,7 @@ describe('§5 SUB-fall (domän/planerare)', () => {
   it('SUB24: frontböj → knäböj: ingen invertering av 0,80 (1,25); egna knäböjsdata eller kalibrering', () => {
     const front = plan('front_squat', { kg: 60, mode: 'heavy', sets: 3, reps: 5, estimatedOneRM: 100 });
     const none = planReplacement(input({ exerciseSettings: [est('front_squat', 100)] }), { from: front, to: 'squat', others: [], familiarity: 'familiar' });
-    expect([none.planned!.kg, none.planned!.calibrationSuggestionKg, none.planned!.loadEstimationKind]).toEqual([null, null, 'none']);
+    expect([none.planned!.kg, none.planned!.calibrationSuggestionKg, none.planned!.loadEstimationKind]).toEqual([40, null, 'calibration']);
     const own = planReplacement(input({ exerciseSettings: [est('front_squat', 100), est('squat', 140)] }), { from: front, to: 'squat', others: [] });
     expect(own.planned!.estimatedOneRM).toBe(140);
   });

@@ -336,3 +336,6 @@ small svg, .small svg.ico { width: 16px; height: 16px; vertical-align: -3px; }
 
 .check-row { display: flex; align-items: center; gap: var(--s2); min-height: 48px; cursor: pointer; }
 .check-row input { flex: 0 0 auto; }
+
+/* A status-aligned action still needs a full mobile touch target. */
+button.set-status { min-height: 44px; }

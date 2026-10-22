@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { abortTrainingSet, addWarmup, adjustRest, configureExercise, detailFor, ensureWarmups, rateSet, recordPerformance, removeWarmup, skipPerformance, startPerformance, undoPerformance } from '../../application/training';
+import { abortTrainingSet, addWarmup, adjustRest, configureExercise, detailFor, ensureWarmups, rateSet, recordPerformance, skipPerformance, startPerformance, undoPerformance } from '../../application/training';
 import { editPlannedSet } from '../../application/workout';
 import { patchProfile } from '../../application/profile';
 import { EXECUTION_LABELS, SIDE_LABELS, comparisonKey, defaultConfiguration, executionDefinition, nextSide, requiredSides, trainingPreferences, type ExerciseConfiguration, type PerformanceSide, type RestRecord } from '../../domain/trainingFlow';
@@ -11,7 +11,7 @@ import { SetRow } from './SetRow';
 import { confirmSetHaptic } from '../design';
 import { EffortFeedback } from './EffortFeedback';
 
-export function PerformanceRow({ set, instance, sessionSets, online, onSaved, planning = false, showEffort = true }: { set: LocalSet; instance: LocalSessionExercise; sessionSets: LocalSet[]; online: boolean; planning?: boolean; showEffort?: boolean; onSaved: (s: LocalSet, side?: PerformanceSide) => void }) {
+export function PerformanceRow({ set, instance, sessionSets, online, onSaved, planning = false, showEffort = true, onDelete }: { set: LocalSet; instance: LocalSessionExercise; sessionSets: LocalSet[]; online: boolean; planning?: boolean; showEffort?: boolean; onSaved: (s: LocalSet, side?: PerformanceSide) => void; onDelete?: () => Promise<void> }) {
   const { ctx } = useServices();
   const d = detailFor(set, instance);
   const [selected, select] = useState<PerformanceSide | null>(null);
@@ -42,12 +42,12 @@ export function PerformanceRow({ set, instance, sessionSets, online, onSaved, pl
         onEdit={async (values) => { await recordPerformance(ctx, set.id, side, values, { edit: true }); }}
         onUndo={async () => { await undoPerformance(ctx, set.id, side); select(null); }} />
       </ul>
-      {!loaded && !planning && <details className="set-options"><summary>Fler setval</summary><div className="row wrap small">
+      {!loaded && !planning && <div className="row wrap small">
         {p?.status === 'started' && <span>Pågår</span>}
         <button className="btn" type="button" onClick={() => void act(() => skipPerformance(ctx, set.id, side))}>Hoppa över {side === 'both' ? 'setet' : SIDE_LABELS[side].toLowerCase()}</button>
         {d.configuration.executionMode === 'alternating' && <label className="check-row"><input type="checkbox" checked={separate} onChange={(e) => setSeparate(e.target.checked)} /> Olika resultat per sida</label>}
         {d.configuration.executionMode === 'alternating' && !separate && <span className="muted">Repetitioner per sida. Båda sparas med ett tryck.</span>}
-      </div></details>}
+      </div>}
     </>}
     {d.configuration.executionMode !== 'bilateral' && d.performances.some((x) => x.status === 'done') && <div className="row wrap performance-summary">{d.performances.filter((x) => x.status === 'done').map((x) => <button type="button" className="btn" key={x.id} onClick={() => { select(selected === x.side ? null : x.side); }} aria-label={`Ändra ${SIDE_LABELS[x.side].toLowerCase()}, set ${set.ordinal}`}>
       ✓ {SIDE_LABELS[x.side]} · {x.loadValue !== null ? `${x.loadValue.toLocaleString('sv-SE')} ${x.equipment.unit === 'level' ? 'nivå' : 'kg'} × ` : ''}{x.repetitions ?? x.seconds}{x.seconds !== null ? ' s' : ' reps'}
@@ -56,7 +56,7 @@ export function PerformanceRow({ set, instance, sessionSets, online, onSaved, pl
     {planning && requiredSides(d.configuration).length > 1 && <div className="row">{requiredSides(d.configuration).map((s) => <button key={s} type="button" className="btn" aria-pressed={side === s} onClick={() => select(s)}>{SIDE_LABELS[s]}</button>)}</div>}
     {set.status === 'partial' && <button type="button" className="btn" onClick={() => void act(() => abortTrainingSet(ctx, set.id, d.aborted || nextSide(d) === null))}>{d.aborted || nextSide(d) === null ? 'Återuppta setet' : 'Avbryt återstående sida'}</button>}
     {set.status === 'skipped' && <button type="button" className="btn" onClick={() => void act(() => abortTrainingSet(ctx, set.id, true))}>Återuppta överhoppat set</button>}
-    {set.kind === 'warmup' && !d.performances.some((x) => x.status === 'done') && <button type="button" className="btn" onClick={() => void act(() => removeWarmup(ctx, set.id))}>Ta bort uppvärmningsset</button>}
+    {onDelete && <button type="button" className="btn ghost" onClick={() => void act(onDelete)}>Ta bort setet</button>}
     {error && <p role="alert" className="error-text">{error}</p>}
   </li>;
 }
@@ -94,17 +94,18 @@ export function SavedRestTimer({ owner, rest, sets, instance, onStart }: { owner
   </section>;
 }
 
-export function TrainingPreferencesControl({ instance }: { instance?: LocalSessionExercise }) {
+export function TrainingPreferencesControl() {
   const { ctx } = useServices();
   const profile = useLiveQuery(() => ctx.db.profile.get(ctx.userId), [ctx]);
   const [draft, setDraft] = useState<ReturnType<typeof trainingPreferences> | null>(null);
   const prefs = draft ?? trainingPreferences(profile?.trainingPreferences);
   useEffect(() => { if (draft && JSON.stringify(trainingPreferences(profile?.trainingPreferences)) === JSON.stringify(draft)) setDraft(null); }, [profile?.trainingPreferences, draft]);
   const [error, setError] = useState('');
-  const update = async (changes: Partial<typeof prefs>) => { const next = { ...prefs, ...changes }; setDraft(next); try { await patchProfile(ctx, { trainingPreferences: next }); setError(''); } catch { setDraft(null); setError('Kunde inte spara inställningen.'); } };
+  const [saveState,setSaveState]=useState<'idle'|'saving'|'saved'>('idle');
+  const update = async (changes: Partial<typeof prefs>) => { const next = { ...prefs, ...changes }; setDraft(next); setSaveState('saving'); try { await patchProfile(ctx, { trainingPreferences: next }); setError(''); setSaveState('saved'); } catch { setSaveState('idle'); setDraft(null); setError('Kunde inte spara inställningen.'); } };
   return <div className="stack"><label className="check-row"><input type="checkbox" checked={prefs.showWarmupSets} onChange={(e) => void update({ showWarmupSets: e.target.checked })} /> Visa uppvärmningsset</label>
-    {!instance && <><label className="check-row"><input type="checkbox" checked={prefs.adaptiveRestEnabled} onChange={(e) => void update({ adaptiveRestEnabled: e.target.checked })} /> Anpassa viloförslag efter registrerad prestation</label><label className="field">Förvald startsida<select value={prefs.defaultStartingSide} onChange={(e) => void update({ defaultStartingSide: e.target.value as 'right' | 'left' })}><option value="right">Höger</option><option value="left">Vänster</option></select></label></>}
-    {instance && <label className="field">Uppvärmning för denna övning<select value={instance.configuration?.warmupVisible == null ? 'default' : String(instance.configuration.warmupVisible)} onChange={(e) => void configureExercise(ctx, instance.id, { ...(instance.configuration ?? defaultConfiguration(instance.exerciseId)), warmupVisible: e.target.value === 'default' ? null : e.target.value === 'true' }, false).catch(() => setError('Kunde inte spara.'))}><option value="default">Följ inställningen ovan</option><option value="true">Visa</option><option value="false">Dölj</option></select></label>}
+    {<><label className="check-row"><input type="checkbox" checked={prefs.adaptiveRestEnabled} onChange={(e) => void update({ adaptiveRestEnabled: e.target.checked })} /> Anpassa viloförslag efter registrerad prestation</label><label className="field">Förvald startsida<select value={prefs.defaultStartingSide} onChange={(e) => void update({ defaultStartingSide: e.target.value as 'right' | 'left' })}><option value="right">Höger</option><option value="left">Vänster</option></select></label></>}
+    {saveState!=='idle' && <p role="status" className="small muted">{saveState==='saving'?'Sparar inställningen…':'Inställningen är sparad.'}</p>}
     {error && <p role="alert" className="error-text">{error}</p>}
   </div>;
 }

@@ -21,7 +21,7 @@ test('SUB17: utloggad besökare når /vetenskap från välkomstsidan; källor oc
   // Användartext, källor och begränsningar utan interna versions- eller filhänvisningar.
   await expect(page.getByText('Senast uppdaterad', { exact: true })).toBeVisible();
   await expect(page.getByText('Forskningen ger vägledning, men visar inte att STYRKA:s förslag är optimala eller medicinskt säkra för just dig.')).toBeVisible();
-  await expect(page.locator('#e-kallor ol > li')).toHaveCount(16); // 13 ur produktägarens register + 3 märkta tillägg (EVIDENS/2.1.0)
+  await expect(page.locator('#e-kallor ol > li')).toHaveCount(21); // originalregister plus versionssatta tillägg (EVIDENS/2.2.0)
   await expect(page.locator('#balans')).toContainText('Så fungerar balansförslagen');
   await expect(page.locator('#kalla-gullett2009')).toContainText('2009');
   await expect(page.locator('#kalla-saeterbakken2013')).toContainText('shoulder presses');
@@ -41,7 +41,7 @@ test('SUB17: utloggad besökare når /vetenskap från välkomstsidan; källor oc
 test('SUB18: direktlänk till algoritmregel och källa (DOI) fungerar', async ({ page }) => {
   await page.goto('/vetenskap#regel-forsta-exponering');
   await expect(page.locator('#regel-forsta-exponering')).toBeInViewport();
-  await expect(page.locator('#regel-forsta-exponering')).toContainText('0,60');
+  await expect(page.locator('#regel-forsta-exponering')).toContainText('50 procent');
   await page.goto('/vetenskap#kalla-gullett2009');
   await expect(page.locator('#kalla-gullett2009')).toBeInViewport();
   const doi = page.locator('#kalla-gullett2009 a[href^="https://doi.org/"]').first();

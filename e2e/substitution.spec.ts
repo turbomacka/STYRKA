@@ -30,7 +30,6 @@ test('byte före start (hjälpskattning, Använd framöver) och under passet (ka
   await axe(page, 'bytesvy');
   await sheet.getByRole('button', { name: 'Frontböj' }).click();
   await expect(sheet.getByRole('heading', { name: 'Frontböj' })).toBeVisible();
-  await sheet.getByRole('radio', { name: 'Ja' }).click();
   await expect(sheet.getByText('Vikten är ett första förslag. Börja kontrollerat och justera vid behov.')).toBeVisible();
   const start = sheet.getByLabel('Startvikt (kg)');
   await expect(start).not.toHaveValue('');
@@ -80,7 +79,7 @@ test('byte före start (hjälpskattning, Använd framöver) och under passet (ka
   await axe(page, 'pass-kalibrering');
 
   await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
-  await page.getByRole('button', { name: 'Avsluta och spara' }).click();
+  await page.getByRole('button', { name: 'Avsluta och spara' }).click(); await expect(page.getByRole('heading',{name:'Så påverkas nästa pass'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
 
   // Permanent byte syns i profilen och kan återställas.

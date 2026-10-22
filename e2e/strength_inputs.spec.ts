@@ -4,7 +4,7 @@ import { independentIntro, reachSource } from './introScenario';
 
 test('separate strength views preserve independent values, drafts, back navigation, offline saves and profile editing', async ({ page, context }, info) => {
   await signUp(page, uniqueEmail('strength'));
-  await independentIntro(page, context, `docs/evidence/ux-2026-10-18/regression/onboarding/${info.project.name}`);
+  await independentIntro(page, context, `docs/evidence/adaptive-2026-10-22/regression/ux-2026-10-18/regression/onboarding/${info.project.name}`);
 });
 
 test('incomplete entries can be postponed and source choice does not delete confirmed entries', async ({ page }) => {

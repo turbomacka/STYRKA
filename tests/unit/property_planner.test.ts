@@ -94,7 +94,7 @@ function checkInvariants(inp: PlannerInput, snap: ReturnType<typeof planRegular>
       expect(Math.round(e.kg * 1000)).toBe(e.kg * 1000); // exakt i gram
     }
     // Ingen viktsiffra för last utan giltig källa (kalibrering).
-    if (e.calibration) expect(e.kg).toBeNull();
+    if (e.calibration) { if (e.kg === null) expect(['unknown','low']).toContain(e.confidence); else if (!e.recommendation) expect(e.kg).toBeNull(); else { expect(e.confidence).toBe('low'); expect(e.estimatedOneRM).toBeNull(); expect(e.kg).toBe(e.recommendation.suggestedKg); } }
     if (e.loadKind === 'assistance_kg' || e.loadKind === 'bodyweight_plus_kg') expect(e.estimatedOneRM).toBeNull();
     for (const r of inp.restrictions) {
       if (r.active && r.kind === 'limit_sets' && r.exerciseA === e.exerciseId && r.maxSets !== null) expect(e.sets).toBeLessThanOrEqual(r.maxSets);

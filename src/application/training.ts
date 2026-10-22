@@ -11,7 +11,7 @@ import type { ExerciseId } from '../domain/catalog';
 import { exercise } from '../domain/catalog';
 import { RULESET_VERSION, type ChoiceScope, type Familiarity, type PendingSubstitution, type PerceivedEffort, type PlanSnapshot, type PlannedExercise, type Readiness, type SessionStatus, type Side, type SymptomReaction, type Technique } from '../domain/model';
 import { kgToGrams, MAX_GRAMS } from '../domain/units';
-import { uuidFromSeed } from '../domain/hash';
+import { hashOf, uuidFromSeed } from '../domain/hash';
 import { SUBSTITUTION_CATALOG_VERSION } from '../domain/substitutionCatalog';
 import { canCountAsPlanned, estimatedMinutesFor, planExtra, planRegular, planReplacement, substitutionCandidates, type ExtraOptions, type ReplacementResult } from '../planner/planner';
 import { prescribe } from '../domain/prescription';
@@ -207,6 +207,12 @@ function validateValues(se: LocalSessionExercise, v: SetValues, done: boolean): 
  * Gemensam väg: ändra set lokalt + köa create/patch i SAMMA transaktion. `post` körs i samma transaktion
  * efter att setet sparats (t.ex. kalibreringsfortsättning), så att allt eller inget sparas.
  */
+/** Compact prior values for correction traceability; never used as current training. */
+function recordedState(s: LocalSet): import('../domain/trainingFlow').RecordedState {
+  return {status:s.status,deleted:s.deleted,grams:s.actualGrams,reps:s.actualReps,seconds:s.actualSeconds,rir:s.rir,technique:s.technique,effort:s.perceivedEffort??null,
+    sides:(s.detail?.performances??[]).filter(p=>p.status==='done').map(p=>({id:p.id,side:p.side,status:p.status,loadValue:p.loadValue,secondLoadValue:p.secondLoadValue,repetitions:p.repetitions,seconds:p.seconds,rir:p.rir,technique:p.technique,comparisonKey:p.comparisonKey,unit:p.equipment.unit,measurement:p.equipment.measurement,effort:p.effort??null}))};
+}
+
 export async function mutateSet(ctx: AppContext, setId: string, change: (s: LocalSet, se: LocalSessionExercise) => LocalSet, post?: (saved: LocalSet, se: LocalSessionExercise) => Promise<void>): Promise<LocalSet> {
   let result!: LocalSet;
   await trainingTransaction(ctx, async () => {
@@ -217,6 +223,13 @@ export async function mutateSet(ctx: AppContext, setId: string, change: (s: Loca
     const se = await ctx.db.sessionExercises.get(before.sessionExerciseId);
     if (!se) throw new AppError('NOT_FOUND');
     const after = { ...change(before, se), updatedAt: ctx.clock.now() };
+    const recordedBefore=recordedState(before), recordedAfter=recordedState(after);
+    if(after.detail && (recordedBefore.sides.length || before.status==='done') && hashOf(recordedBefore)!==hashOf(recordedAfter)) {
+      after.detail={...after.detail,recordingChanges:[...(before.detail?.recordingChanges??[]),{id:ctx.ids.uuid(),at:ctx.clock.now(),before:recordedBefore,afterHash:hashOf(recordedAfter)}]};
+    }
+    // Fail atomically before queueing a detail that the server cannot accept.
+    // Indented JSON is a conservative upper bound for PostgreSQL jsonb text size.
+    if (after.detail && new TextEncoder().encode(JSON.stringify(after.detail,null,1)).length > 64000) throw new AppError('VALIDATION_ERROR','setDetailSize');
     if (!before.createQueued) {
       after.createQueued = true;
       await ctx.db.outbox.add(outbox(ctx, setId, { type: 'set', setId, create: true, payload: setCreatePayload(after) }));
@@ -228,6 +241,7 @@ export async function mutateSet(ctx: AppContext, setId: string, change: (s: Loca
     await ctx.db.sets.put(after);
     result = after;
     if (post) await post(after, se);
+    if (after.kind === 'work' && ['completed','partial'].includes(session.status)) await updateCalibrationsTx(ctx,session.id);
   });
   return result;
 }
@@ -792,7 +806,7 @@ async function updateCalibrationsTx(ctx: AppContext, sessionId: string): Promise
     const id = calibrationId(ctx, e.exerciseId, variant);
     const cur = await db.calibrations.get(id);
     const tracked = e.snapshot.calibration || e.snapshot.loadEstimationKind !== undefined || !!cur;
-    if (!tracked || cur?.quality === 'calibrated') continue;
+    if (!tracked) continue;
     const sameExs = (await db.sessionExercises.where('exerciseId').equals(e.exerciseId).toArray()).filter((x) => detailed || x.variantKey === e.variantKey);
     const exposures = new Map<string, string[]>();
     for (const x of sameExs) {
@@ -937,12 +951,12 @@ export async function recordPerformance(ctx: AppContext, setId: string, side: Pe
       const prefs = trainingPreferences((await ctx.db.profile.get(ctx.userId))?.trainingPreferences);
       const all = (await ctx.db.sets.where('sessionExerciseId').equals(se.id).toArray()).filter((s) => !s.deleted);
       const secondSidePending = nextSide(updated) !== null;
-      const showWarmup = se.configuration?.warmupVisible ?? prefs.showWarmupSets;
+      const showWarmup = prefs.showWarmupSets;
       const following = all.filter((s) => s.id !== setId && !['done', 'skipped'].includes(s.status) && !s.detail?.aborted && (s.kind === 'work' || (showWarmup && existing.kind === 'warmup')))
         .sort((a, b) => (a.kind === 'warmup' ? 0 : 1) - (b.kind === 'warmup' ? 0 : 1) || a.ordinal - b.ordinal)[0];
       const previous = all.filter((s) => s.id !== setId && s.kind === existing.kind).flatMap((s) => (s.detail?.performances ?? []).filter((x) => x.side === side && x.status === 'done').map((x) => ({ s, p: x }))).sort((a, b) => (b.p.completedAt ?? '').localeCompare(a.p.completedAt ?? ''))[0];
       const knownRir = updated.performances.filter((x) => x.status === 'done').flatMap((x) => effectiveRir(x.rir,x.effort) === null ? [] : [effectiveRir(x.rir,x.effort)!]);
-      const reliableMax = se.snapshot.estimatedOneRM && se.snapshot.configuration && comparisonKey(se.exerciseId, se.snapshot.configuration) === p.comparisonKey && ['high','medium'].includes(se.snapshot.confidence) ? se.snapshot.estimatedOneRM : null;
+      const reliableMax = se.snapshot.estimatedOneRM && comparisonKey(se.exerciseId, se.snapshot.configuration ?? defaultConfiguration(se.exerciseId)) === p.comparisonKey && ['high','medium'].includes(se.snapshot.confidence) ? se.snapshot.estimatedOneRM : null;
       const restInput: RestInput = { effort: updated.performances.some((x) => x.effort === 'maximal') ? 'maximal' : updated.performances.some((x) => x.effort === 'hard' || x.effort === 'too_heavy') ? 'hard' : null, category: exercise(se.exerciseId).timeKind, mode: se.mode, strengthFocus: se.mode === 'heavy', experience: (await ctx.db.profile.get(ctx.userId))?.experience ?? 'novice', adaptive: prefs.adaptiveRestEnabled,
         kind: existing.kind, nextKind: following?.kind ?? null, secondSidePending, betweenSidesSeconds: d.configuration.betweenSidesSeconds, relativeIntensity: reliableMax && p.loadValue !== null ? p.loadValue / reliableMax : null,
         overrideSeconds: se.configuration?.restSeconds ?? prefs.preferredRestOverrides[se.exerciseId], current: restPerformance(existing, p), effortRir: knownRir.length ? Math.min(...knownRir) : null, previous: previous && restPerformance(previous.s, previous.p) };
@@ -951,9 +965,11 @@ export async function recordPerformance(ctx: AppContext, setId: string, side: Pe
         type: secondSidePending ? 'between_sides' : existing.kind === 'warmup' ? (following?.kind === 'work' ? 'before_work' : 'warmup') : 'between_sets',
         recommendationInput: restInput, initialRecommendedSeconds: recommendation.seconds, startedAt: ctx.clock.now(), endedAt: null, recommendedSeconds: recommendation.seconds, actualSeconds: null, adjustmentSeconds: 0, reasons: recommendation.reasons, policyVersion: recommendation.version, outcome: 'active' });
     }
-    return mutateSet(ctx, setId, (s) => ({ ...withDetail(s, updated), manualOverride: isOverride(s, v) }), async (saved, x) => {
+    const saved = await mutateSet(ctx, setId, (s) => ({ ...withDetail(s, updated), manualOverride: isOverride(s, v) }), async (saved, x) => {
       if (saved.kind === 'work' && saved.status === 'done' && updated.configuration.executionMode === 'bilateral' && equipment.unit === 'kg') await continueCalibration(ctx, x, saved);
     });
+    if (options.edit) await refreshActiveRest(ctx, saved);
+    return saved;
   });
 }
 
@@ -1044,23 +1060,42 @@ export async function ensureWarmups(ctx: AppContext, exerciseInstanceId: string)
     const se = await ctx.db.sessionExercises.get(exerciseInstanceId); const profile = await ctx.db.profile.get(ctx.userId);
     if (!se) throw new AppError('NOT_FOUND');
     const prefs = trainingPreferences(profile?.trainingPreferences);
-    if (!(se.configuration?.warmupVisible ?? prefs.showWarmupSets)) return;
+    if (!(prefs.showWarmupSets)) return;
     const sets = await ctx.db.sets.where('sessionExerciseId').equals(se.id).toArray();
-    if (sets.some((s) => s.kind === 'warmup')) return; // Includes removed/skipped rows: don't recreate them.
+    // Only rows explicitly owned by this policy may be updated. Legacy rows remain untouched.
+    const warmups = sets.filter((s) => s.kind === 'warmup');
+    if (warmups.length && !warmups.some((s) => s.detail?.warmupProposal)) return;
     const work = sets.filter((s) => s.kind === 'work' && !s.deleted).sort((a, b) => a.ordinal - b.ordinal)[0];
-    if (!work || sets.some((s) => s.kind === 'work' && (s.status === 'done' || s.status === 'partial'))) return;
+    if (!work || sets.some((s) => !s.deleted && s.kind === 'work' && (s.status === 'done' || s.status === 'partial'))) return;
     const configuration = se.configuration ?? defaultConfiguration(se.exerciseId);
     const earlier = (await ctx.db.sets.where('sessionId').equals(se.sessionId).toArray()).filter((s) => !s.deleted && s.kind === 'work' && s.status === 'done' && s.sessionExerciseId !== se.id && exercise(s.exerciseId).pattern === exercise(se.exerciseId).pattern).length;
-    const input = { targetReps: work.targetReps ?? 0, mode: se.mode, category: exercise(se.exerciseId).timeKind, equipment: configuration.equipment, experience: profile?.experience ?? 'novice', samePatternWorkDone: earlier };
-    const suggestions = warmupSuggestions({ ...input, workingLoad: work.detail?.targetLoadValue ?? (work.targetGrams === null ? null : work.targetGrams / 1000) });
+    const input = { targetReps: work.targetReps ?? 0, mode: se.mode, category: exercise(se.exerciseId).timeKind, equipment: configuration.equipment, experience: profile?.experience ?? 'novice', samePatternWorkDone: earlier, reliableMax: ['high','medium'].includes(se.snapshot.confidence) && comparisonKey(se.exerciseId,se.snapshot.configuration??defaultConfiguration(se.exerciseId))===comparisonKey(se.exerciseId,configuration) ? se.snapshot.estimatedOneRM : null };
+    const sharedLoad = work.detail?.targetLoadValue ?? (work.targetGrams === null ? null : work.targetGrams / 1000);
+    const sideLoads=requiredSides(configuration).map(side=>work.detail?.plannedSides?.[side] ? (work.detail.plannedSides[side]!.grams===null?null:work.detail.plannedSides[side]!.grams!/1000):sharedLoad);
+    const workingLoad=sideLoads.some(x=>x===null)?null:Math.min(...sideLoads as number[]);
+    const suggestions = warmupSuggestions({ ...input, workingLoad });
     const independent = configuration.equipment.basis === 'independent';
     const secondSuggestions = independent ? warmupSuggestions({ ...input, workingLoad: work.detail?.targetSecondLoadValue ?? null }) : [];
     for (const [index, p] of suggestions.entries()) {
       const second = secondSuggestions.find((x) => x.reps === p.reps);
       if (independent && !second) continue;
       const s: LocalSet = { ...work, id: uuidFromSeed(`${se.id}|warmup|${index + 1}`), kind: 'warmup', ordinal: index + 1, status: 'planned', targetGrams: independent ? null : kgToGrams(p.load), targetReps: p.reps, actualGrams: null, actualReps: null, actualSeconds: null, occurredAt: null, serverRevision: null, createQueued: false, detail: undefined, syncState: 'local' };
-      await ctx.db.sets.add(s);
-      await mutateSet(ctx, s.id, (x) => ({ ...x, detail: { ...detailFor(x, se), ...(independent ? { targetLoadValue: p.load, targetSecondLoadValue: second!.load } : {}) } }));
+
+      const old = warmups.find((x) => x.id === s.id);
+      if (old && (!old.detail?.warmupProposal?.managed || (old.deleted && !old.detail.warmupProposal.suppressed) || old.status !== 'planned' || old.detail.performances.length)) continue;
+      const proposal = { policyVersion: p.policyVersion, managed: true };
+      if (old) {
+        if (!old.deleted && old.targetReps === p.reps && old.detail?.targetLoadValue === p.load && (!independent || old.detail?.targetSecondLoadValue === second!.load) && old.detail.warmupProposal?.policyVersion === p.policyVersion) continue;
+        await mutateSet(ctx, old.id, (x) => ({ ...x, deleted: false, targetGrams: s.targetGrams, targetReps: p.reps,
+          detail: { ...x.detail!, plannedSides: undefined, targetLoadValue: p.load, targetSecondLoadValue: independent ? second!.load : null, warmupProposal: proposal } }));
+      } else {
+        await ctx.db.sets.add(s);
+        await mutateSet(ctx, s.id, (x) => ({ ...x, detail: { ...detailFor(x, se), targetLoadValue: p.load, ...(independent ? { targetSecondLoadValue: second!.load } : {}), warmupProposal: proposal } }));
+      }
+    }
+    for (const old of warmups) {
+      if (old.ordinal <= suggestions.length || old.deleted || old.status !== 'planned' || !old.detail?.warmupProposal?.managed || old.detail.performances.length) continue;
+      await mutateSet(ctx, old.id, (x) => ({ ...x, deleted: true, detail: { ...x.detail!, warmupProposal: { ...x.detail!.warmupProposal!, suppressed: true } } }));
     }
   });
 }
@@ -1095,7 +1130,9 @@ async function refreshActiveRest(ctx:AppContext,saved:LocalSet) {
     d.rests=d.rests.map((r)=>{
       if(r.outcome!=='active' || !r.recommendationInput) return r;
       const p=performed.find((x)=>x.id===r.precedingPerformanceId); if(!p) return r;
-      const input={...r.recommendationInput,effort,effortRir:known.length?Math.min(...known):null,current:restPerformance(s,p)};
+      const prior=r.recommendationInput;
+      const max=prior.relativeIntensity && prior.current?.load ? prior.current.load/prior.relativeIntensity : null;
+      const input={...prior,relativeIntensity:max && p.loadValue!==null ? p.loadValue/max:null,effort,effortRir:known.length?Math.min(...known):null,current:restPerformance(s,p)};
       const next=recommendRest(input);
       if(next.seconds===r.recommendedSeconds && JSON.stringify(next.reasons)===JSON.stringify(r.reasons)) return r;
       const manual=r.userAdjustmentSeconds ?? r.adjustmentSeconds;

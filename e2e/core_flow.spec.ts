@@ -62,8 +62,8 @@ test('S01–S12: konto, intro, starta pass (≤2 tryck), logga set (1 tryck), å
   await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
   await expect(page.getByText(/set/).first()).toBeVisible();
   await shot('S11-avsluta');
-  await page.getByRole('button', { name: 'Avsluta och spara' }).click();
-  await expect(page.getByText('Passet är sparat',{exact:true})).toBeVisible();
+  await page.getByRole('button', { name: 'Avsluta och spara' }).click(); await expect(page.getByRole('heading',{name:'Så påverkas nästa pass'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
+
   await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
 
   await page.getByRole('link', { name: 'Utveckling' }).click();

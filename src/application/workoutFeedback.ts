@@ -1,16 +1,19 @@
+import { hashOf } from '../domain/hash';
 import type { AppContext } from './context';
 import { chooseFeedback, feedbackCategory } from '../domain/workoutFeedback';
 import { effectiveRir } from '../domain/effort';
 
-export type SavedWorkoutFeedback = { text: string; sessionId: string; category: string; createdAt: string };
+export type SavedWorkoutFeedback = { text: string; sessionId: string; category: string; createdAt: string; inputsHash?: string };
 export async function savedWorkoutFeedback(ctx: AppContext, id: string): Promise<SavedWorkoutFeedback> {
   return ctx.db.transaction('rw', [ctx.db.meta, ctx.db.sessions, ctx.db.sets, ctx.db.sessionExercises], async () => {
     const key = `workout-feedback:${id}`;
     const existing = await ctx.db.meta.get(key);
-    if (existing) return existing.value as SavedWorkoutFeedback;
+
     const session = await ctx.db.sessions.get(id);
     if (!session) throw new Error('SESSION_NOT_FOUND');
     const all = (await ctx.db.sets.toArray()).filter((s) => !s.deleted && s.kind === 'work');
+    const inputsHash = hashOf({status:session.status, sets:all.map((s)=>[s.id,s.status,s.actualGrams,s.actualReps,s.actualSeconds,s.targetGrams,s.rir,s.technique,s.perceivedEffort,s.detail?.performances])});
+    if (existing && (existing.value as SavedWorkoutFeedback).inputsHash === inputsHash) return existing.value as SavedWorkoutFeedback;
     const sets = all.filter((s) => s.sessionId === id);
     const perf = sets.flatMap((s) => s.detail?.performances.filter((p) => p.status === 'done') ?? []);
     const history = (await ctx.db.sessions.toArray())
@@ -24,7 +27,7 @@ export async function savedWorkoutFeedback(ctx: AppContext, id: string): Promise
       .sort((a, b) => (b.finishedAt ?? '').localeCompare(a.finishedAt ?? ''));
     // Only the latest comparable session is a baseline. An old easy set cannot imply new progress.
     const improved = perf.some((p) => {
-      if (p.loadValue === null || p.repetitions === null || p.technique !== 'controlled' || effectiveRir(p.rir, p.effort) == null)
+      if (p.equipment.measurement === 'bodyweight_assistance' || p.equipment.basis === 'independent' || p.loadValue === null || p.repetitions === null || p.technique !== 'controlled' || effectiveRir(p.rir, p.effort) == null)
         return false;
       for (const prior of history) {
         const comparable = all
@@ -48,6 +51,9 @@ export async function savedWorkoutFeedback(ctx: AppContext, id: string): Promise
     const performed = sets.filter((s) => s.status === 'done' || s.detail?.performances.some((p) => p.status === 'done')).length;
     const category = feedbackCategory({
       performed,
+      extra: exs.some((e) => (e.snapshot.substitutionReason === 'USER_ADDED' && sets.some((s) => s.sessionExerciseId === e.id && s.status === 'done')) || sets.filter((s) => s.sessionExerciseId === e.id && s.status === 'done').length > e.snapshot.sets),
+      first: perf.some((p) => !all.some((s) => s.sessionId !== id && s.detail?.performances.some((o) => o.status === 'done' && o.comparisonKey === p.comparisonKey))),
+      maintained: perf.some((p) => all.filter((s) => s.sessionId === history[0]?.id).some((s) => s.detail?.performances.some((o) => o.status === 'done' && o.comparisonKey === p.comparisonKey && o.side === p.side && o.seconds === p.seconds && o.loadValue === p.loadValue && o.repetitions === p.repetitions && o.secondLoadValue === p.secondLoadValue && o.technique === p.technique && effectiveRir(o.rir,o.effort) === effectiveRir(p.rir,p.effort)))),
       complete: session.status === 'completed',
       improved,
       adjusted: sets.some(
@@ -65,7 +71,7 @@ export async function savedWorkoutFeedback(ctx: AppContext, id: string): Promise
     });
     const recent = ((await ctx.db.meta.get('recent-workout-feedback'))?.value ?? []) as string[];
     const seed = parseInt(ctx.ids.uuid().replace(/-/g, '').slice(0, 8), 16);
-    const value = { text: chooseFeedback(category, recent, seed), category, sessionId: id, createdAt: ctx.clock.now() };
+    const value = { inputsHash, text: chooseFeedback(category, recent, seed), category, sessionId: id, createdAt: ctx.clock.now() };
     await ctx.db.meta.put({ key, value });
     await ctx.db.meta.put({ key: 'recent-workout-feedback', value: [value.text, ...recent].slice(0, 12) });
     return value;

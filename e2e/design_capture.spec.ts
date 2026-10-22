@@ -5,7 +5,7 @@ import { onboard, signUp, uniqueEmail } from './helpers';
 const phase = process.env.DES_CAPTURE;
 test.skip(!phase, 'Explicit before/after evidence capture only');
 for (const theme of ['light', 'dark'] as const) test(`design evidence ${theme}`, async ({ page }, info) => {
-  const dir = `docs/evidence/ux-2026-10-18/regression/design-001/${phase}/${info.project.name}/${theme}`;
+  const dir = `docs/evidence/adaptive-2026-10-22/regression/ux-2026-10-18/regression/design-001/${phase}/${info.project.name}/${theme}`;
   mkdirSync(dir, { recursive: true });
   await page.emulateMedia({ colorScheme: theme });
   await page.addInitScript(() => {
@@ -32,7 +32,7 @@ for (const theme of ['light', 'dark'] as const) test(`design evidence ${theme}`,
   await page.getByRole('button', { name: 'Registrera set 2' }).click();
   await expect(page.getByRole('button', { name: 'Set 2 utfört. Ändra eller ångra' })).toBeVisible(); await shot('06-saved');
   await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
-  await page.getByRole('button', { name: 'Avsluta och spara', exact: true }).click();
+  await page.getByRole('button', { name: 'Avsluta och spara', exact: true }).click(); await expect(page.getByRole('heading',{name:'Så påverkas nästa pass'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
   await page.getByRole('link', { name: 'Plan', exact: true }).click();
   await expect(page.locator('.plan-row-head').first()).toBeVisible(); await page.locator('.plan-row-head').first().click();

@@ -265,7 +265,7 @@ export function WorkoutOverview() {
   );
 }
 
-function AddExercise({
+export function AddExercise({
   sessionId,
   onClose,
   onAdded,

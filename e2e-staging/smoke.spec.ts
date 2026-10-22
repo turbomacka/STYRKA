@@ -23,7 +23,7 @@ test('staging: inloggning, intro, pass med synk till staging-databasen, utan CSP
   const problems: string[] = [];
   page.on('console', (m) => m.type() === 'error' && problems.push(m.text()));
   page.on('pageerror', (e) => problems.push(e.message));
-  const dir = `docs/evidence/ux-2026-10-18/published/design-001/staging/${info.project.name}`;
+  const dir = `docs/evidence/adaptive-2026-10-22/published/design-001/staging/${info.project.name}`;
   mkdirSync(dir, { recursive: true });
   try {
     expect((await userClient.auth.signInWithPassword({ email, password })).error).toBeNull();
@@ -74,6 +74,8 @@ test('staging: inloggning, intro, pass med synk till staging-databasen, utan CSP
     await page.getByRole('button', { name: 'Hann inte', exact: true }).click();
     await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
     await page.getByRole('button', { name: 'Avsluta och spara' }).click();
+    await expect(page.getByRole('heading', { name: 'Så påverkas nästa pass' })).toBeVisible();
+    await page.getByRole('button', { name: 'Till planen', exact: true }).click();
     await page.getByRole('button', { name: 'Använd förslaget nästa pass' }).click();
     await expect(page.getByRole('heading', { name: 'Ditt val för nästa pass' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Min träningsplan' })).toBeVisible();

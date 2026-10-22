@@ -174,6 +174,8 @@ function latestFor(history: PerformedExercise[], mode: Mode): { latest: Performe
  * nedgraderat tung övning vid caution <48 h (08 §2 steg 4–5).
  */
 export function prescribe(args: PrescribeArgs): PlannedExercise {
+  // Project the actual active work-set count; immutable original plans remain unchanged.
+  args = { ...args, history: args.history.map((h) => ({ ...h, plan: { ...h.plan, sets: Math.max(1, h.sets.filter((s) => s.kind === 'work').length) } })) };
   if (args.performedSetsOnly) {
     // Projection only: never rewrite immutable historical plans or stored observations.
     args = { ...args, settings: args.settings ? { ...args.settings, estimate: null } : null,
@@ -228,7 +230,7 @@ function prescribeExternal(args: PrescribeArgs): PlannedExercise {
     return base(args, rec, { estimatedOneRM: e1rm, calibration: rec.kg === null });
   }
 
-  if (latest.plan.kg === null) return fromCalibration(args, latest, inc, e1rm);
+  if (latest.plan.kg === null || (latest.plan.calibration && latest.plan.recommendation)) return fromCalibration(args, latest, inc, e1rm);
 
   const exposures = sameMode.map(toExposure);
   const next = recommendNext({
@@ -256,7 +258,7 @@ function deriveFromOtherMode(args: PrescribeArgs, inc: number): { kg: number } |
     const loads = workDone(h.sets).flatMap((s) => s.actualKg !== null && s.actualKg > 0 ? [s.actualKg] : []);
     return loads.length ? Math.min(...loads) : null;
   };
-  const load = (h: PerformedExercise) => args.performedSetsOnly ? actualLoad(h) : h.plan.kg;
+  const load = (h: PerformedExercise) => args.performedSetsOnly || h.plan.calibration ? actualLoad(h) : h.plan.kg;
   const others = args.history.filter((h) => h.plan.mode !== args.mode && load(h) !== null && hasWork(h));
   const src = others[others.length - 1];
   if (!src || load(src) === null) return null;

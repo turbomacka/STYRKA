@@ -44,7 +44,7 @@ test('axe + träffytor + reflow på kritiska vyer', async ({ page }) => {
     ['S08', async () => { await page.getByRole('button', { name: 'Starta passet', exact: true }).click(); await page.getByRole('button', { name: 'Registrera set 1' }).click(); }],
     ['S08-editor', async () => { await page.getByRole('button', { name: /Repetitioner set 2/ }).click(); }],
     ['S11', async () => { await page.getByRole('button', { name: 'Avsluta', exact: true }).click(); }],
-    ['S12', async () => { await page.getByRole('button', { name: 'Avsluta och spara' }).click(); await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible(); await page.getByRole('link', { name: 'Utveckling' }).click(); }],
+    ['S12', async () => { await page.getByRole('button', { name: 'Avsluta och spara' }).click(); await expect(page.getByRole('heading',{name:'Så påverkas nästa pass'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click(); await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible(); await page.getByRole('link', { name: 'Utveckling' }).click(); }],
     ['S13', async () => { await page.getByRole('link', { name: 'Profil' }).click(); }],
     ['S14', async () => { await page.goto('/profil/begransningar'); }],
     ['S15', async () => { await page.goto('/profil/data'); }],
@@ -71,7 +71,7 @@ test('reflow: 320 CSS px bredd utan horisontell scroll (motsvarar kraftig zoom)'
   await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
   await page.getByRole('button', { name: /Vikt set 1/ }).click();
   await noHorizontalScroll(page, 'S08-editor');
-  await page.screenshot({ path: 'docs/evidence/ux-2026-10-18/regression/screenshots/reflow-320-S08.png', fullPage: true });
+  await page.screenshot({ path: 'docs/evidence/adaptive-2026-10-22/regression/ux-2026-10-18/regression/screenshots/reflow-320-S08.png', fullPage: true });
 });
 
 test('tangentbord: starta pass och logga set utan mus; skärmläsarstatus annonseras en gång', async ({ page, browserName }) => {
@@ -105,11 +105,11 @@ test.describe('mörkt läge', () => {
     await signUp(page, uniqueEmail('dark'));
     await onboard(page);
     await axe(page, 'S06-mörkt');
-    await page.screenshot({ path: `docs/evidence/ux-2026-10-18/regression/screenshots/${info.project.name}/S06-idag-morkt.png`, fullPage: true });
+    await page.screenshot({ path: `docs/evidence/adaptive-2026-10-22/regression/ux-2026-10-18/regression/screenshots/${info.project.name}/S06-idag-morkt.png`, fullPage: true });
     await page.getByRole('button', { name: 'Öppna passet' }).click();
     await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
     await page.getByRole('button', { name: 'Registrera set 1' }).click();
     await axe(page, 'S08-mörkt');
-    await page.screenshot({ path: `docs/evidence/ux-2026-10-18/regression/screenshots/${info.project.name}/S08-trana-morkt.png`, fullPage: true });
+    await page.screenshot({ path: `docs/evidence/adaptive-2026-10-22/regression/ux-2026-10-18/regression/screenshots/${info.project.name}/S08-trana-morkt.png`, fullPage: true });
   });
 });

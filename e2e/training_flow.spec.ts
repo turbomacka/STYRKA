@@ -8,5 +8,5 @@ test('warmup, unilateral cable, offline rest resume and separated history', asyn
   await signUp(page, uniqueEmail('flow'));
   await onboard(page);
   if(info.project.name==='iphone-webkit')info.annotations.push({type:'limitation',description:'Windows WebKit: reload online; actual offline PWA needs iPhone testing.'});
-  await runTrainingFlow(page, context, `docs/evidence/ux-2026-10-18/training-flow/${info.project.name}`, info.project.name!=='iphone-webkit');
+  await runTrainingFlow(page, context, `docs/evidence/adaptive-2026-10-22/regression/ux-2026-10-18/training-flow/${info.project.name}`, info.project.name!=='iphone-webkit');
 });

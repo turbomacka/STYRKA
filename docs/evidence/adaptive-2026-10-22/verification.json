@@ -1,0 +1,804 @@
+{
+  "verifiedAt": "2026-10-22T15:17:55.021Z",
+  "baseCommit": "d81c9cc863caedb3153b182a26d5c9a9cfcfff6f",
+  "vitest": {
+    "passed": 482,
+    "failed": 0,
+    "total": 482
+  },
+  "browser": {
+    "passed": 85,
+    "skipped": 5,
+    "failed": 0,
+    "results": [
+      {
+        "file": "a11y.spec.ts",
+        "title": "axe + träffytor + reflow på kritiska vyer",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "a11y.spec.ts",
+        "title": "reflow: 320 CSS px bredd utan horisontell scroll (motsvarar kraftig zoom)",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "a11y.spec.ts",
+        "title": "tangentbord: starta pass och logga set utan mus; skärmläsarstatus annonseras en gång",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "a11y.spec.ts",
+        "title": "axe + träffytor + reflow på kritiska vyer",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "a11y.spec.ts",
+        "title": "reflow: 320 CSS px bredd utan horisontell scroll (motsvarar kraftig zoom)",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "a11y.spec.ts",
+        "title": "tangentbord: starta pass och logga set utan mus; skärmläsarstatus annonseras en gång",
+        "project": "iphone-webkit",
+        "status": "skipped",
+        "run": "browser-final-focused.json",
+        "annotations": [
+          {
+            "type": "skip",
+            "description": "Tab-fokus mellan knappar är avstängt som standard i WebKit/Safari.",
+            "location": {
+              "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\a11y.spec.ts",
+              "line": 78,
+              "column": 8
+            }
+          }
+        ]
+      },
+      {
+        "file": "a11y.spec.ts",
+        "title": "axe + träffytor + reflow på kritiska vyer",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "a11y.spec.ts",
+        "title": "reflow: 320 CSS px bredd utan horisontell scroll (motsvarar kraftig zoom)",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "a11y.spec.ts",
+        "title": "tangentbord: starta pass och logga set utan mus; skärmläsarstatus annonseras en gång",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "a11y.spec.ts",
+        "title": "samma informationshierarki och godkänd kontrast i mörkt läge",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "a11y.spec.ts",
+        "title": "samma informationshierarki och godkänd kontrast i mörkt läge",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "a11y.spec.ts",
+        "title": "samma informationshierarki och godkänd kontrast i mörkt läge",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "adaptive_training.spec.ts",
+        "title": "active workout: add, undo, delete, restore, offline reload and real replanning",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "adaptive_training.spec.ts",
+        "title": "active workout: add, undo, delete, restore, offline reload and real replanning",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "adaptive_training.spec.ts",
+        "title": "active workout: add, undo, delete, restore, offline reload and real replanning",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "balance.spec.ts",
+        "title": "Balans under Utveckling: tomläge, fördelning, förslag, förhandsvisning och avböjande",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "balance.spec.ts",
+        "title": "Balans under Utveckling: tomläge, fördelning, förslag, förhandsvisning och avböjande",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "balance.spec.ts",
+        "title": "Balans under Utveckling: tomläge, fördelning, förslag, förhandsvisning och avböjande",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "balance.spec.ts",
+        "title": "Balans läsbar i mörkt läge på smal skärm",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "balance.spec.ts",
+        "title": "Balans läsbar i mörkt läge på smal skärm",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "balance.spec.ts",
+        "title": "Balans läsbar i mörkt läge på smal skärm",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "core_flow.spec.ts",
+        "title": "S01–S12: konto, intro, starta pass (≤2 tryck), logga set (1 tryck), ångra, paus, avsluta, utveckling",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "core_flow.spec.ts",
+        "title": "S10: spontanpass med standardtid nås med 3 tryck från Idag",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "core_flow.spec.ts",
+        "title": "S01–S12: konto, intro, starta pass (≤2 tryck), logga set (1 tryck), ångra, paus, avsluta, utveckling",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "core_flow.spec.ts",
+        "title": "S10: spontanpass med standardtid nås med 3 tryck från Idag",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "core_flow.spec.ts",
+        "title": "S01–S12: konto, intro, starta pass (≤2 tryck), logga set (1 tryck), ångra, paus, avsluta, utveckling",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "core_flow.spec.ts",
+        "title": "S10: spontanpass med standardtid nås med 3 tryck från Idag",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "delete_workout.spec.ts",
+        "title": "radera registrerat pass: avbryt, bekräfta offline, historik och omladdning",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "delete_workout.spec.ts",
+        "title": "radera registrerat pass: avbryt, bekräfta offline, historik och omladdning",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "delete_workout.spec.ts",
+        "title": "radera registrerat pass: avbryt, bekräfta offline, historik och omladdning",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "design_rollback.spec.ts",
+        "title": "DES rollback: classic theme and functional set/card without migration",
+        "project": "android-chrome",
+        "status": "skipped",
+        "run": "browser-results.json",
+        "annotations": [
+          {
+            "type": "skip",
+            "description": "Run explicitly against a fresh classic build",
+            "location": {
+              "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_rollback.spec.ts",
+              "line": 5,
+              "column": 8
+            }
+          }
+        ]
+      },
+      {
+        "file": "design_rollback.spec.ts",
+        "title": "DES rollback: classic theme and functional set/card without migration",
+        "project": "iphone-webkit",
+        "status": "skipped",
+        "run": "browser-results.json",
+        "annotations": [
+          {
+            "type": "skip",
+            "description": "Run explicitly against a fresh classic build",
+            "location": {
+              "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_rollback.spec.ts",
+              "line": 5,
+              "column": 8
+            }
+          }
+        ]
+      },
+      {
+        "file": "design_rollback.spec.ts",
+        "title": "DES rollback: classic theme and functional set/card without migration",
+        "project": "desktop-keyboard",
+        "status": "skipped",
+        "run": "browser-results.json",
+        "annotations": [
+          {
+            "type": "skip",
+            "description": "Run explicitly against a fresh classic build",
+            "location": {
+              "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_rollback.spec.ts",
+              "line": 5,
+              "column": 8
+            }
+          }
+        ]
+      },
+      {
+        "file": "design.spec.ts",
+        "title": "DES mobile states and 200% text: light",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "design.spec.ts",
+        "title": "DES mobile states and 200% text: dark",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "design.spec.ts",
+        "title": "DES mobile states and 200% text: light",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "design.spec.ts",
+        "title": "DES mobile states and 200% text: dark",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "design.spec.ts",
+        "title": "DES mobile states and 200% text: light",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "design.spec.ts",
+        "title": "DES mobile states and 200% text: dark",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "effort.spec.ts",
+        "title": "optional set feelings survive edits and offline reload; initial strength is a separate reference",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "effort.spec.ts",
+        "title": "optional set feelings survive edits and offline reload; initial strength is a separate reference",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "effort.spec.ts",
+        "title": "optional set feelings survive edits and offline reload; initial strength is a separate reference",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "offline_privacy.spec.ts",
+        "title": "29: flygplansläge hela passet + omladdning offline + återanslutning ⇒ exakt utförda set på servern",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "offline_privacy.spec.ts",
+        "title": "29: flygplansläge hela passet + omladdning offline + återanslutning ⇒ exakt utförda set på servern",
+        "project": "iphone-webkit",
+        "status": "skipped",
+        "run": "browser-results.json",
+        "annotations": [
+          {
+            "type": "skip",
+            "description": "Playwright WebKit på Windows saknar stöd för service worker-offline; täcks av Chromium + manuell iOS-QA.",
+            "location": {
+              "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\offline_privacy.spec.ts",
+              "line": 29,
+              "column": 8
+            }
+          }
+        ]
+      },
+      {
+        "file": "offline_privacy.spec.ts",
+        "title": "29: flygplansläge hela passet + omladdning offline + återanslutning ⇒ exakt utförda set på servern",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "offline_privacy.spec.ts",
+        "title": "32: utloggning med osynkade data varnar; nästa användare på enheten ser inget av första",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "offline_privacy.spec.ts",
+        "title": "32: utloggning med osynkade data varnar; nästa användare på enheten ser inget av första",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "offline_privacy.spec.ts",
+        "title": "32: utloggning med osynkade data varnar; nästa användare på enheten ser inget av första",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "plan.spec.ts",
+        "title": "Min träningsplan: kommande, genomförda, anteckning, planversioner och utskrift",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "plan.spec.ts",
+        "title": "Min träningsplan: kommande, genomförda, anteckning, planversioner och utskrift",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "plan.spec.ts",
+        "title": "Min träningsplan: kommande, genomförda, anteckning, planversioner och utskrift",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "recovery.spec.ts",
+        "title": "completed bench Lätt: next bench is Tung, offline and after reload",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "recovery.spec.ts",
+        "title": "completed bench Lagom: next bench is Medel, offline and after reload",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "recovery.spec.ts",
+        "title": "completed bench Maxansträngning: next bench is Lätt, offline and after reload",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "recovery.spec.ts",
+        "title": "completed bench Lätt: next bench is Tung, offline and after reload",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "recovery.spec.ts",
+        "title": "completed bench Lagom: next bench is Medel, offline and after reload",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "recovery.spec.ts",
+        "title": "completed bench Maxansträngning: next bench is Lätt, offline and after reload",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "recovery.spec.ts",
+        "title": "completed bench Lätt: next bench is Tung, offline and after reload",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "recovery.spec.ts",
+        "title": "completed bench Lagom: next bench is Medel, offline and after reload",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "recovery.spec.ts",
+        "title": "completed bench Maxansträngning: next bench is Lätt, offline and after reload",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "science.spec.ts",
+        "title": "SUB17: utloggad besökare når /vetenskap från välkomstsidan; källor och begränsningar visas",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "science.spec.ts",
+        "title": "SUB18: direktlänk till algoritmregel och källa (DOI) fungerar",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "science.spec.ts",
+        "title": "inloggad: vetenskap är tillgänglig i Profil och hålls utanför träningen",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "science.spec.ts",
+        "title": "SUB17: utloggad besökare når /vetenskap från välkomstsidan; källor och begränsningar visas",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "science.spec.ts",
+        "title": "SUB18: direktlänk till algoritmregel och källa (DOI) fungerar",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "science.spec.ts",
+        "title": "inloggad: vetenskap är tillgänglig i Profil och hålls utanför träningen",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "science.spec.ts",
+        "title": "SUB17: utloggad besökare når /vetenskap från välkomstsidan; källor och begränsningar visas",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "science.spec.ts",
+        "title": "SUB18: direktlänk till algoritmregel och källa (DOI) fungerar",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "science.spec.ts",
+        "title": "inloggad: vetenskap är tillgänglig i Profil och hålls utanför träningen",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "skipped_exercises.spec.ts",
+        "title": "orsak till överhopp, tydligt förslag, godkännande och ångra på mobil",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "skipped_exercises.spec.ts",
+        "title": "orsak till överhopp, tydligt förslag, godkännande och ångra på mobil",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "skipped_exercises.spec.ts",
+        "title": "orsak till överhopp, tydligt förslag, godkännande och ångra på mobil",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "strength_inputs.spec.ts",
+        "title": "separate strength views preserve independent values, drafts, back navigation, offline saves and profile editing",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "strength_inputs.spec.ts",
+        "title": "incomplete entries can be postponed and source choice does not delete confirmed entries",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "strength_inputs.spec.ts",
+        "title": "new user can create a plan without strength data and change the source later",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "strength_inputs.spec.ts",
+        "title": "separate strength views preserve independent values, drafts, back navigation, offline saves and profile editing",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "strength_inputs.spec.ts",
+        "title": "incomplete entries can be postponed and source choice does not delete confirmed entries",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "strength_inputs.spec.ts",
+        "title": "new user can create a plan without strength data and change the source later",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "strength_inputs.spec.ts",
+        "title": "separate strength views preserve independent values, drafts, back navigation, offline saves and profile editing",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "strength_inputs.spec.ts",
+        "title": "incomplete entries can be postponed and source choice does not delete confirmed entries",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "strength_inputs.spec.ts",
+        "title": "new user can create a plan without strength data and change the source later",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "substitution.spec.ts",
+        "title": "byte före start (hjälpskattning, Använd framöver) och under passet (kalibrering per hantel, ≤2 tryck)",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "substitution.spec.ts",
+        "title": "byte före start (hjälpskattning, Använd framöver) och under passet (kalibrering per hantel, ≤2 tryck)",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "substitution.spec.ts",
+        "title": "byte före start (hjälpskattning, Använd framöver) och under passet (kalibrering per hantel, ≤2 tryck)",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "training_flow.spec.ts",
+        "title": "warmup, unilateral cable, offline rest resume and separated history",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "training_flow.spec.ts",
+        "title": "warmup, unilateral cable, offline rest resume and separated history",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": [
+          {
+            "type": "limitation",
+            "description": "Windows WebKit: reload online; actual offline PWA needs iPhone testing."
+          }
+        ]
+      },
+      {
+        "file": "training_flow.spec.ts",
+        "title": "warmup, unilateral cable, offline rest resume and separated history",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-final-focused.json",
+        "annotations": []
+      },
+      {
+        "file": "workout_ux.spec.ts",
+        "title": "A–J: plan, autosave, register, effort, persistent rest, swap, reduce, undo and finish",
+        "project": "android-chrome",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      },
+      {
+        "file": "workout_ux.spec.ts",
+        "title": "A–J: plan, autosave, register, effort, persistent rest, swap, reduce, undo and finish",
+        "project": "iphone-webkit",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": [
+          {
+            "type": "limitation",
+            "description": "Windows WebKit: reload online; service worker offline requires physical iPhone QA."
+          }
+        ]
+      },
+      {
+        "file": "workout_ux.spec.ts",
+        "title": "A–J: plan, autosave, register, effort, persistent rest, swap, reduce, undo and finish",
+        "project": "desktop-keyboard",
+        "status": "expected",
+        "run": "browser-results.json",
+        "annotations": []
+      }
+    ]
+  },
+  "checks": {
+    "typecheck": "passed",
+    "eslint": "passed",
+    "build": "passed; existing chunk size warning",
+    "referenceSmoke": 26,
+    "originalEngineHash": "unchanged"
+  },
+  "productionDeployed": false
+}

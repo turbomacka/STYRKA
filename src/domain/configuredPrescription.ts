@@ -8,7 +8,7 @@ import { comparisonKey, requiredSides, type ExerciseConfiguration } from './trai
  * The load fields supplied to progressionDecision are neutral 0/1 comparison flags,
  * never a conversion of levels or independent stacks to kilograms or estimated strength.
  */
-export function configuredPrescription(plan: PlannedExercise, history: PerformedExercise[], c: ExerciseConfiguration): PlannedExercise {
+function configuredPrescriptionImpl(plan: PlannedExercise, history: PerformedExercise[], c: ExerciseConfiguration): PlannedExercise {
   const e = c.equipment;
   if (e.unit === 'kg' && e.basis !== 'independent') {
     if (plan.kg === null || !e.increments.length) return plan;
@@ -51,4 +51,13 @@ export function configuredPrescription(plan: PlannedExercise, history: Performed
     }
   }
   return { ...empty, targetLoadValue: Number.isFinite(load) ? Math.min(500,load) : null, targetSecondLoadValue: second !== null && Number.isFinite(second) ? Math.min(500,second) : null, reps, calibration: false, reasons: [...plan.reasons,progressionHeld ? 'RECOVERY_HOLD' : decision.reason] };
+}
+
+/** Keep source metadata consistent after equipment rounding or an ordinal load decision. */
+export function configuredPrescription(plan: PlannedExercise, history: PerformedExercise[], c: ExerciseConfiguration): PlannedExercise {
+  const result = configuredPrescriptionImpl(plan,history,c);
+  if (!result.recommendation) return result;
+  const calibratedValue = result.targetLoadValue != null;
+  const source = calibratedValue ? 'history' : result.kg === null && result.targetSeconds === null && c.equipment.measurement !== 'bodyweight' ? 'calibration' : result.recommendation.source;
+  return {...result,recommendation:{...result.recommendation,source,suggestedKg:result.kg}};
 }

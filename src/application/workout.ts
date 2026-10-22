@@ -10,6 +10,7 @@ import {
   abortTrainingSet,
   activeSession,
   detailFor,
+  ensureWarmups,
   displayOrder,
   initialConfiguration,
   mutateSet,
@@ -78,7 +79,7 @@ export async function editPlannedSet(
     const s = await ctx.db.sets.get(id);
     if (!s || s.deleted) throw new AppError('NOT_FOUND');
     await requireEditable(ctx, s.sessionId);
-    return mutateSet(ctx, id, (current, se) => {
+    const saved = await mutateSet(ctx, id, (current, se) => {
       if (se.replacedById || current.status === 'done') throw new AppError('INVALID_STATE');
       const d = detailFor(current, se);
       const chosen = side ?? (requiredSides(d.configuration).length === 1 ? requiredSides(d.configuration)[0] : undefined);
@@ -105,6 +106,7 @@ export async function editPlannedSet(
           throw new AppError('VALIDATION_ERROR', key);
       if (value.secondLoad !== null && (!Number.isFinite(value.secondLoad) || value.secondLoad < 0 || value.secondLoad > 500))
         throw new AppError('VALIDATION_ERROR', 'secondLoad');
+      if (d.warmupProposal) d.warmupProposal = { ...d.warmupProposal, managed: false };
       if (chosen) d.plannedSides = { ...d.plannedSides, [chosen]: value };
       const shared = !chosen || d.configuration.executionMode === 'bilateral';
       if (shared) {
@@ -123,6 +125,24 @@ export async function editPlannedSet(
           : {}),
       };
     });
+    if (s.kind === 'work') await ensureWarmups(ctx, s.sessionExerciseId);
+    return saved;
+  });
+}
+
+// Explicit deletion is separate from removing only the remaining part of an exercise.
+// Tombstones preserve the recorded values for undo and use the existing mutation log.
+export async function deleteTrainingSet(ctx: AppContext, id: string) {
+  return trainingTransaction(ctx, async () => {
+    const s = await ctx.db.sets.get(id);
+    if (!s) throw new AppError('NOT_FOUND');
+    await requireEditable(ctx, s.sessionId);
+    for (const owner of await ctx.db.sets.where('sessionId').equals(s.sessionId).toArray()) {
+      if (owner.detail?.rests.some((r) => r.outcome === 'active' && (owner.id === id || r.followingSetId === id)))
+        await mutateSet(ctx, owner.id, (x) => ({ ...x, detail: { ...x.detail!, rests: x.detail!.rests.map((r) =>
+          r.outcome === 'active' && (owner.id === id || r.followingSetId === id) ? { ...r, outcome: 'dismissed', endedAt: ctx.clock.now() } : r) } }));
+    }
+    return mutateSet(ctx, id, (x) => ({ ...x, deleted: true }));
   });
 }
 
@@ -165,7 +185,7 @@ export async function restorePlannedSet(ctx: AppContext, id: string) {
     if (!s) throw new AppError('NOT_FOUND');
     await requireEditable(ctx, s.sessionId);
     return mutateSet(ctx, id, (x, se) => {
-      if (se.replacedById || x.status === 'done') throw new AppError('INVALID_STATE');
+      if (se.replacedById) throw new AppError('INVALID_STATE');
       return { ...x, deleted: false, detail: x.detail ? { ...x.detail, aborted: false } : undefined };
     });
   });

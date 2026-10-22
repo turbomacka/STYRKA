@@ -35,7 +35,7 @@ test('staging: integrated training, offline reload and exact remote side/warmup/
     await onboard(page);
     const offlineReload = info.project.name !== 'staging-iphone';
     if (!offlineReload) info.annotations.push({ type: 'limitation', description: 'Windows WebKit uses online reload; physical iPhone offline QA remains.' });
-    await runTrainingFlow(page, context, `docs/evidence/ux-2026-10-18/published/training-flow/staging/${info.project.name}`, offlineReload);
+    await runTrainingFlow(page, context, `docs/evidence/adaptive-2026-10-22/published/training-flow/staging/${info.project.name}`, offlineReload);
     expect((await client.auth.signInWithPassword({ email, password })).error).toBeNull();
     await expect.poll(async () => {
       const r = await client.from('training_sets').select('kind,status,detail');

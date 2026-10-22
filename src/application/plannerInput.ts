@@ -1,5 +1,5 @@
 /** Bygger planerarens indata från lokal, konsistent snapshot av användarens data (02 §10: offline-motor). */
-import type { ExerciseId } from '../domain/catalog';
+import { exercise, type ExerciseId } from '../domain/catalog';
 import type { HistorySet, PerformedExercise, PlannerInput, RestrictionRule, SymptomReport, UserExerciseSettings } from '../domain/model';
 import { gramsToKg } from '../domain/units';
 import type { LocalExerciseSettings, LocalProfile, StyrkaDB } from '../storage/db';
@@ -14,7 +14,7 @@ export function toUserSettings(s: LocalExerciseSettings): UserExerciseSettings {
     s.strengthInputs !== undefined ? resolveStrengthInputs(s.strengthInputs).estimate : s.estimateKind && s.estimateGrams !== null
       ? { kind: s.estimateKind, kg: gramsToKg(s.estimateGrams), reps: s.estimateReps ?? undefined, rir: s.estimateRir, measured: s.estimateMeasured, testedAt: s.estimateTestedAt ?? undefined }
       : null;
-  return { exerciseId: s.exerciseId, experience: s.experience, incrementKg: kg(s.incrementGrams), estimate, maxLoadKg: kg(s.maxLoadGrams), machineMinKg: kg(s.machineMinGrams), machineMaxKg: kg(s.machineMaxGrams) };
+  return { exerciseId: s.exerciseId, experience: s.experience, incrementKg: kg(s.incrementGrams) ?? exercise(s.exerciseId).defaultIncrementKg, estimate, maxLoadKg: kg(s.maxLoadGrams), machineMinKg: kg(s.machineMinGrams), machineMaxKg: kg(s.machineMaxGrams) };
 }
 
 export async function activeHealthConsent(db: StyrkaDB, userId: string): Promise<boolean> {
@@ -52,11 +52,11 @@ export async function buildHistory(db: StyrkaDB): Promise<PerformedExercise[]> {
       actualSeconds: s.actualSeconds,
       rir: effectiveRir(s.rir, s.perceivedEffort),
       technique: s.technique,
-      occurredAt: s.occurredAt,
+      occurredAt: s.occurredAt ? new Date(s.occurredAt).toISOString() : null,
       // Endast när svar finns, så att indata (och inputsHash) är oförändrade för befintlig historik.
       ...(s.perceivedEffort ? { perceivedEffort: s.perceivedEffort } : {}),
     }));
-    const doneTimes = own.filter((s) => s.kind === 'work' && ['done','partial'].includes(s.status) && s.occurredAt).map((s) => s.occurredAt as string);
+    const doneTimes = own.filter((s) => s.kind === 'work' && ['done','partial'].includes(s.status) && s.occurredAt).map((s) => new Date(s.occurredAt!).toISOString());
     if (!doneTimes.length) continue;
     const whenUtc = doneTimes.sort().at(-1)!;
     out.push({ sessionId: sess.id, sessionKind: sess.kind, sessionStatus: sess.status, exerciseId: e.exerciseId, plan: e.snapshot, sets: hs, whenUtc });

@@ -201,6 +201,7 @@ export type SetRowProps = {
   onLog: (v: SetValues) => Promise<void>;
   onEdit: (v: SetValues) => Promise<void>;
   onUndo: () => Promise<void>;
+  onDelete?: () => Promise<void>;
   onPlan?: (v: SetValues) => Promise<void>;
   planning?: boolean;
   secondLoad?: number | null;
@@ -240,6 +241,7 @@ export function SetRow({
   onLog,
   onEdit,
   onUndo,
+  onDelete,
   onPlan,
   planning = false,
   secondLoad,
@@ -416,7 +418,7 @@ export function SetRow({
     >
       <span className="set-no num">{displayNo}</span>
       {hasKg ? (
-        <button type="button" className="val num" aria-label={`Vikt set ${displayNo}: ${spoken}. Ändra`} onClick={() => setEditing('kg')}>
+        <button type="button" className="val num" disabled={busy} aria-label={`Vikt set ${displayNo}: ${spoken}. Ändra`} onClick={() => setEditing('kg')}>
           <span className="set-value">{grams === null ? 'Välj vikt' : formatKg(grams)}</span>
           <span className="unit">
             {loadUnit === 'level'
@@ -436,6 +438,7 @@ export function SetRow({
       <button
         type="button"
         className="val num"
+        disabled={busy}
         aria-label={`${isDuration ? 'Tid' : 'Repetitioner'} set ${displayNo}: ${reps ?? '–'}. Ändra`}
         onClick={() => setEditing('reps')}
       >
@@ -446,6 +449,7 @@ export function SetRow({
         <button
           type="button"
           className="done-mark"
+          disabled={busy}
           aria-label={`Set ${displayNo} utfört. Ändra eller ångra`}
           onClick={() => {
             if (editing) void close();
@@ -470,7 +474,7 @@ export function SetRow({
         <span className="small muted">Planerat</span>
       )}
       {secondLoad !== undefined && (
-        <button type="button" className="btn ghost set-status" onClick={() => setEditing('edit')}>
+        <button type="button" className="btn ghost set-status" disabled={busy} onClick={() => setEditing('edit')}>
           Andra viktstapeln:{' '}
           {secondLoad === null ? 'Välj belastning' : `${formatKg(Math.round(secondLoad * 1000))} ${loadUnit === 'level' ? 'nivå' : 'kg'}`}
         </button>
@@ -490,6 +494,31 @@ export function SetRow({
           )}
         </div>
       )}
+            {onDelete && <button type="button" className="btn ghost" disabled={busy} onClick={async()=>{try{await onDelete();}catch{setError('Kunde inte ta bort setet. Försök igen.');}}}>Ta bort setet</button>}
+            {done && (
+              <button
+                type="button"
+                className="btn ghost set-status"
+                disabled={busy}
+                onClick={async () => {
+                  if (inFlight.current) return;
+                  inFlight.current = true;
+                  setBusy(true);
+                  try {
+                    if (!(await persist())) return;
+                    await onUndo();
+                    setEditing(null);
+                  } catch {
+                    setError(T.WARN_UNSAVED);
+                  } finally {
+                    inFlight.current = false;
+                    setBusy(false);
+                  }
+                }}
+              >
+                Ångra registrering
+              </button>
+            )}
       {editing && (
         <div
           className="editor stack"
@@ -563,30 +592,6 @@ export function SetRow({
                   : 'Ändringar sparas automatiskt.'}
           </p>
           <div className="row wrap">
-            {done && (
-              <button
-                type="button"
-                className="btn"
-                disabled={busy}
-                onClick={async () => {
-                  if (inFlight.current) return;
-                  inFlight.current = true;
-                  setBusy(true);
-                  try {
-                    if (!(await persist())) return;
-                    await onUndo();
-                    setEditing(null);
-                  } catch {
-                    setError(T.WARN_UNSAVED);
-                  } finally {
-                    inFlight.current = false;
-                    setBusy(false);
-                  }
-                }}
-              >
-                Ångra registrering
-              </button>
-            )}
             {saveState === 'failed' && (
               <button type="button" className="btn" onClick={() => void persist()}>
                 Försök igen

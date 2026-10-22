@@ -113,3 +113,14 @@ describe('ProgressChart', () => {
     expect(screen.getAllByRole('row')).toHaveLength(4);
   });
 });
+
+it('blocks value editing while undo is committing',async()=> {
+ let release!:()=>void;
+ const pending=new Promise<void>(resolve=>{release=resolve;});
+ row({status:'done',actualGrams:80000,actualReps:5},{onUndo:()=>pending});
+ fireEvent.click(screen.getByRole('button',{name:'Ångra registrering'}));
+ expect((screen.getByRole('button',{name:/Vikt set 2/}) as HTMLButtonElement).disabled).toBe(true);
+ expect((screen.getByRole('button',{name:/Repetitioner set 2/}) as HTMLButtonElement).disabled).toBe(true);
+ release();
+ await waitFor(()=>expect((screen.getByRole('button',{name:/Vikt set 2/}) as HTMLButtonElement).disabled).toBe(false));
+});

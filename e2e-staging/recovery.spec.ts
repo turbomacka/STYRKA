@@ -53,6 +53,8 @@ for (const scenario of [
       await expect(first).toContainText(`Känsla: ${scenario.feeling}`);
       await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
       await page.getByRole('button', { name: 'Avsluta och spara', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Så påverkas nästa pass' })).toBeVisible();
+    await page.getByRole('button', { name: 'Till planen', exact: true }).click();
       await expect(page.getByRole('heading', { name: 'Min träningsplan' })).toBeVisible();
       await expect.poll(async () => {
         const result = await client.from('training_sets').select('perceived_effort').eq('status', 'done');
@@ -70,7 +72,7 @@ for (const scenario of [
       try { await page.reload(); } finally { reloading = false; }
       await expect(bench).toHaveAttribute('data-mode',mode);
       await expect(page.getByText('Varför det här förslaget?',{exact:true})).toHaveCount(0);
-      const dir = `docs/evidence/ux-2026-10-18/published/recovery/staging/${info.project.name}`;
+      const dir = `docs/evidence/adaptive-2026-10-22/published/recovery/staging/${info.project.name}`;
       mkdirSync(dir, { recursive: true });
       await page.screenshot({ path: `${dir}/${scenario.effort}.png`, fullPage: true });
       await page.getByRole('button', { name: 'Starta passet', exact: true }).click();

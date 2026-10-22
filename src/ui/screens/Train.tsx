@@ -1,17 +1,19 @@
+import { SOURCE_LABELS } from '../../domain/startingLoad';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { ExerciseId } from '../../domain/catalog';
 import { exercise } from '../../domain/catalog';
 import { formatKg } from '../../domain/units';
-import { workoutOrder } from '../../application/workout';
+import { deleteTrainingSet, restorePlannedSet, workoutOrder } from '../../application/workout';
 import { EFFORT_LABELS } from '../../domain/effort';
 import { addSet, editSet, logSet, pauseSession, previewSwap, rateSet, resumeSession, swapCandidates, swapExercise, swapExerciseLegacy, undoSet, undoPerformance, type SetValues, type SwapOptions } from '../../application/training';
 import type { Familiarity } from '../../domain/model';
 import { estimatedMinutesFor } from '../../planner/planner';
 import { Banner, Icon, OfflineBanner, ToastWithUndo } from '../components/common';
+import { AddExercise } from '../components/WorkoutOverview';
 import { SetRow } from '../components/SetRow';
-import { ExecutionControl, PerformanceRow, SavedRestTimer, TrainingPreferencesControl, WarmupControl } from '../components/TrainingFlow';
+import { ExecutionControl, PerformanceRow, SavedRestTimer, WarmupControl } from '../components/TrainingFlow';
 import { comparisonKey, defaultConfiguration, SIDE_LABELS, trainingPreferences } from '../../domain/trainingFlow';
 import { SkipExercise } from '../components/SkipExercise';
 import { SubstitutionSheet } from '../components/SubstitutionSheet';
@@ -52,6 +54,8 @@ export function Train() {
   const [announce, setAnnounce] = useState('');
   const [toast, setToast] = useState<{ msg: string; setId: string; side?: import('../../domain/trainingFlow').PerformanceSide } | null>(null);
   const [failed, setFailed] = useState<Set<string>>(new Set());
+  const [adding, setAdding] = useState(false);
+  const [removed, setRemoved] = useState<string | null>(null);
   const [swap, setSwap] = useState(false);
   const [previous, setPrevious] = useState<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -112,12 +116,12 @@ export function Train() {
       </div>
     );
   }
-  if (!current) return <div className="page stack"><h1>Inga övningar kvar</h1><button className="btn" onClick={()=>nav(`/pass/${id}/oversikt`)}>Ändra passet</button><button className="btn primary" onClick={()=>nav(`/pass/${id}/avsluta`)}>Avsluta passet</button></div>;
+  if (!current) return <div className="page stack"><h1>Inga övningar kvar</h1><button className="btn" onClick={()=>setAdding(true)}>Lägg till övning</button>{adding && <AddExercise sessionId={session.id} onClose={()=>setAdding(false)} onAdded={(e)=>{setAdding(false);setParams({ovning:e.id},{replace:true});}}/>}{removed && <ToastWithUndo message="Setet borttaget ur passet" onDone={()=>setRemoved(null)} onUndo={async()=>{await restorePlannedSet(ctx,removed);setRemoved(null);}}/>}<button className="btn" onClick={()=>nav(`/pass/${id}/oversikt`)}>Ändra passet</button><button className="btn primary" onClick={()=>nav(`/pass/${id}/avsluta`)}>Avsluta passet</button></div>;
   const lk = current.snapshot.loadKind;
-  const showWarmup = current.configuration?.warmupVisible ?? trainingPreferences(profile?.trainingPreferences).showWarmupSets;
+  const showWarmup = trainingPreferences(profile?.trainingPreferences).showWarmupSets;
   const mySets = sets.filter((s) => s.sessionExerciseId === current.id && !s.deleted && (s.kind === 'work' || showWarmup)).sort((a, b) => (a.kind === 'warmup' ? 0 : 1) - (b.kind === 'warmup' ? 0 : 1) || a.ordinal - b.ordinal);
 
-  const activeRest = sets.filter((s) => !s.deleted).flatMap((owner) => (owner.detail?.rests ?? []).filter((rest) => rest.outcome === 'active').map((rest) => ({ owner, rest }))).sort((a,b) => b.rest.startedAt.localeCompare(a.rest.startedAt))[0];
+  const activeRest = sets.filter((s) => !s.deleted && s.sessionExerciseId === current.id).flatMap((owner) => (owner.detail?.rests ?? []).filter((rest) => rest.outcome === 'active' && sets.some((s) => s.id === rest.followingSetId && !s.deleted && !['done','skipped'].includes(s.status))).map((rest) => ({ owner, rest }))).sort((a,b) => b.rest.startedAt.localeCompare(a.rest.startedAt))[0];
   const allWork = sets.filter((s) => !s.deleted && s.kind === 'work');
   const doneCount = allWork.filter((s) => s.status === 'done').length;
   const stepGrams = Math.round(((settings?.find((s) => s.exerciseId === current.exerciseId)?.incrementGrams ?? null) ?? exercise(current.exerciseId).defaultIncrementKg * 1000));
@@ -176,13 +180,16 @@ export function Train() {
         <OfflineBanner online={online} />
         {paused && <Banner kind="info">Passet är pausat. Dina set är sparade.</Banner>}
         <div className="row"><button type="button" className="btn grow" onClick={()=>nav(`/pass/${session.id}/oversikt`, { state: { returnTo: location.pathname + location.search } })}>Hela passet</button><button type="button" className="btn grow" onClick={()=>setSwap(true)}><Icon.Swap/> Byt övning</button></div>
+        {current.snapshot.recommendation && <details><summary>Om förslaget</summary><p>{SOURCE_LABELS[current.snapshot.recommendation.source]}. {current.snapshot.recommendation.source === 'calibration' ? 'Välj en lätt belastning på det redskap du använder. Gör några kontrollerade repetitioner och registrera vad du använde.' : 'Du kan ändra förslaget direkt. Egna jämförbara arbetsset ger bättre underlag framöver.'}</p></details>}
         {lk === 'assistance_kg' && <p className="small muted">Assistans: lägre siffra betyder tyngre för dig.</p>}
         {activeRest && restInstance && <SavedRestTimer key={activeRest.rest.id} owner={activeRest.owner} rest={activeRest.rest} sets={sets} instance={restInstance} onStart={(s)=>{const i=exs.findIndex((e)=>e.id===s.sessionExerciseId);if(i>=0)setFocus(i);}}/>}
-        <details><summary>Uppvärmning och utförande</summary><div className="stack"><TrainingPreferencesControl instance={current}/><ExecutionControl key={current.id} instance={current} onPendingChange={executionPending}/>{previous&&<p className="small muted">Senast: {previous}</p>}</div></details>
+        <button type="button" className="btn" onClick={() => setAdding(true)}><Icon.Plus /> Lägg till övning</button>
+        <ExecutionControl key={`execution-${current.id}`} instance={current} onPendingChange={executionPending}/>
+        {previous && <p className="small muted">Senast: {previous}</p>}
         <fieldset className="training-set-controls" disabled={pendingExecution === current.id} aria-busy={pendingExecution === current.id}>
         <WarmupControl instance={current} visible={showWarmup} count={mySets.filter((s) => s.kind === 'warmup').length} />
         <ul className="card list set-list" aria-label={`Set för ${exercise(current.exerciseId).nameSv}`}>
-          {mySets.map((s, i) => ((s.status !== 'done' || s.detail) ? <PerformanceRow key={s.id} set={s} instance={current} sessionSets={sets} online={online} showEffort={s.id===latestDone} onSaved={(saved, side) => { const msg = saved.status === 'done' ? `✓ ${saved.kind === 'warmup' ? 'Uppvärmning' : 'Set'} ${saved.ordinal} registrerat på enheten` : '✓ Sidan registrerad. Fortsätt med nästa sida.'; setToast({ msg, setId: saved.id, side }); }} /> :
+          {mySets.map((s, i) => ((s.status !== 'done' || s.detail) ? <PerformanceRow key={s.id} set={s} instance={current} sessionSets={sets} online={online} onDelete={async () => { await deleteTrainingSet(ctx, s.id); setRemoved(s.id); }} showEffort={s.id===latestDone} onSaved={(saved, side) => { const msg = saved.status === 'done' ? `✓ ${saved.kind === 'warmup' ? 'Uppvärmning' : 'Set'} ${saved.ordinal} registrerat på enheten` : '✓ Sidan registrerad. Fortsätt med nästa sida.'; setToast({ msg, setId: saved.id, side }); }} /> :
             <SetRow
               key={s.id}
               set={s}
@@ -202,6 +209,7 @@ export function Train() {
                 })
               }
               onEdit={(v: SetValues) => wrap(s.id, `Set ${i + 1} ändrat`, () => editSet(ctx, s.id, v))}
+              onDelete={async()=>{await deleteTrainingSet(ctx,s.id);setRemoved(s.id);}}
               onUndo={() => wrap(s.id, `Set ${i + 1} ångrat`, () => undoSet(ctx, s.id))}
             />
           ))}
@@ -232,6 +240,8 @@ export function Train() {
         </nav>
       </main>
       {toast && <ToastWithUndo message={toast.msg} onUndo={() => { const { setId: sid, side } = toast; setToast(null); void wrap(sid, side && side !== 'both' ? 'Sidan ångrad' : 'Set ångrat', () => side ? undoPerformance(ctx, sid, side) : undoSet(ctx, sid)).catch(() => undefined); }} onDone={() => setToast(null)} />}
+      {adding && <AddExercise sessionId={session.id} onClose={() => setAdding(false)} onAdded={(e) => { setAdding(false); setParams({ ovning: e.id }, { replace: true }); }} />}
+      {removed && <ToastWithUndo message="Setet borttaget ur passet" onDone={() => setRemoved(null)} onUndo={async () => { await restorePlannedSet(ctx, removed); setRemoved(null); }} />}
       {swap && profile && v2 && (
         <SubstitutionSheet
           from={current.snapshot}

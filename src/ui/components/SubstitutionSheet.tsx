@@ -144,7 +144,7 @@ function ConfirmStep({ from, choice, rootName, goal, preview, onBack, onConfirm 
           )}
           {hasKg && (
             <>
-              {p.substitution?.prior && <p className="small muted">Vikten är ett första förslag. Börja kontrollerat och justera vid behov.</p>}
+              {(p.substitution?.prior || p.recommendation?.confidence === 'low') && <p className="small muted">Vikten är ett första förslag. Börja kontrollerat och justera vid behov.</p>}
               {p.kg === null && <p className="small muted">Välj en försiktig startvikt. Du kan ändra efter första setet.</p>}
               <EditableKg
                 id={`${uid}-kg`}

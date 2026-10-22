@@ -1,3 +1,4 @@
+import { resolveStartingLoad } from '../domain/startingLoad';
 import { recoveryMode } from '../domain/recoveryPolicy';
 import { comparableHistory } from '../domain/comparableTraining';
 import { configuredPrescription } from '../domain/configuredPrescription';
@@ -6,14 +7,14 @@ import { comparisonKey } from '../domain/trainingFlow';
  * Deterministisk schemagenerator enligt 08 §2 och 02 §7–9.
  * Ren funktion: ingen Date.now, ingen slump, ingen I/O. Samma input + version ⇒ samma output.
  */
-import { ENGINE_VERSION, estimateMinutes, isHeavy, roundDownKg, type Experience, type Mode } from '../domain/decision_engine';
+import { ENGINE_VERSION, estimateMinutes, isHeavy, type Experience, type Mode } from '../domain/decision_engine';
 import { heavyPairAllowed } from '../domain/heavyPair';
 import type { ExerciseId } from '../domain/catalog';
 import { CATALOG, CATALOG_VERSION, RETIRED_SLUGS, V1_SLUGS, exercise, impactsAreas, isAvailable, type Area, type EquipmentSlug } from '../domain/catalog';
 import { hashOf } from '../domain/hash';
 import { relationBetween, relationsFrom, SUBSTITUTION_CATALOG_VERSION, type SubstitutionRelation } from '../domain/substitutionCatalog';
-import { PLANNER_VERSION, RULESET_VERSION, type Familiarity, type LoadEstimationKind, type PlanSnapshot, type PlanStatus, type PlannedExercise, type PlannerInput, type Readiness, type RelationClass, type RestrictionRule, type Role, type SubstitutionMeta, type WarningCode } from '../domain/model';
-import { e1rmFromEstimate, prescribe, START_PCT } from '../domain/prescription';
+import { PLANNER_VERSION, RULESET_VERSION, type Familiarity, type LoadEstimationKind, type PlanSnapshot, type PlanStatus, type PlannedExercise, type PlannerInput, type Readiness, type RelationClass, type Role, type SubstitutionMeta, type WarningCode } from '../domain/model';
+import { prescribe } from '../domain/prescription';
 import { activeSymptoms, capMode, gateFor, hoursSinceExercise, isBlocked, isLowerSensitive, modeRank, pastWork, ruleTargets } from './history';
 import templatesJson from './planner_templates.json';
 
@@ -261,7 +262,8 @@ function prescribeItem(ctx: Ctx, it: Item, variantKey = activeVariant(ctx.input.
   });
   const configuration = ctx.input.profile.trainingPreferences?.exerciseDefaults[it.slug];
   const withVariant = { ...(variantKey !== 'default' ? { variantKey } : {}), ...(configuration ? { configuration } : {}) };
-  const adapted = configuration ? configuredPrescription(p, ctx.history, configuration) : p;
+  const recommended = resolveStartingLoad(ctx.input, p, history, settings, gate);
+  const adapted = configuration ? configuredPrescription(recommended, ctx.history, configuration) : recommended;
   return { ...adapted, ...withVariant, reasons: [...it.reasons, ...adapted.reasons], substitutionFrom: it.substitutionFrom, substitutionReason: it.substitutionReason, acceptedByUserAt: it.acceptedByUserAt };
 }
 
@@ -663,23 +665,6 @@ const KIND_CODE: Record<LoadEstimationKind, string> = {
  * (blockering, parregel, set-/nivågräns eller områdesnotering) som rör käll- eller målövningen eller målövningens
  * områden. Då används kalibrering i stället – ingen siffra från populationsdata.
  */
-function priorRestricted(rules: RestrictionRule[], exercises: ExerciseId[], target: ExerciseId): boolean {
-  return rules.some((r) => r.active && (exercises.some((e) => r.exerciseA === e || r.exerciseB === e) || (!!r.area && impactsAreas(target, [r.area]))));
-}
-
-/** Giltig e1RM i källövningen: egen uppskattning, annars senaste föreskrifts e1RM (standardvariant). */
-function sourceE1rm(ctx: Ctx, from: ExerciseId): number | null {
-  // No population ratios or inherited estimated maxima in the explicitly observed-only mode.
-  if (ctx.input.profile.trainingPreferences?.loadRecommendationSource === 'performed_sets') return null;
-  const s = settingsFor(ctx, from);
-  if (s?.estimate) {
-    const e = e1rmFromEstimate(s.estimate);
-    if (e && e.kg > 0) return e.kg;
-  }
-  const hist = ctx.history.filter((h) => h.exerciseId === from && variantOf(h.plan) === 'default' && h.plan.estimatedOneRM !== null && h.plan.estimatedOneRM > 0);
-  return hist.length ? (hist[hist.length - 1].plan.estimatedOneRM as number) : null;
-}
-
 /**
  * Föreskrift för ersättare enligt auktoritetsordningen (CR §3.1). Tillämpar blockeringar, symtomspärr,
  * återhämtning, användarens gränser och parregler innan något visas. Den ursprungliga övningens kilo används aldrig.
@@ -722,44 +707,15 @@ export function planReplacement(input: PlannerInput, args: ReplacementArgs): Rep
   const { history, settings } = variantData(ctx, to, variantKey);
   const experience = experienceFor(ctx, to);
   const hasHistory = history.some((h) => h.sets.some((s) => s.kind === 'work' && s.status === 'done'));
-  let p = prescribe({ performedSetsOnly: input.profile.trainingPreferences?.loadRecommendationSource === 'performed_sets', exerciseId: to, mode: it.mode, sets: it.sets, role: it.role, experience, settings, history, gate, bodyweightKg: input.profile.bodyweightKg });
-  let kind: LoadEstimationKind;
-  let needsFamiliarity = false;
-  let requiresConfirmation = false;
-  let prior: SubstitutionMeta['prior'];
-  let suggestion: number | null = null;
-  if (hasHistory) {
-    kind = p.reasons.some((r) => r.startsWith('CALIBRATED_FROM_USER')) ? 'calibration' : p.kg !== null || p.targetSeconds !== null ? 'target_observed' : 'none';
-  } else if (settings?.estimate && p.kg !== null) {
-    kind = 'target_estimated';
-  } else {
-    kind = 'none';
-    const lp = relation?.load_prior;
-    const srcE1rm = lp?.kind === 'population_ratio' ? sourceE1rm(ctx, from.exerciseId) : null;
-    const restricted = priorRestricted(input.restrictions, [from.exerciseId, root, to], to);
-    if (lp?.kind === 'population_ratio' && srcE1rm !== null && !gate.impactedRegion && !restricted && exercise(to).loadKind === 'external_kg') {
-      if (args.familiarity === 'familiar') {
-        const inc = p.incrementKg;
-        const tentative = +(lp.ratio * srcE1rm).toFixed(3);
-        const pct = Math.min(START_PCT[experience][it.mode], lp.first_exposure_cap, FIRST_EXPOSURE_MAX_PCT);
-        const perHand = lp.basis === 'per_hand_total';
-        let kg = roundDownKg((tentative * pct) / (perHand ? 2 : 1), inc);
-        const maxLoad = settings?.maxLoadKg ?? null;
-        if (maxLoad !== null && kg > maxLoad) kg = roundDownKg(maxLoad, inc);
-        if (kg > 0) {
-          kind = 'population_prior_low_confidence';
-          requiresConfirmation = true;
-          suggestion = kg;
-          prior = { ratio: lp.ratio, sourceExerciseId: from.exerciseId, sourceE1rm: srcE1rm, tentativeE1rm: tentative, pct, perHand };
-        }
-      } else if (args.familiarity === undefined || args.familiarity === 'unknown') {
-        needsFamiliarity = true;
-      }
-    }
-    // Ingen giltig skattning: kontrollerad kalibrering, aldrig en påhittad siffra (§3.1 p.5).
-    p = { ...p, kg: null, calibration: true };
-  }
-  const evidenceIds = [...new Set([...(relation?.evidence_ids ?? []), ...(prior && relation?.load_prior.kind === 'population_ratio' ? relation.load_prior.reference_ids : [])])];
+  const raw = prescribe({ performedSetsOnly: input.profile.trainingPreferences?.loadRecommendationSource === 'performed_sets', exerciseId: to, mode: it.mode, sets: it.sets, role: it.role, experience, settings, history, gate, bodyweightKg: input.profile.bodyweightKg });
+  const configuration = input.profile.trainingPreferences?.exerciseDefaults[to];
+  const recommended = resolveStartingLoad(input, raw, history, settings, gate);
+  const p = configuration ? { ...configuredPrescription(recommended, ctx.history, configuration), configuration } : recommended;
+  const kind: LoadEstimationKind = hasHistory ? 'target_observed' : settings?.estimate && p.kg !== null ? 'target_estimated' : p.kg !== null || p.targetSeconds !== null ? 'calibration' : 'none';
+  const needsFamiliarity = false, requiresConfirmation = false;
+  const prior: SubstitutionMeta['prior'] = undefined;
+  const suggestion: number | null = null;
+  const evidenceIds = relation?.evidence_ids ?? [];
   const reasons = [
     ...(relation ? [RELATION_CODE[relation.relation]] : sameExercise ? ['SUB_NEW_MACHINE_PROFILE'] : ['SUB_REVERT_TO_ORIGINAL']),
     KIND_CODE[kind],
@@ -770,7 +726,7 @@ export function planReplacement(input: PlannerInput, args: ReplacementArgs): Rep
   const planned: PlannedExercise = {
     ...p,
     reasons: [...new Set(reasons)],
-    confidence: kind === 'population_prior_low_confidence' ? 'low' : p.confidence,
+    confidence: p.confidence,
     // Kedjade byten pekar på den ursprungligen planerade övningen (parregler, "återställ", "Använd framöver").
     substitutionFrom: to === root ? null : root,
     substitutionReason: 'USER_SWAP',
@@ -798,6 +754,10 @@ export function planReplacement(input: PlannerInput, args: ReplacementArgs): Rep
  * Ingen vikt utan underlag: 'none' får varken kg eller förslag.
  */
 export function verifySubstitutionInvariants(p: PlannedExercise): void {
+  if (p.recommendation && ['transfer','model'].includes(p.recommendation.source) &&
+      (p.confidence !== 'low' || p.recommendation.confidence !== 'low' || p.estimatedOneRM !== null || !p.calibration ||
+       p.kg !== p.recommendation.suggestedKg || p.loadEstimationKind !== 'calibration' ||
+       !p.reasons.includes('STARTING_LOAD_' + p.recommendation.source.toUpperCase()))) throw new Error('INVARIANT_STARTING_LOAD_UNMARKED');
   if (p.loadEstimationKind === 'population_prior_low_confidence') {
     if (p.confidence !== 'low' || !p.calibration || p.kg !== null || p.calibrationSuggestionKg == null || !p.reasons.includes('SUB_POPULATION_PRIOR_LOW_CONFIDENCE') || !p.substitution?.prior) {
       throw new Error('INVARIANT_PRIOR_UNMARKED');

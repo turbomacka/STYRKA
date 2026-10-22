@@ -212,3 +212,5 @@ html[data-design='refined'] {
 }
 
 .training-set-controls { border: 0; padding: 0; margin: 0; min-width: 0; }
+
+html[data-design='refined'] button.set-status { min-height: 44px; }

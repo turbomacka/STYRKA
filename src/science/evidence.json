@@ -1,17 +1,17 @@
 {
-  "registryVersion": "EVIDENS/2.1.0",
+  "registryVersion": "EVIDENS/2.2.0",
   "sourceRegister": {
     "file": "spec/cr-2026-10-10-01/STYRKA_evidence_register.json",
     "schema_version": "1.0.0",
     "reviewed_at": "2026-10-10",
     "warning_sv": "Evidensregistret är beskrivande: det validerar inte STYRKA:s rekommendationsmotor eller medicinsk säkerhet."
   },
-  "methodVersion": "STYRKA-METOD/1.4.0",
+  "methodVersion": "STYRKA-METOD/1.5.0",
   "ruleSetVersion": "STYRKA-RULES/1.3.0",
   "engineVersion": "1.0.0",
   "substitutionCatalogVersion": "SUBST/1.2.0",
-  "lastSubstantiveUpdate": "2026-10-16",
-  "verificationNote": "Källor och påståenden kommer från produktägarens evidensregister (schema 1.0.0, granskat 2026-10-10). DOI och länkar kontrollerade mot Crossref, PMC och utgivarnas sidor 2026-10-11. Innehållet är en sammanfattning för allmänheten, inte en fullständig granskning av varje studie.",
+  "lastSubstantiveUpdate": "2026-10-22",
+  "verificationNote": "Källor och påståenden kommer från produktägarens evidensregister (schema 1.0.0, granskat 2026-10-10). DOI och länkar kontrollerade mot Crossref, PMC och utgivarnas sidor 2026-10-11. Innehållet är en sammanfattning för allmänheten, inte en fullständig granskning av varje studie. Förnyad granskning 2026-10-22: tillgängliga abstracts och öppna förlagstexter. Numeriska ramper och överföringsandelar är dokumenterade produktheuristiker. Förstaförfattaren för DOI 10.1007/s42978-025-00361-9 är Neves enligt förlaget.",
   "sources": [
     {
       "source_id": "currier2026",
@@ -239,6 +239,81 @@
       "limitations_sv": "Handlar om belastningskvoter i idrottsforskning. STYRKA använder ingen sådan kvot och beräknar ingen skaderisk.",
       "last_checked_at": "2026-10-12",
       "added_in": "EVIDENS/2.1.0"
+    },
+    {
+      "source_id": "neves2026",
+      "authors": "Neves PP, Marques DL, Neiva HP, Alves AR",
+      "year": 2026,
+      "title": "Acute Effects of Resistance Training Warm-Up and Re-Warm-Up on Dynamic Strength Performance: A Scoping Review",
+      "publication": "Journal of Science in Sport and Exercise",
+      "doi": "10.1007/s42978-025-00361-9",
+      "public_url": "https://link.springer.com/article/10.1007/s42978-025-00361-9",
+      "design": "Scoping review: 19 uppvärmningsstudier och en återuppvärmningsstudie",
+      "population": "Styrketränade män",
+      "supported_claim_sv": "Specifik uppvärmning kan förbättra vissa akuta styrkeprestationer.",
+      "limitations_sv": "Heterogena protokoll och utfall; ingen universell ramp. Granskning av förlagets abstract. DOI anger Neves, inte Sequera, som första författare.",
+      "last_checked_at": "2026-10-22",
+      "added_in": "EVIDENS/2.2.0"
+    },
+    {
+      "source_id": "viveiros2024",
+      "authors": "Viveiros H, m.fl.",
+      "year": 2024,
+      "title": "High-load and low-volume warm-up increases performance in a resistance training session",
+      "publication": "Journal of Bodywork and Movement Therapies",
+      "doi": "10.1016/j.jbmt.2024.08.004",
+      "public_url": "https://pubmed.ncbi.nlm.nih.gov/39593476/",
+      "design": "Akut jämförelse av tre uppvärmningsprotokoll",
+      "population": "15 män med minst sex månaders styrketräning",
+      "supported_claim_sv": "80 procent av 10RM med fem repetitioner gav större efterföljande volym än de två lättare protokollen.",
+      "limitations_sv": "Litet urval; belastning och repetitionsantal ändrades samtidigt. Ingen kontroll utan uppvärmning. Abstract granskat.",
+      "last_checked_at": "2026-10-22",
+      "added_in": "EVIDENS/2.2.0"
+    },
+    {
+      "source_id": "enes2025",
+      "authors": "Enes A, m.fl.",
+      "year": 2025,
+      "title": "Warming up to improved performance? Effects of different specific warm-up protocols on neuromuscular performance in trained individuals",
+      "publication": "Sports Medicine and Health Science",
+      "doi": "10.1016/j.smhs.2025.08.002",
+      "public_url": "https://www.sciencedirect.com/science/article/pii/S2666337625000988",
+      "design": "Akut överkorsningsstudie",
+      "population": "29 tränade personer; Smithbänkpress och benpress",
+      "supported_claim_sv": "De testade korta uppvärmningarna gav liknande prestation som ingen specifik uppvärmning.",
+      "limitations_sv": "Små till försumbara skillnader; kan inte generaliseras till tunga fria lyft eller alla individer.",
+      "last_checked_at": "2026-10-22",
+      "added_in": "EVIDENS/2.2.0"
+    },
+    {
+      "source_id": "singer2024",
+      "authors": "Singer A, m.fl.",
+      "year": 2024,
+      "title": "Give it a rest: a systematic review with Bayesian meta-analysis on the effect of inter-set rest interval duration on muscle hypertrophy",
+      "publication": "Frontiers in Sports and Active Living",
+      "doi": "10.3389/fspor.2024.1429789",
+      "public_url": "https://www.frontiersin.org/journals/sports-and-active-living/articles/10.3389/fspor.2024.1429789/full",
+      "design": "Systematisk översikt och Bayesiansk metaanalys",
+      "population": "Nio studier, 19 mätningar av muskeltillväxt",
+      "supported_claim_sv": "En liten tendens gynnade vila över 60 sekunder; ytterligare fördel över 90 sekunder var inte tydlig.",
+      "limitations_sv": "Breda osäkerhetsintervall och heterogenitet. Hypertrofiresultat validerar inte en individuell styrketimer.",
+      "last_checked_at": "2026-10-22",
+      "added_in": "EVIDENS/2.2.0"
+    },
+    {
+      "source_id": "lockie2018",
+      "authors": "Lockie RG, m.fl.",
+      "year": 2018,
+      "title": "The 1 Repetition Maximum Mechanics of a High-Handle Hexagonal Bar Deadlift Compared With a Conventional Deadlift",
+      "publication": "Journal of Strength and Conditioning Research",
+      "doi": "10.1519/JSC.0000000000001781",
+      "public_url": "https://doi.org/10.1519/JSC.0000000000001781",
+      "design": "Biomekanisk jämförelse av maximala lyft",
+      "population": "31 personer, 21 män och 10 kvinnor",
+      "supported_claim_sv": "Höga trapbarhandtag gav i gruppen högre maximal last och kortare rörelsebana.",
+      "limitations_sv": "Handtagshöjd, rörelsebana och urval begränsar överförbarheten. Ingen individuell omräkningsfaktor. Abstract granskat.",
+      "last_checked_at": "2026-10-22",
+      "added_in": "EVIDENS/2.2.0"
     }
   ],
   "claims": [
@@ -363,8 +438,8 @@
     {
       "claim_id": "rules.first_exposure_0.60",
       "section": "C",
-      "title_sv": "Högst 60 % vid första försöket efter byte",
-      "plain_language_sv": "När en hjälpskattning används blir första förslaget högst 60 % av den preliminära maxstyrkan. Siffran är en försiktighetsregel som vi har valt – den bygger inte på någon studie.",
+      "title_sv": "Försiktig provlast vid första försöket efter byte",
+      "plain_language_sv": "Det ursprungliga registret angav ett tak på 60 %. I STARTING-LOAD/1.0.0 används 50 % arbetsandel med en populationsrelation, eller 40 % av källmax för kompatibla rörelsemönster. Dessa är försiktiga produktregler, inte validerad individuell maxstyrka.",
       "evidence_kind": "product_heuristic_unvalidated",
       "population_scope": "Ej tillämpligt – produktregel",
       "caveats_sv": "Gränsen är vald för appens beräkningar och har inte validerats vetenskapligt.",
@@ -416,6 +491,69 @@
         "symtom-och-besvar"
       ],
       "last_reviewed_at": "2026-10-10",
+      "rule_is_heuristic": false,
+      "engine_version": "1.0.0"
+    },
+    {
+      "claim_id": "claims.warmup_context",
+      "section": "B",
+      "title_sv": "Uppvärmning efter sammanhang",
+      "plain_language_sv": "Kort specifik uppvärmning kan vara hjälpsam, men mer uppvärmning ger inte alltid bättre prestation.",
+      "evidence_kind": "synthesis",
+      "source_ids": [
+        "neves2026",
+        "viveiros2024",
+        "enes2025"
+      ],
+      "rule_ids": [
+        "adaptiv-uppvarmning"
+      ],
+      "caveats_sv": "Tränade deltagare i små, heterogena akuta studier; inte individuell validering.",
+      "population_scope": "Se respektive studie.",
+      "register_rule_ids": [],
+      "last_reviewed_at": "2026-10-22",
+      "rule_is_heuristic": false,
+      "engine_version": "1.0.0"
+    },
+    {
+      "claim_id": "claims.rest_context",
+      "section": "B",
+      "title_sv": "Tillräcklig vila",
+      "plain_language_sv": "Vilans längd påverkar möjligheten att fortsätta träna; en exakt optimal tid kan inte utläsas för varje individ.",
+      "evidence_kind": "synthesis",
+      "source_ids": [
+        "singer2024",
+        "currier2026"
+      ],
+      "rule_ids": [
+        "adaptiv-vila"
+      ],
+      "caveats_sv": "Hypertrofi och akut styrkeprestation är olika utfall.",
+      "population_scope": "Se respektive studie.",
+      "register_rule_ids": [],
+      "last_reviewed_at": "2026-10-22",
+      "rule_is_heuristic": false,
+      "engine_version": "1.0.0"
+    },
+    {
+      "claim_id": "claims.starting_uncertainty",
+      "section": "C",
+      "title_sv": "Försiktig överföring mellan lyft",
+      "plain_language_sv": "Frontböj, knäböj och olika marklyft har skilda belastningsförutsättningar. Gruppskillnader ger ingen säker individuell kvot.",
+      "evidence_kind": "empirical_group_means_not_individual",
+      "source_ids": [
+        "gullett2009",
+        "swinton2011",
+        "lockie2018"
+      ],
+      "rule_ids": [
+        "generell-startmodell",
+        "forsta-exponering"
+      ],
+      "caveats_sv": "Små och olika populationer; handtag, rörelsebana, vana och redskap påverkar.",
+      "population_scope": "Se respektive studie.",
+      "register_rule_ids": [],
+      "last_reviewed_at": "2026-10-22",
       "rule_is_heuristic": false,
       "engine_version": "1.0.0"
     }
@@ -766,9 +904,9 @@
       "rule_id": "ovningsbyte-startvikt",
       "group": "C",
       "title_sv": "Vikt efter byte: ordning",
-      "method_sv": "1) Din egen historik i den nya övningen. 2) Din egen uppskattade maxstyrka i den nya övningen. 3) Din kalibrering i den nya övningen. 4) Endast för två par: en försiktig populationsbaserad hjälpskattning med låg säkerhet. 5) Annars ingen vikt – du väljer en lätt, kontrollerad vikt. Den tidigare övningens kilo används aldrig.",
-      "value_sv": "Din egen träningshistorik används i första hand",
-      "rationale_sv": "Dina egna data går alltid före populationsdata.",
+      "method_sv": "Samma beräkning används vid ordinarie plan, permanent byte, tillfälligt byte och tillägg. Jämförbar egen historik och egna uppskattningar prioriteras. Därefter egna submaxdata, försiktiga relationer i katalogen och kända lätta provvikter. Okänd maskinskala kräver kalibrering. En tidigare föreslagen vikt används aldrig som uppmätt styrka.",
+      "value_sv": "STARTING-LOAD/1.0.0",
+      "rationale_sv": "Egna resultat ersätter gradvis det osäkra startförslaget; inga nya individuella maxvärden påstås.",
       "heuristic": true,
       "reason_codes": [
         "SUB_TARGET_OBSERVED",
@@ -781,9 +919,9 @@
       "rule_id": "prior-frontboj",
       "group": "C",
       "title_sv": "Hjälpskattning knäböj → frontböj",
-      "method_sv": "Endast om alla villkor är uppfyllda: giltig maxstyrka i knäböj, du har gjort frontböj tidigare, inga egna frontböjsdata, tillgängliga viktsteg och ingen aktiv begränsning eller besvärsflagga. Då är preliminär maxstyrka i frontböj = 0,80 × knäböj, och första vikten blir andelen enligt startvikten men högst 60 %, avrundad nedåt. Du måste bekräfta eller ändra vikten. Gäller inte omvänt.",
-      "value_sv": "Kvot 0,80 (studiens gruppmedelvärde: 102,4/123,9 ≈ 0,83)",
-      "rationale_sv": "Något försiktigare än studiens gruppmedelvärde. Låg säkerhet; ersätts av din faktiska prestation.",
+      "method_sv": "Katalogens populationsprior 0,80 används enbart för ett försiktigt arbetsförslag: känt källmax × 0,80 × 0,50, avrundat nedåt till utrustningen. Ingen individuell frontböjsmax lagras. Egen frontböjshistorik går före; relevanta begränsningar stoppar överföring.",
+      "value_sv": "0,80 × 0,50 av källmax; låg säkerhet",
+      "rationale_sv": "Davis grupprelation motiverar riktningen. Gulletts biomekanik visar varför lyften skiljer sig. Faktorerna är produktheuristiker.",
       "heuristic": true,
       "reason_codes": [
         "SUB_POPULATION_PRIOR_LOW_CONFIDENCE"
@@ -793,9 +931,9 @@
       "rule_id": "prior-hantelpress",
       "group": "C",
       "title_sv": "Hjälpskattning bänkpress → liggande hantelpress",
-      "method_sv": "Endast om alla villkor är uppfyllda: giltig maxstyrka i bänkpress, du har gjort hantelpress tidigare, inga egna data, tillgängliga viktsteg och ingen aktiv begränsning eller besvärsflagga. Då är preliminär sammanlagd hantelvikt = 0,83 × bänkpress; första vikt per hantel blir andelen enligt startvikten men högst 60 %, delat med två och avrundat nedåt. Du måste bekräfta eller ändra vikten. Gäller inte omvänt.",
-      "value_sv": "Faktor 0,83 på sammanlagd hantelvikt",
-      "rationale_sv": "Motsvarar studiens 17 % lägre hantelvikt. Låg säkerhet.",
+      "method_sv": "Försiktigt första arbetsförslag per hantel: känt bänkpressmax × 0,83 × 0,50 / 2, avrundat nedåt. Egen hantelpresshistorik går före. Ingen individuell hantelpressmax beräknas.",
+      "value_sv": "0,83 × 0,50 / 2 av källmax",
+      "rationale_sv": "Gruppdata ger en osäker riktning; faktorn och första arbetsandel är inte individuellt validerade.",
       "heuristic": true,
       "reason_codes": [
         "SUB_POPULATION_PRIOR_LOW_CONFIDENCE"
@@ -804,10 +942,10 @@
     {
       "rule_id": "forsta-exponering",
       "group": "C",
-      "title_sv": "Högst 60 % vid första försöket",
-      "method_sv": "Ett första förslag från en hjälpskattning använder högst 60 % av den preliminära maxstyrkan, även om din vana normalt skulle ge högre startvikt.",
-      "value_sv": "0,60 (första exponering)",
-      "rationale_sv": "Försiktighet vid osäkert underlag – inte en empirisk säkerhetsgräns.",
+      "title_sv": "Försiktigt första arbetsförslag",
+      "method_sv": "Nya överföringsförslag använder 50 procent av katalogens grupprelation. Andra kompatibla relationer inom samma rörelsemönster använder 40 procent av källmax direkt som provbelastning. Lätt läge reducerar ytterligare. Saknas underlag används känd minsta last eller kalibrering.",
+      "value_sv": "50 procent respektive 40 procent; låg säkerhet",
+      "rationale_sv": "Försiktiga arbetsförslag, inte prognoser av målövningens max. Kan korrigeras direkt utan obligatorisk bekräftelseruta.",
       "heuristic": true,
       "reason_codes": []
     },
@@ -950,6 +1088,41 @@
       "reason_codes": [
         "USER_ACCEPTED_CATCH_UP"
       ]
+    },
+    {
+      "rule_id": "adaptiv-uppvarmning",
+      "group": "B",
+      "title_sv": "Automatisk uppvärmning",
+      "method_sv": "WARMUP/2.0.0 använder planerad arbetsvikt. Tung flerledsövning: 50/70/85 procent × 5/3/1 reps. Medeltung: 60/80 procent × 5/3. Lätt eller isolering: 65 procent × 4. Reduceras efter minst två arbetsset i samma rörelsemönster och för vissa nybörjarpass. Vikter avrundas till känd utrustning; dubbletter och arbetsvikt tas bort. Endast automatiska, oregistrerade och oredigerade rader uppdateras.",
+      "value_sv": "En global profilinställning; arbetsvikt är referensen",
+      "rationale_sv": "Forskningen stödjer situationsanpassad förberedelse men validerar inte dessa exakta procenttal. Uppvärmning ingår aldrig som arbetsset.",
+      "heuristic": true,
+      "reason_codes": []
+    },
+    {
+      "rule_id": "adaptiv-vila",
+      "group": "B",
+      "title_sv": "Vila inför nästa återstående set",
+      "method_sv": "REST/1.1.0 behåller 30–300 sekunders gränser. Grundvila efter övning och mål; hög relativ intensitet, få RIR, rapporterad ansträngning och jämförbart repetitionstapp kan höja. Korrelerade signaler tar största tillägget. Sen återkoppling behåller starttid och manuellt tillägg. Timern visas endast i rätt övning. Ingen obligatorisk timer mellan övningar.",
+      "value_sv": "Längsta motiverade tillägget, inte summan av ansträngningssignaler",
+      "rationale_sv": "Vila stödjer fortsatt prestation. Exakta timergränser är produktregler; hypertrofistudier validerar inte en individuell återhämtningsprognos.",
+      "heuristic": true,
+      "reason_codes": []
+    },
+    {
+      "rule_id": "generell-startmodell",
+      "group": "B",
+      "title_sv": "Individuell startmodell med osäkerhet",
+      "method_sv": "STARTING-LOAD/1.0.0 använder faktisk jämförbar historik, egen uppskattning, egna kontrollerade submaxset, katalogrelationer och konservativ utrustningslast i fallande ordning. Historik matchas på övning, sida och utrustningssemantik. Ingen demografi ger ensam ett maxvärde. Källa och säkerhet sparas med förslaget. Inställningen endast utförda set stänger av överföring från andra övningar.",
+      "value_sv": "Källa, version och låg initial säkerhet",
+      "rationale_sv": "En datadriven profil byggs vid beräkningen ur egna data. Osäkra överföringar är startheuristiker och ersätts av egen målövningsdata.",
+      "heuristic": true,
+      "reason_codes": [
+        "STARTING_LOAD_PERFORMANCE",
+        "STARTING_LOAD_TRANSFER",
+        "STARTING_LOAD_MODEL",
+        "STARTING_LOAD_CONSERVATIVE"
+      ]
     }
   ],
   "registryAdditions": [
@@ -961,6 +1134,18 @@
         "lauersen2014",
         "parkinson2021",
         "wang2020"
+      ]
+    },
+    {
+      "version": "EVIDENS/2.2.0",
+      "date": "2026-10-22",
+      "reason": "Förnyad granskning av uppvärmning, vila och osäkra startbelastningar. Ursprungliga registerposter bevaras.",
+      "source_ids": [
+        "neves2026",
+        "viveiros2024",
+        "enes2025",
+        "singer2024",
+        "lockie2018"
       ]
     }
   ],

@@ -4,7 +4,7 @@ import type { Area, EquipmentSlug, LoadDisplayBasis, LoadKind } from './catalog'
 
 /** Versionsnummer som sparas i varje plansnapshot (04 §4). */
 export const RULESET_VERSION = 'STYRKA-RULES/1.3.0' as const;
-export const PLANNER_VERSION = 'STYRKA-PLANNER/1.0.0' as const;
+export const PLANNER_VERSION = 'STYRKA-PLANNER/1.1.0' as const;
 
 export type Readiness = 'good' | 'normal' | 'tired' | 'pain';
 export type SessionKind = 'planned' | 'extra' | 'calibration';
@@ -83,6 +83,7 @@ export type PlannerProfile = {
 
 /** Föreskrift för en övning i ett plansnapshot. Immutabel efter skapande. */
 export type PlannedExercise = {
+  recommendation?: { version: string; source: import('./startingLoad').RecommendationSource; confidence: Confidence; sourceExerciseId?: string; suggestedKg?: number | null };
   /** Present only when the user explicitly selects the performed-set source policy. */
   loadSourcePolicyVersion?: 'STYRKA-LOAD-SOURCE/1.0.0';
   targetLoadValue?: number | null;

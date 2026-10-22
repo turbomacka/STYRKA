@@ -123,7 +123,7 @@ export async function onboard(page: Page, opts: { pull?: 'Latsdrag' | 'Assistera
 }
 
 export function shooter(page: Page, info: TestInfo) {
-  const dir = `docs/evidence/ux-2026-10-18/regression/${info.project.name}`;
+  const dir = `docs/evidence/adaptive-2026-10-22/regression/ux-2026-10-18/regression/${info.project.name}`;
   mkdirSync(dir, { recursive: true });
   return async (name: string, opts: { fullPage?: boolean } = {}) => {
     await page.screenshot({ path: `${dir}/${name}.png`, fullPage: opts.fullPage ?? true });

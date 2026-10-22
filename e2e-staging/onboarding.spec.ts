@@ -27,7 +27,7 @@ for (const source of ['strength_inputs', 'performed_sets'] as const) {
       expect((await client.auth.signInWithPassword({ email, password })).error).toBeNull();
       await signIn(page, email, password);
       await expect(page.getByText('Intro 1/4')).toBeVisible({ timeout: 25_000 });
-      if (source === 'strength_inputs') await independentIntro(page, context, `docs/evidence/ux-2026-10-18/published/onboarding/published/${info.project.name}`);
+      if (source === 'strength_inputs') await independentIntro(page, context, `docs/evidence/adaptive-2026-10-22/published/onboarding/published/${info.project.name}`);
       else await onboard(page, { estimates: false });
       await expect.poll(async () => (await client.from('profiles').select('training_preferences').eq('user_id', id).single()).data?.training_preferences?.loadRecommendationSource, { timeout: 30_000 }).toBe(source);
       if (source === 'strength_inputs') {

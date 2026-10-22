@@ -187,7 +187,7 @@ describe('appflöde mot verklig server', () => {
     // Resterande set förifylldes ett steg lättare (2 kg per hantel) efter "för tungt".
     expect((await sql(`select target_kg::text kg from public.training_sets where id=$1`, [sets[1].id]))[0].kg).toBe('18.000');
     const evRows = await sql(`select * from public.session_exercise_substitution_events where id=$1`, [event.id]);
-    expect(evRows[0]).toMatchObject({ user_id: U.id, original_exercise_slug: 'bench_press', replacement_exercise_slug: 'dumbbell_bench_press', choice_scope: 'future', load_estimation_kind: 'population_prior_low_confidence', user_override: true });
+    expect(evRows[0]).toMatchObject({ user_id: U.id, original_exercise_slug: 'bench_press', replacement_exercise_slug: 'dumbbell_bench_press', choice_scope: 'future', load_estimation_kind: 'calibration', user_override: false });
     expect((await sql(`select substitutions from public.profiles where user_id=$1`, [U.id]))[0].substitutions).toEqual({ bench_press: 'dumbbell_bench_press' });
     // Ny enhet.
     const fresh = { ...mk(), db: new (openUserDb(U.id).constructor as new (n: string) => ReturnType<typeof openUserDb>)(`styrka_${U.id}_dev2`) };

@@ -1,3 +1,4 @@
+import { buildPlannerInput } from '../../src/application/plannerInput';
 /**
  * ÄA-PLAN-001 "Min träningsplan" – acceptanstest på applikationsnivå (lokal IndexedDB, outbox, fake-server).
  * PL21 (RLS) i tests/db/training_plan_db.test.ts; PL02/PL22/PL23/PL26 (UI/utskrift) även i e2e/plan.spec.ts.
@@ -50,7 +51,7 @@ describe('Min träningsplan – framtidsplan', () => {
     expect(new Set(p.slots.map((s) => s.plannedSlotId)).size).toBe(36);
   });
 
-  it('PL02/PL26: pass 20 har full struktur men ingen framtidsvikt; revisioner lagrar aldrig vikter', async () => {
+  it('PL02/PL26: pass 20 har full struktur och revisionen lagrar preliminära rekommendationer', async () => {
     const h = harness();
     await onboard(h);
     const s20 = (await getFuturePlan(h.ctx, 36))!.slots[19];
@@ -60,9 +61,9 @@ describe('Min träningsplan – framtidsplan', () => {
       expect(e.sets).toBeGreaterThan(0);
       expect(e.bandMax).toBeGreaterThanOrEqual(e.bandMin);
       expect(['heavy', 'moderate', 'light']).toContain(e.mode);
-      expect('kg' in e).toBe(false);
+      expect('kg' in e).toBe(true);
     }
-    expect(JSON.stringify((await latestRevision(h.ctx))!.slots)).not.toMatch(/"kg"|"targetSeconds"|"calibrationSuggestionKg"/);
+    expect(JSON.stringify((await latestRevision(h.ctx))!.slots)).toMatch(/"kg"/);
   });
 
   it('PL03: nästa pass = befintlig rekommendation med versionsmärkt vikt när underlag finns', async () => {
@@ -448,6 +449,7 @@ describe('Min träningsplan – offline, synk och integritet', () => {
     B.ctx.db = bDb;
     await new SyncEngine(B.ctx).pull();
     const rb = (await refreshFuturePlan(B.ctx))!;
+    expect(await buildPlannerInput(B.ctx.db,userId,clock.now())).toEqual(await buildPlannerInput(A.ctx.db,userId,clock.now()));
     expect(rb.id).toBe(ra.id);
     expect(hashOf(rb.slots)).toBe(ra.contentHash);
     expect(shape(rb.slots[0] as PlanSlot)).toBe(shape(ra.slots[0] as PlanSlot));
