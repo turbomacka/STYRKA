@@ -57,10 +57,8 @@ test('published effort: independent sides, offline save, removal, server validat
     const rejected=await client.rpc('apply_set_mutation',{event_id:randomUUID(),set_id:max.id,base_revision:max.revision,payload:{detail:invalid}});
     expect(rejected.error).toBeNull(); expect(rejected.data).toMatchObject({status:'rejected',code:'VALIDATION_ERROR'});
     await page.getByRole('button',{name:'Nästa övning',exact:true}).click(); await page.getByRole('button',{name:'Nästa övning',exact:true}).click();
-    await page.getByText('Uppvärmning och utförande',{exact:true}).click();
     await page.getByText('Utförande och sida',{exact:true}).click();
     await page.getByRole('combobox',{name:'Utförande',exact:true}).selectOption('sequential');
-    await page.getByText('Uppvärmning och utförande',{exact:true}).click();
     await first.getByRole('button',{name:/Vikt set 1:/}).click(); await first.getByLabel('Vikt (kg)',{exact:true}).fill('30');
     await first.getByRole('button',{name:'Stäng',exact:true}).click();
     await first.getByRole('button',{name:'Registrera set 1',exact:true}).click();

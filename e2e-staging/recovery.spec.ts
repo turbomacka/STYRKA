@@ -53,8 +53,8 @@ for (const scenario of [
       await expect(first).toContainText(`Känsla: ${scenario.feeling}`);
       await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
       await page.getByRole('button', { name: 'Avsluta och spara', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Så påverkas nästa pass' })).toBeVisible();
-    await page.getByRole('button', { name: 'Till planen', exact: true }).click();
+      await expect(page.getByRole('heading', { name: 'Så påverkas nästa pass' })).toBeVisible();
+      await page.getByRole('button', { name: 'Till planen', exact: true }).click();
       await expect(page.getByRole('heading', { name: 'Min träningsplan' })).toBeVisible();
       await expect.poll(async () => {
         const result = await client.from('training_sets').select('perceived_effort').eq('status', 'done');
