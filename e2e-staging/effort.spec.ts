@@ -69,7 +69,7 @@ test('published effort: independent sides, offline save, removal, server validat
     await page.emulateMedia({colorScheme:'dark'}); await expect(page.locator('.toast')).toHaveCount(0,{timeout:10000});
     await page.screenshot({path:`${dir}/side-feedback.png`,fullPage:true});
     await page.getByRole('button',{name:'Avsluta',exact:true}).click(); await page.getByRole('button',{name:'Avsluta och spara',exact:true}).click();
-    await expect(page.getByRole('heading', { name: 'Så påverkas nästa pass' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Så påverkas kommande träning' })).toBeVisible();
     await page.getByRole('button', { name: 'Till planen', exact: true }).click();
     await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible(); await page.getByRole('link',{name:'Utveckling',exact:true}).click();
     const localMax = await page.evaluate(({userId,setId}) => new Promise<unknown>((resolve,reject) => {

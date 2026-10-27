@@ -1,0 +1,713 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\nubbe\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+      "D:\\Projekt\\STYRKA\\styrka-app\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "e2e/balance.spec.ts",
+      "e2e/plan.spec.ts",
+      "e2e/recovery.spec.ts",
+      "e2e/manual_dose.spec.ts",
+      "e2e/a11y.spec.ts",
+      "--project=android-chrome",
+      "--reporter=line,json"
+    ],
+    "configFile": "D:\\Projekt\\STYRKA\\styrka-app\\playwright.config.ts",
+    "rootDir": "D:/Projekt/STYRKA/styrka-app/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/Projekt/STYRKA/styrka-app/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "android-chrome",
+        "name": "android-chrome",
+        "testDir": "D:/Projekt/STYRKA/styrka-app/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 90000
+      },
+      {
+        "outputDir": "D:/Projekt/STYRKA/styrka-app/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "iphone-webkit",
+        "name": "iphone-webkit",
+        "testDir": "D:/Projekt/STYRKA/styrka-app/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 90000
+      },
+      {
+        "outputDir": "D:/Projekt/STYRKA/styrka-app/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "desktop-keyboard",
+        "name": "desktop-keyboard",
+        "testDir": "D:/Projekt/STYRKA/styrka-app/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 90000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "D:\\Projekt\\STYRKA\\styrka-app\\test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "android-chrome",
+        "testDir": "D:\\Projekt\\STYRKA\\styrka-app\\e2e",
+        "snapshotDir": "D:\\Projekt\\STYRKA\\styrka-app\\e2e",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 90000,
+        "use": {
+          "baseURL": "http://127.0.0.1:4173",
+          "locale": "sv-SE",
+          "timezoneId": "Europe/Stockholm",
+          "trace": "retain-on-failure",
+          "screenshot": "only-on-failure",
+          "serviceWorkers": "allow",
+          "userAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Mobile Safari/537.36",
+          "viewport": {
+            "width": 412,
+            "height": 839
+          },
+          "screen": {
+            "width": 412,
+            "height": 915
+          },
+          "deviceScaleFactor": 2.625,
+          "isMobile": true,
+          "hasTouch": true,
+          "defaultBrowserType": "chromium"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": "android-chrome"
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.0",
+    "workers": 1,
+    "webServer": {
+      "command": "npm run build && npm run preview",
+      "url": "http://127.0.0.1:4173",
+      "reuseExistingServer": true,
+      "timeout": 180000
+    }
+  },
+  "suites": [
+    {
+      "title": "a11y.spec.ts",
+      "file": "a11y.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "axe + träffytor + reflow på kritiska vyer",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10473,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T12:01:33.418Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa3ad05f8c0e05077efb-970f966d0c030be417c7",
+          "file": "a11y.spec.ts",
+          "line": 34,
+          "column": 1
+        },
+        {
+          "title": "reflow: 320 CSS px bredd utan horisontell scroll (motsvarar kraftig zoom)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2210,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T12:01:44.000Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa3ad05f8c0e05077efb-678dea9998595a3f5561",
+          "file": "a11y.spec.ts",
+          "line": 63,
+          "column": 1
+        },
+        {
+          "title": "tangentbord: starta pass och logga set utan mus; skärmläsarstatus annonseras en gång",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2334,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T12:01:46.219Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa3ad05f8c0e05077efb-e78a24815754af6eb6fb",
+          "file": "a11y.spec.ts",
+          "line": 77,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "mörkt läge",
+          "file": "a11y.spec.ts",
+          "line": 102,
+          "column": 6,
+          "specs": [
+            {
+              "title": "samma informationshierarki och godkänd kontrast i mörkt läge",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "android-chrome",
+                  "projectName": "android-chrome",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3670,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-27T12:01:48.562Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa3ad05f8c0e05077efb-bef18fd8ad5f3e7e0d05",
+              "file": "a11y.spec.ts",
+              "line": 104,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "balance.spec.ts",
+      "file": "balance.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Balans under Utveckling: tomläge, fördelning, förslag, förhandsvisning och avböjande",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7532,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T12:01:52.257Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "50759d9ccdefa0f61531-187d4f1eaa330685631f",
+          "file": "balance.spec.ts",
+          "line": 32,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "BAL37: mörkt läge och 320 px",
+          "file": "balance.spec.ts",
+          "line": 105,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Balans läsbar i mörkt läge på smal skärm",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "android-chrome",
+                  "projectName": "android-chrome",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3535,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-27T12:01:59.798Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "50759d9ccdefa0f61531-c27b5637fdd96e177ac5",
+              "file": "balance.spec.ts",
+              "line": 107,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "manual_dose.spec.ts",
+      "file": "manual_dose.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "selected lower load is visible on the light day and supports a trial on the next comparable day",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 150000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7476,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T12:02:03.362Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ab32f0ae691c2a8a0c0d-44b805483e326d89c3dd",
+          "file": "manual_dose.spec.ts",
+          "line": 5,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "plan.spec.ts",
+      "file": "plan.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Min träningsplan: kommande, genomförda, anteckning, planversioner och utskrift",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7711,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T12:02:10.852Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0bcf17a0c6512d46058b-d942ad37e019769bd802",
+          "file": "plan.spec.ts",
+          "line": 21,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "recovery.spec.ts",
+      "file": "recovery.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "completed bench Lätt: next bench is Tung, offline and after reload",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 13419,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.train-head h1')\nExpected: \u001b[32m\"Bänkpress\"\u001b[39m\nReceived: \u001b[31m\"Sittande kabelrodd\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" locator('.train-head h1') with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('.train-head h1')\u001b[22m\n\u001b[2m    23 × locator resolved to <h1 tabindex=\"-1\">Sittande kabelrodd</h1>\u001b[22m\n\u001b[2m       - unexpected value \"Sittande kabelrodd\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.train-head h1')\nExpected: \u001b[32m\"Bänkpress\"\u001b[39m\nReceived: \u001b[31m\"Sittande kabelrodd\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" locator('.train-head h1') with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('.train-head h1')\u001b[22m\n\u001b[2m    23 × locator resolved to <h1 tabindex=\"-1\">Sittande kabelrodd</h1>\u001b[22m\n\u001b[2m       - unexpected value \"Sittande kabelrodd\"\u001b[22m\n\n    at D:\\Projekt\\STYRKA\\styrka-app\\e2e\\recovery.spec.ts:34:52",
+                    "location": {
+                      "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\recovery.spec.ts",
+                      "column": 52,
+                      "line": 34
+                    },
+                    "snippet": "  32 |       await page.getByRole('button',{name:'Starta passet',exact:true}).click();\n  33 |       await page.getByRole('button',{name:'Nästa övning',exact:true}).click();\n> 34 |       await expect(page.locator('.train-head h1')).toHaveText('Bänkpress');\n     |                                                    ^\n  35 |       await page.getByRole('listitem',{name:'Arbetsset 1',exact:true}).getByRole('button',{name:'Registrera set 1',exact:true}).click();\n  36 |       await expect(page.getByRole('button',{name:'Set 1 utfört. Ändra eller ångra',exact:true})).toBeVisible();\n  37 |     } finally {await context.setOffline(false);}"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\recovery.spec.ts",
+                        "column": 52,
+                        "line": 34
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.train-head h1')\nExpected: \u001b[32m\"Bänkpress\"\u001b[39m\nReceived: \u001b[31m\"Sittande kabelrodd\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" locator('.train-head h1') with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('.train-head h1')\u001b[22m\n\u001b[2m    23 × locator resolved to <h1 tabindex=\"-1\">Sittande kabelrodd</h1>\u001b[22m\n\u001b[2m       - unexpected value \"Sittande kabelrodd\"\u001b[22m\n\n\n  32 |       await page.getByRole('button',{name:'Starta passet',exact:true}).click();\n  33 |       await page.getByRole('button',{name:'Nästa övning',exact:true}).click();\n> 34 |       await expect(page.locator('.train-head h1')).toHaveText('Bänkpress');\n     |                                                    ^\n  35 |       await page.getByRole('listitem',{name:'Arbetsset 1',exact:true}).getByRole('button',{name:'Registrera set 1',exact:true}).click();\n  36 |       await expect(page.getByRole('button',{name:'Set 1 utfört. Ändra eller ångra',exact:true})).toBeVisible();\n  37 |     } finally {await context.setOffline(false);}\n    at D:\\Projekt\\STYRKA\\styrka-app\\e2e\\recovery.spec.ts:34:52"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T12:02:18.581Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\Projekt\\STYRKA\\styrka-app\\test-results\\recovery-completed-bench-L-28ce1-ng-offline-and-after-reload-android-chrome\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\Projekt\\STYRKA\\styrka-app\\test-results\\recovery-completed-bench-L-28ce1-ng-offline-and-after-reload-android-chrome\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Projekt\\STYRKA\\styrka-app\\test-results\\recovery-completed-bench-L-28ce1-ng-offline-and-after-reload-android-chrome\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\recovery.spec.ts",
+                    "column": 52,
+                    "line": 34
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "ef78f3da5c9c24fceacf-f3cfc18dfb34c2a77d5f",
+          "file": "recovery.spec.ts",
+          "line": 7,
+          "column": 3
+        },
+        {
+          "title": "completed bench Lagom: next bench is Medel, offline and after reload",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 13501,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.train-head h1')\nExpected: \u001b[32m\"Bänkpress\"\u001b[39m\nReceived: \u001b[31m\"Sittande kabelrodd\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" locator('.train-head h1') with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('.train-head h1')\u001b[22m\n\u001b[2m    - locator resolved to <h1 tabindex=\"-1\">Marklyft</h1>\u001b[22m\n\u001b[2m    - unexpected value \"Marklyft\"\u001b[22m\n\u001b[2m    23 × locator resolved to <h1 tabindex=\"-1\">Sittande kabelrodd</h1>\u001b[22m\n\u001b[2m       - unexpected value \"Sittande kabelrodd\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.train-head h1')\nExpected: \u001b[32m\"Bänkpress\"\u001b[39m\nReceived: \u001b[31m\"Sittande kabelrodd\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" locator('.train-head h1') with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('.train-head h1')\u001b[22m\n\u001b[2m    - locator resolved to <h1 tabindex=\"-1\">Marklyft</h1>\u001b[22m\n\u001b[2m    - unexpected value \"Marklyft\"\u001b[22m\n\u001b[2m    23 × locator resolved to <h1 tabindex=\"-1\">Sittande kabelrodd</h1>\u001b[22m\n\u001b[2m       - unexpected value \"Sittande kabelrodd\"\u001b[22m\n\n    at D:\\Projekt\\STYRKA\\styrka-app\\e2e\\recovery.spec.ts:34:52",
+                    "location": {
+                      "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\recovery.spec.ts",
+                      "column": 52,
+                      "line": 34
+                    },
+                    "snippet": "  32 |       await page.getByRole('button',{name:'Starta passet',exact:true}).click();\n  33 |       await page.getByRole('button',{name:'Nästa övning',exact:true}).click();\n> 34 |       await expect(page.locator('.train-head h1')).toHaveText('Bänkpress');\n     |                                                    ^\n  35 |       await page.getByRole('listitem',{name:'Arbetsset 1',exact:true}).getByRole('button',{name:'Registrera set 1',exact:true}).click();\n  36 |       await expect(page.getByRole('button',{name:'Set 1 utfört. Ändra eller ångra',exact:true})).toBeVisible();\n  37 |     } finally {await context.setOffline(false);}"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\recovery.spec.ts",
+                        "column": 52,
+                        "line": 34
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.train-head h1')\nExpected: \u001b[32m\"Bänkpress\"\u001b[39m\nReceived: \u001b[31m\"Sittande kabelrodd\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" locator('.train-head h1') with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('.train-head h1')\u001b[22m\n\u001b[2m    - locator resolved to <h1 tabindex=\"-1\">Marklyft</h1>\u001b[22m\n\u001b[2m    - unexpected value \"Marklyft\"\u001b[22m\n\u001b[2m    23 × locator resolved to <h1 tabindex=\"-1\">Sittande kabelrodd</h1>\u001b[22m\n\u001b[2m       - unexpected value \"Sittande kabelrodd\"\u001b[22m\n\n\n  32 |       await page.getByRole('button',{name:'Starta passet',exact:true}).click();\n  33 |       await page.getByRole('button',{name:'Nästa övning',exact:true}).click();\n> 34 |       await expect(page.locator('.train-head h1')).toHaveText('Bänkpress');\n     |                                                    ^\n  35 |       await page.getByRole('listitem',{name:'Arbetsset 1',exact:true}).getByRole('button',{name:'Registrera set 1',exact:true}).click();\n  36 |       await expect(page.getByRole('button',{name:'Set 1 utfört. Ändra eller ångra',exact:true})).toBeVisible();\n  37 |     } finally {await context.setOffline(false);}\n    at D:\\Projekt\\STYRKA\\styrka-app\\e2e\\recovery.spec.ts:34:52"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T12:02:32.783Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\Projekt\\STYRKA\\styrka-app\\test-results\\recovery-completed-bench-L-6124a-el-offline-and-after-reload-android-chrome\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\Projekt\\STYRKA\\styrka-app\\test-results\\recovery-completed-bench-L-6124a-el-offline-and-after-reload-android-chrome\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Projekt\\STYRKA\\styrka-app\\test-results\\recovery-completed-bench-L-6124a-el-offline-and-after-reload-android-chrome\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\recovery.spec.ts",
+                    "column": 52,
+                    "line": 34
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "ef78f3da5c9c24fceacf-6d151c2dd91994cb0126",
+          "file": "recovery.spec.ts",
+          "line": 7,
+          "column": 3
+        },
+        {
+          "title": "completed bench Maxansträngning: next bench is Medel, offline and after reload",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 13504,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.train-head h1')\nExpected: \u001b[32m\"Bänkpress\"\u001b[39m\nReceived: \u001b[31m\"Sittande kabelrodd\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" locator('.train-head h1') with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('.train-head h1')\u001b[22m\n\u001b[2m    23 × locator resolved to <h1 tabindex=\"-1\">Sittande kabelrodd</h1>\u001b[22m\n\u001b[2m       - unexpected value \"Sittande kabelrodd\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.train-head h1')\nExpected: \u001b[32m\"Bänkpress\"\u001b[39m\nReceived: \u001b[31m\"Sittande kabelrodd\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" locator('.train-head h1') with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('.train-head h1')\u001b[22m\n\u001b[2m    23 × locator resolved to <h1 tabindex=\"-1\">Sittande kabelrodd</h1>\u001b[22m\n\u001b[2m       - unexpected value \"Sittande kabelrodd\"\u001b[22m\n\n    at D:\\Projekt\\STYRKA\\styrka-app\\e2e\\recovery.spec.ts:34:52",
+                    "location": {
+                      "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\recovery.spec.ts",
+                      "column": 52,
+                      "line": 34
+                    },
+                    "snippet": "  32 |       await page.getByRole('button',{name:'Starta passet',exact:true}).click();\n  33 |       await page.getByRole('button',{name:'Nästa övning',exact:true}).click();\n> 34 |       await expect(page.locator('.train-head h1')).toHaveText('Bänkpress');\n     |                                                    ^\n  35 |       await page.getByRole('listitem',{name:'Arbetsset 1',exact:true}).getByRole('button',{name:'Registrera set 1',exact:true}).click();\n  36 |       await expect(page.getByRole('button',{name:'Set 1 utfört. Ändra eller ångra',exact:true})).toBeVisible();\n  37 |     } finally {await context.setOffline(false);}"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\recovery.spec.ts",
+                        "column": 52,
+                        "line": 34
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.train-head h1')\nExpected: \u001b[32m\"Bänkpress\"\u001b[39m\nReceived: \u001b[31m\"Sittande kabelrodd\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" locator('.train-head h1') with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('.train-head h1')\u001b[22m\n\u001b[2m    23 × locator resolved to <h1 tabindex=\"-1\">Sittande kabelrodd</h1>\u001b[22m\n\u001b[2m       - unexpected value \"Sittande kabelrodd\"\u001b[22m\n\n\n  32 |       await page.getByRole('button',{name:'Starta passet',exact:true}).click();\n  33 |       await page.getByRole('button',{name:'Nästa övning',exact:true}).click();\n> 34 |       await expect(page.locator('.train-head h1')).toHaveText('Bänkpress');\n     |                                                    ^\n  35 |       await page.getByRole('listitem',{name:'Arbetsset 1',exact:true}).getByRole('button',{name:'Registrera set 1',exact:true}).click();\n  36 |       await expect(page.getByRole('button',{name:'Set 1 utfört. Ändra eller ångra',exact:true})).toBeVisible();\n  37 |     } finally {await context.setOffline(false);}\n    at D:\\Projekt\\STYRKA\\styrka-app\\e2e\\recovery.spec.ts:34:52"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-27T12:02:47.065Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "D:\\Projekt\\STYRKA\\styrka-app\\test-results\\recovery-completed-bench-M-77cc7-el-offline-and-after-reload-android-chrome\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "D:\\Projekt\\STYRKA\\styrka-app\\test-results\\recovery-completed-bench-M-77cc7-el-offline-and-after-reload-android-chrome\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "D:\\Projekt\\STYRKA\\styrka-app\\test-results\\recovery-completed-bench-M-77cc7-el-offline-and-after-reload-android-chrome\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\recovery.spec.ts",
+                    "column": 52,
+                    "line": 34
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "ef78f3da5c9c24fceacf-ee04a04708e5915547b5",
+          "file": "recovery.spec.ts",
+          "line": 7,
+          "column": 3
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-27T12:01:23.668Z",
+    "duration": 97615.117,
+    "expected": 8,
+    "skipped": 0,
+    "unexpected": 3,
+    "flaky": 0
+  }
+}

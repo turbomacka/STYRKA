@@ -44,7 +44,18 @@ export type RecordedState = {
   rir: number|null; technique: Technique|null; effort: PerceivedEffort|null;
   sides: Array<Pick<SetPerformance,'id'|'side'|'status'|'loadValue'|'secondLoadValue'|'repetitions'|'seconds'|'rir'|'technique'|'comparisonKey'> & {unit: EquipmentProfile['unit']; measurement: LoadMeasurement; effort: PerceivedEffort|null}>;
 };
+export type SetDoseTarget = { loadValue: number | null; secondLoadValue: number | null; reps: number | null; seconds: number | null };
+export type SetPrescriptionOrigin = {
+  version: 1;
+  source?: 'engine' | 'unknown';
+  role: 'ordinary' | 'extra';
+  original: SetDoseTarget;
+  originalSides?: Partial<Record<PerformanceSide, SetDoseTarget>>;
+  userEditedSides: PerformanceSide[];
+};
 export type SetDetail = {
+  /** Immutable app targets; explicit edits do not overwrite the original prescription. */
+  prescriptionOrigin?: SetPrescriptionOrigin;
   recordingChanges?: Array<{id:string;at:string;before:RecordedState;afterHash:string}>;
   /** Absent on legacy/manual rows: never infer ownership of old warmups. */
   warmupProposal?: { policyVersion: string; managed: boolean; suppressed?: boolean };

@@ -79,7 +79,7 @@ test('A–J: plan, autosave, register, effort, persistent rest, swap, reduce, un
   await page.getByRole('button',{name:'Fortsätt träna'}).click();
   await page.getByRole('button',{name:'Avsluta',exact:true}).click();
   await page.getByRole('button',{name:'Avsluta och spara'}).click();
-  await expect(page.getByRole('heading',{name:'Så påverkas nästa pass'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Så påverkas kommande träning'})).toBeVisible();
   await page.screenshot({path:dir+'/replanning.png',fullPage:true});
   await page.getByRole('button',{name:'Till planen',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();

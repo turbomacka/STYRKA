@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
   },
   "scripts": {
     "dev": "vite",
@@ -13,6 +13,8 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit",
     "lint": "eslint .",
     "test": "vitest run --project unit --project ui --project db",
+    "test:adaptive": "vitest run --project unit tests/unit/adaptive_engine.test.ts tests/unit/adaptive_simulation.test.ts tests/unit/adaptive_planning_simulation.test.ts",
+    "test:adaptive:comparison": "node scripts/verify-adaptive-regression.mjs",
     "test:unit": "vitest run --project unit",
     "test:db": "vitest run --project db",
     "test:e2e": "playwright test",
@@ -57,6 +59,6 @@
     "vite": "8.3.4",
     "vite-plugin-pwa": "2.0.0",
     "vitest": "5.0.3",
-    "wrangler": "4.149.0"
+    "wrangler": "4.153.0"
   }
 }

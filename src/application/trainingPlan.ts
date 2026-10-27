@@ -10,15 +10,16 @@ import type { ExerciseId, LoadDisplayBasis, LoadKind } from '../domain/catalog';
 import { exercise, CATALOG_VERSION } from '../domain/catalog';
 import { ENGINE_VERSION, type Mode } from '../domain/decision_engine';
 import { hashOf, uuidFromSeed } from '../domain/hash';
-import { PLANNER_VERSION, RULESET_VERSION, type PlanStatus, type PlannerInput, type PlanSnapshot, type Role, type WarningCode } from '../domain/model';
+import { PLANNER_VERSION, RULESET_VERSION, type PlanStatus, type PlannerInput, type PlanSnapshot, type PlannedExercise, type Role, type WarningCode } from '../domain/model';
 import { SUBSTITUTION_CATALOG_VERSION } from '../domain/substitutionCatalog';
-import { planRegular, TEMPLATE_VERSION } from '../planner/planner';
+import { planRegular, TEMPLATE_VERSION, type PlanningHorizonContext } from '../planner/planner';
 import type { LocalNote, LocalPlanRevision, LocalSession, LocalSessionExercise, LocalSet } from '../storage/db';
 import { noteRow, planRevisionRow } from '../server/mapping';
 import { AppError, outbox, type AppContext } from './context';
 import { buildPlannerInput } from './plannerInput';
 import { deletedWorkouts } from './deleteWorkout';
 import { comparisonKey, defaultConfiguration } from '../domain/trainingFlow';
+import { prescriptionSignature } from '../domain/prescriptionDisplay';
 
 /** Standardhorisont och val (§3.3). Lagrad horisont per revision; längre visning beräknas utan ny revision. */
 export const PLAN_HORIZONS = [12, 36, 72] as const;
@@ -26,17 +27,18 @@ export const DEFAULT_HORIZON = 36;
 export const STORED_HORIZON = 72;
 /** Pass 2–3 i sekvensen visas som "preliminära" (§4 p.2); övriga strukturella (§4 p.3). */
 const PROVISIONAL_SLOTS = 2;
-/**
- * Visningsantagande för strukturell plan (inte en träningsregel): varje framtida plats beräknas som om normal vila
- * (3 dygn efter senaste utförda pass) föregår den. Påverkar aldrig nästa pass, som alltid beräknas vid passtillfället.
- */
-const STRUCTURAL_REST_HOURS = 72;
+/** Stable, frequency-based planning assumptions. Future slots are never observations. */
+export const FUTURE_HORIZON_VERSION = 'FUTURE/2.1.0';
 export const NOTE_MAX_LENGTH = 2000;
 
 export type SlotStatus = 'ready' | 'provisional' | 'structural';
 
 export type PlanSlotExercise = {
-  /** Provisional values at this revision's documented 72-hour structural horizon. */
+  /** Complete, preliminary prescription at this slot's documented time assumption. */
+  targetLoadValue?: number | null;
+  targetSecondLoadValue?: number | null;
+  sideTargets?: PlannedExercise['sideTargets'];
+  configuration?: PlannedExercise['configuration'];
   kg?: number | null;
   targetSeconds?: number | null;
   reasons?: string[];
@@ -57,6 +59,7 @@ export type PlanSlotExercise = {
 };
 
 export type PlanSlot = {
+  assumedAtUtc?: string;
   catchUp?: PlanSnapshot['catchUp'];
   slotSequence: number;
   plannedSlotId: string;
@@ -113,17 +116,17 @@ export async function ordinarySequence(ctx: AppContext): Promise<Map<string, num
   return result;
 }
 
-type PlanInputs = { input: PlannerInput; programId: string | null; rotationIndex: number; frequency: number; baseSequence: number; parts: Record<string, string>; inputsHash: string };
+export type PlanInputs = { input: PlannerInput; programId: string | null; rotationIndex: number; frequency: number; baseSequence: number; parts: Record<string, string>; inputsHash: string };
 
 /** Konsekvent indata för framtidsplanen. Pågående pass ingår inte (deras accepterade plan ändras aldrig tyst, PL25). */
-async function planInputs(ctx: AppContext): Promise<PlanInputs> {
+export async function planInputs(ctx: AppContext): Promise<PlanInputs> {
   const { db, userId } = ctx;
   const program = (await db.programs.where('active').equals(1).toArray())[0];
   const raw = await buildPlannerInput(db, userId, ctx.clock.now());
   const history = raw.history.filter((h) => FINISHED.has(h.sessionStatus));
   const lastWork = history.reduce((m, h) => (h.whenUtc > m ? h.whenUtc : m), '');
   const anchor = lastWork || program?.createdAt || (await db.profile.get(userId))?.onboardingCompletedAt || '2026-01-01T00:00:00.000Z';
-  const nowUtc = new Date(Date.parse(anchor) + STRUCTURAL_REST_HOURS * 3_600_000).toISOString();
+  const nowUtc = new Date(Date.parse(anchor) + 7 * 86400000 / Math.max(1, raw.profile.plannedSessionsPerWeek)).toISOString();
   const input: PlannerInput = { ...raw, nowUtc, history, rotationIndex: program?.rotationIndex ?? 0 };
   const seq = await ordinarySequence(ctx);
   const sessions = await db.sessions.toArray();
@@ -140,48 +143,39 @@ async function planInputs(ctx: AppContext): Promise<PlanInputs> {
     symptoms: hashOf(input.symptoms),
     settings: hashOf(input.exerciseSettings),
     history: hashOf(history),
-    versions: hashOf([ENGINE_VERSION, PLANNER_VERSION, RULESET_VERSION, CATALOG_VERSION, SUBSTITUTION_CATALOG_VERSION, TEMPLATE_VERSION, STARTING_LOAD_VERSION]),
+    versions: hashOf([ENGINE_VERSION, PLANNER_VERSION, RULESET_VERSION, CATALOG_VERSION, SUBSTITUTION_CATALOG_VERSION, TEMPLATE_VERSION, STARTING_LOAD_VERSION, FUTURE_HORIZON_VERSION]),
   };
   return { input, programId: program?.id ?? null, rotationIndex: program?.rotationIndex ?? 0, frequency: input.profile.plannedSessionsPerWeek, baseSequence: seq.size + 1, parts, inputsHash: hashOf({ parts, rotation: program?.rotationIndex ?? 0 }) };
 }
 
-/** Deterministisk framtidssekvens: befintlig planerare per kommande rotationsplats. Värdena är preliminära vid den dokumenterade 72-timmarshorisonten. */
-function computeSlots(ctx: AppContext, pi: PlanInputs, count: number, offset = 0): PlanSlot[] {
-  const out: PlanSlot[] = [];
-  for (let k = offset; k < offset + count; k++) {
-    const plan = planRegular({ ...pi.input, rotationIndex: pi.rotationIndex + k });
-    const sequence = pi.baseSequence + k;
-    out.push({
-      ...(plan.catchUp ? { catchUp: plan.catchUp } : {}),
-      slotSequence: sequence,
-      plannedSlotId: slotId(ctx.userId, sequence),
-      programId: pi.programId,
-      rotationIndex: pi.rotationIndex + k,
-      templateKey: plan.templateKey,
-      approxWeek: Math.floor(k / Math.max(1, pi.frequency)) + 1,
-      estimatedMinutes: Math.round(plan.estimatedMinutes),
-      status: k === 0 ? 'ready' : k <= PROVISIONAL_SLOTS ? 'provisional' : 'structural',
-      planStatus: plan.status,
-      exercises: plan.exercises.map((e) => ({
-        kg: e.kg, targetSeconds: e.targetSeconds, reasons: e.reasons, recommendation: e.recommendation,
-        exerciseId: e.exerciseId,
-        variantKey: e.variantKey ?? 'default',
-        role: e.role,
-        mode: e.mode,
-        sets: e.sets,
-        reps: e.reps,
-        bandMin: e.bandMin,
-        bandMax: e.bandMax,
-        loadKind: e.loadKind,
-        loadBasis: e.loadBasis ?? null,
-        calibration: e.calibration,
-        substitutionFrom: e.substitutionFrom,
-      })),
-      removed: plan.removed,
-      warnings: plan.warnings,
-    });
+/** Shared horizon for saved slots and feedback; planned exposure never enters performed history. */
+export function futurePlanningHorizon(input: PlannerInput, count: number): PlanSnapshot[] {
+  const plans:PlanSnapshot[]=[];
+  const plannedExposure:NonNullable<PlanningHorizonContext['plannedExposure']>=[];
+  const spacing=7*86400000/Math.max(1,input.profile.plannedSessionsPerWeek);
+  for(let k=0;k<count;k++) {
+    const nowUtc=new Date(Date.parse(input.nowUtc)+k*spacing).toISOString();
+    const plan=planRegular({...input,nowUtc,rotationIndex:input.rotationIndex+k},{plannedExposure:plannedExposure.filter(p=>Date.parse(nowUtc)-Date.parse(p.whenUtc)<=14*86400000)});
+    plans.push(plan);
+    plannedExposure.push(...plan.exercises.map(e=>({exerciseId:e.exerciseId,whenUtc:nowUtc,sets:e.sets,mode:e.mode})));
   }
-  return out;
+  return plans;
+}
+export type FuturePlanningResult={input:PlannerInput; plans:PlanSnapshot[]; revisionId:string};
+function computeSlots(ctx: AppContext, pi: PlanInputs, count: number, offset = 0, supplied?:PlanSnapshot[]): PlanSlot[] {
+  const plans=supplied??futurePlanningHorizon(pi.input,offset+count);
+  return plans.slice(offset,offset+count).map((plan,index)=>{
+    const k=offset+index,sequence=pi.baseSequence+k;
+    return {
+      ...(plan.catchUp?{catchUp:plan.catchUp}:{}), assumedAtUtc:plan.generatedAtUtc,
+      slotSequence:sequence,plannedSlotId:slotId(ctx.userId,sequence),programId:pi.programId,
+      rotationIndex:pi.rotationIndex+k,templateKey:plan.templateKey,
+      approxWeek:Math.floor(k/Math.max(1,pi.frequency))+1,estimatedMinutes:Math.round(plan.estimatedMinutes),
+      status:k===0?'ready':k<=PROVISIONAL_SLOTS?'provisional':'structural',planStatus:plan.status,
+      exercises:plan.exercises.map(e=>({...e,variantKey:e.variantKey??'default',loadBasis:e.loadBasis??null})),
+      removed:plan.removed,warnings:plan.warnings,
+    };
+  });
 }
 
 const CHANGE_ORDER = ['SESSION_COMPLETED', 'EXTRA_COUNTED_AS_PLANNED', 'EXTRA_SESSION_COMPLETED', 'CATCH_UP_CHANGED', 'SUBSTITUTION_CHANGED', 'PROFILE_CHANGED', 'RESTRICTION_CHANGED', 'SYMPTOM_CHANGED', 'EXERCISE_SETTINGS_CHANGED', 'ALGORITHM_VERSION_CHANGED', 'HISTORY_CHANGED'] as const;
@@ -216,7 +210,7 @@ export const CHANGE_TYPE_SV: Record<string, string> = {
   HISTORY_CHANGED: 'Träningshistorik ändrad',
 };
 
-const slotShape = (s: PlanSlot) => JSON.stringify([s.templateKey, s.estimatedMinutes, s.exercises.map((e) => [e.exerciseId, e.variantKey, e.mode, e.sets, e.bandMin, e.bandMax, e.calibration, e.reps, e.kg, e.targetSeconds])]);
+const slotShape = (s: PlanSlot) => JSON.stringify([s.templateKey, s.estimatedMinutes, s.exercises.map((e) => [prescriptionSignature(e),e.mode,e.reasons])]);
 
 function summarize(changeTypes: string[], prev: LocalPlanRevision | null, slots: PlanSlot[]): string {
   const parts: string[] = [];
@@ -268,6 +262,8 @@ export type RefreshOptions = {
   /** Uttryckliga användarbeslut som ska synas i revisionens orsakskoder (t.ex. USER_ACCEPTED_BALANCE_SUGGESTION). */
   extraReasons?: string[];
   onProgress?: (completed: 'inputs' | 'computed' | 'saved') => void;
+  /** Delivers exactly the same assumptions and applied plans used for the revision. */
+  onPlanningResult?: (result:FuturePlanningResult)=>void;
 };
 
 export function refreshFuturePlan(ctx: AppContext, opts: RefreshOptions = {}): Promise<LocalPlanRevision | null> {
@@ -284,19 +280,22 @@ async function refreshFuturePlanNow(ctx: AppContext, opts: RefreshOptions = {}):
   const pi = await planInputs(ctx);
   opts.onProgress?.('inputs');
   const latest = await latestRevision(ctx);
-  if (latest && latest.inputsHash === pi.inputsHash) { opts.onProgress?.('computed'); opts.onProgress?.('saved'); return latest; }
+  const deliverCached=()=>{if(opts.onPlanningResult&&latest)opts.onPlanningResult({input:pi.input,plans:futurePlanningHorizon(pi.input,Math.max(2,pi.frequency*2)),revisionId:latest.id});};
+  if (latest && latest.inputsHash === pi.inputsHash) { opts.onProgress?.('computed'); opts.onProgress?.('saved'); deliverCached(); return latest; }
   const checked = (await db.meta.get(`planChecked:${latest?.id ?? ''}`))?.value;
-  if (latest && checked === pi.inputsHash) { opts.onProgress?.('computed'); opts.onProgress?.('saved'); return latest; }
+  if (latest && checked === pi.inputsHash) { opts.onProgress?.('computed'); opts.onProgress?.('saved'); deliverCached(); return latest; }
   const changeTypes = latest ? CHANGE_ORDER.filter((c) => Object.entries(PART_CHANGE).some(([part, t]) => t === c && latest.inputParts[part] !== pi.parts[part])) : [];
   // Ett genomfört spontanpass räknat som ordinarie redovisas som det, inte dessutom som "ordinarie pass genomfört".
   const types: string[] = changeTypes.includes('EXTRA_COUNTED_AS_PLANNED') ? changeTypes.filter((c) => c !== 'SESSION_COMPLETED' && c !== 'EXTRA_SESSION_COMPLETED') : [...changeTypes];
-  const slots = computeSlots(ctx, pi, STORED_HORIZON);
+  const plans=futurePlanningHorizon(pi.input,STORED_HORIZON);
+  const slots = computeSlots(ctx, pi, STORED_HORIZON,0,plans);
   const contentHash = hashOf(slots);
   opts.onProgress?.('computed');
   if (latest && latest.contentHash === contentHash && !types.some((t) => ALWAYS_REVISE.has(t))) {
     // Ingen relevant förändring av kommande pass: ingen ny revision, men kom ihåg kontrollen.
     await db.meta.put({ key: `planChecked:${latest.id}`, value: pi.inputsHash });
     opts.onProgress?.('saved');
+    opts.onPlanningResult?.({input:pi.input,plans,revisionId:latest.id});
     return latest;
   }
   const changeType = latest ? (types[0] ?? 'HISTORY_CHANGED') : 'INITIAL';
@@ -313,7 +312,7 @@ async function refreshFuturePlanNow(ctx: AppContext, opts: RefreshOptions = {}):
     inputParts: pi.parts,
     contentHash,
     engineVersion: ENGINE_VERSION,
-    plannerVersion: pi.input.catchUp ? 'STYRKA-PLANNER/1.1.0' : PLANNER_VERSION,
+    plannerVersion: PLANNER_VERSION,
     rulesetVersion: RULESET_VERSION,
     catalogVersion: CATALOG_VERSION,
     substitutionCatalogVersion: SUBSTITUTION_CATALOG_VERSION,
@@ -328,6 +327,7 @@ async function refreshFuturePlanNow(ctx: AppContext, opts: RefreshOptions = {}):
   });
   ctx.onQueued?.();
   opts.onProgress?.('saved');
+  opts.onPlanningResult?.({input:pi.input,plans,revisionId:rev.id});
   return (await db.planRevisions.get(rev.id)) ?? rev;
 }
 

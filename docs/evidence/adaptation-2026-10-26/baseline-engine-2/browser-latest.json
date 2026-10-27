@@ -1,0 +1,5468 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "D:\\Projekt\\STYRKA\\styrka-app\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--workers=2",
+      "--reporter=list,json"
+    ],
+    "configFile": "D:\\Projekt\\STYRKA\\styrka-app\\playwright.config.ts",
+    "rootDir": "D:/Projekt/STYRKA/styrka-app/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 2
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/Projekt/STYRKA/styrka-app/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "android-chrome",
+        "name": "android-chrome",
+        "testDir": "D:/Projekt/STYRKA/styrka-app/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 90000
+      },
+      {
+        "outputDir": "D:/Projekt/STYRKA/styrka-app/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "iphone-webkit",
+        "name": "iphone-webkit",
+        "testDir": "D:/Projekt/STYRKA/styrka-app/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 90000
+      },
+      {
+        "outputDir": "D:/Projekt/STYRKA/styrka-app/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "desktop-keyboard",
+        "name": "desktop-keyboard",
+        "testDir": "D:/Projekt/STYRKA/styrka-app/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 90000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "D:\\Projekt\\STYRKA\\styrka-app\\test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "name": "android-chrome",
+        "testDir": "D:\\Projekt\\STYRKA\\styrka-app\\e2e",
+        "snapshotDir": "D:\\Projekt\\STYRKA\\styrka-app\\e2e",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 90000,
+        "use": {
+          "baseURL": "http://127.0.0.1:4173",
+          "locale": "sv-SE",
+          "timezoneId": "Europe/Stockholm",
+          "trace": "retain-on-failure",
+          "screenshot": "only-on-failure",
+          "serviceWorkers": "allow",
+          "userAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Mobile Safari/537.36",
+          "viewport": {
+            "width": 412,
+            "height": 839
+          },
+          "screen": {
+            "width": 412,
+            "height": 915
+          },
+          "deviceScaleFactor": 2.625,
+          "isMobile": true,
+          "hasTouch": true,
+          "defaultBrowserType": "chromium"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": "android-chrome"
+      },
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "D:\\Projekt\\STYRKA\\styrka-app\\test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "name": "iphone-webkit",
+        "testDir": "D:\\Projekt\\STYRKA\\styrka-app\\e2e",
+        "snapshotDir": "D:\\Projekt\\STYRKA\\styrka-app\\e2e",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 90000,
+        "use": {
+          "baseURL": "http://127.0.0.1:4173",
+          "locale": "sv-SE",
+          "timezoneId": "Europe/Stockholm",
+          "trace": "retain-on-failure",
+          "screenshot": "only-on-failure",
+          "serviceWorkers": "allow",
+          "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1",
+          "viewport": {
+            "width": 390,
+            "height": 664
+          },
+          "screen": {
+            "width": 390,
+            "height": 844
+          },
+          "deviceScaleFactor": 3,
+          "isMobile": true,
+          "hasTouch": true,
+          "defaultBrowserType": "webkit"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": "iphone-webkit"
+      },
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "D:\\Projekt\\STYRKA\\styrka-app\\test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "name": "desktop-keyboard",
+        "testDir": "D:\\Projekt\\STYRKA\\styrka-app\\e2e",
+        "snapshotDir": "D:\\Projekt\\STYRKA\\styrka-app\\e2e",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 90000,
+        "use": {
+          "baseURL": "http://127.0.0.1:4173",
+          "locale": "sv-SE",
+          "timezoneId": "Europe/Stockholm",
+          "trace": "retain-on-failure",
+          "screenshot": "only-on-failure",
+          "serviceWorkers": "allow",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "viewport": {
+            "width": 1280,
+            "height": 720
+          },
+          "screen": {
+            "width": 1920,
+            "height": 1080
+          },
+          "deviceScaleFactor": 1,
+          "isMobile": false,
+          "hasTouch": false,
+          "defaultBrowserType": "chromium"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": "desktop-keyboard"
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.0",
+    "workers": 2,
+    "webServer": {
+      "command": "npm run build && npm run preview",
+      "url": "http://127.0.0.1:4173",
+      "reuseExistingServer": true,
+      "timeout": 180000
+    }
+  },
+  "suites": [
+    {
+      "title": "a11y.spec.ts",
+      "file": "a11y.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "axe + träffytor + reflow på kritiska vyer",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10841,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:07.789Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa3ad05f8c0e05077efb-970f966d0c030be417c7",
+          "file": "a11y.spec.ts",
+          "line": 34,
+          "column": 1
+        },
+        {
+          "title": "reflow: 320 CSS px bredd utan horisontell scroll (motsvarar kraftig zoom)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2224,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:18.751Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa3ad05f8c0e05077efb-678dea9998595a3f5561",
+          "file": "a11y.spec.ts",
+          "line": 63,
+          "column": 1
+        },
+        {
+          "title": "tangentbord: starta pass och logga set utan mus; skärmläsarstatus annonseras en gång",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2175,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:20.984Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa3ad05f8c0e05077efb-e78a24815754af6eb6fb",
+          "file": "a11y.spec.ts",
+          "line": 77,
+          "column": 1
+        },
+        {
+          "title": "axe + träffytor + reflow på kritiska vyer",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 22599,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:44.105Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa3ad05f8c0e05077efb-f65b4528ac56b2dc7ffa",
+          "file": "a11y.spec.ts",
+          "line": 34,
+          "column": 1
+        },
+        {
+          "title": "reflow: 320 CSS px bredd utan horisontell scroll (motsvarar kraftig zoom)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 9781,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:31:06.785Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa3ad05f8c0e05077efb-fcaad2fe7385e4d2ee88",
+          "file": "a11y.spec.ts",
+          "line": 63,
+          "column": 1
+        },
+        {
+          "title": "tangentbord: starta pass och logga set utan mus; skärmläsarstatus annonseras en gång",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Tab-fokus mellan knappar är avstängt som standard i WebKit/Safari.",
+                  "location": {
+                    "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\a11y.spec.ts",
+                    "line": 78,
+                    "column": 8
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "skipped",
+                  "duration": 210,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:31:16.574Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Tab-fokus mellan knappar är avstängt som standard i WebKit/Safari.",
+                      "location": {
+                        "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\a11y.spec.ts",
+                        "line": 78,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "aa3ad05f8c0e05077efb-2dce71a81d28f246736c",
+          "file": "a11y.spec.ts",
+          "line": 77,
+          "column": 1
+        },
+        {
+          "title": "axe + träffytor + reflow på kritiska vyer",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10382,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:35:44.045Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa3ad05f8c0e05077efb-c1b9a616997ff7bbf8c0",
+          "file": "a11y.spec.ts",
+          "line": 34,
+          "column": 1
+        },
+        {
+          "title": "reflow: 320 CSS px bredd utan horisontell scroll (motsvarar kraftig zoom)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2038,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:35:54.528Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa3ad05f8c0e05077efb-7c65d5759a5afb05e977",
+          "file": "a11y.spec.ts",
+          "line": 63,
+          "column": 1
+        },
+        {
+          "title": "tangentbord: starta pass och logga set utan mus; skärmläsarstatus annonseras en gång",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2135,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:35:56.575Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa3ad05f8c0e05077efb-ed509ccc5afb94de1e0a",
+          "file": "a11y.spec.ts",
+          "line": 77,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "mörkt läge",
+          "file": "a11y.spec.ts",
+          "line": 102,
+          "column": 6,
+          "specs": [
+            {
+              "title": "samma informationshierarki och godkänd kontrast i mörkt läge",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "android-chrome",
+                  "projectName": "android-chrome",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3573,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:29:23.169Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa3ad05f8c0e05077efb-bef18fd8ad5f3e7e0d05",
+              "file": "a11y.spec.ts",
+              "line": 104,
+              "column": 3
+            },
+            {
+              "title": "samma informationshierarki och godkänd kontrast i mörkt läge",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone-webkit",
+                  "projectName": "iphone-webkit",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 11482,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:31:16.792Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa3ad05f8c0e05077efb-0b91e208805217a48d19",
+              "file": "a11y.spec.ts",
+              "line": 104,
+              "column": 3
+            },
+            {
+              "title": "samma informationshierarki och godkänd kontrast i mörkt läge",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "desktop-keyboard",
+                  "projectName": "desktop-keyboard",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3345,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:35:58.719Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "aa3ad05f8c0e05077efb-59f6ea38b8886def40ae",
+              "file": "a11y.spec.ts",
+              "line": 104,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "adaptive_training.spec.ts",
+      "file": "adaptive_training.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "active workout: add, undo, delete, restore, offline reload and real replanning",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 150000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 6761,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:07.772Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6b647a748484fb2aea80-d6c3ffb252d481630e15",
+          "file": "adaptive_training.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "active workout: add, undo, delete, restore, offline reload and real replanning",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 150000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 25063,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:44.997Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6b647a748484fb2aea80-f61b416ebe419a86b354",
+          "file": "adaptive_training.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "active workout: add, undo, delete, restore, offline reload and real replanning",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 150000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 5571,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:35:44.329Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6b647a748484fb2aea80-50287108a665c4b8af26",
+          "file": "adaptive_training.spec.ts",
+          "line": 5,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "auth_resilience.spec.ts",
+      "file": "auth_resilience.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "login and account creation are visible on the first small-mobile screen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 493,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:16.379Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9f0d2f92f2f1070ad2c6-42f40cf16a6025bde83d",
+          "file": "auth_resilience.spec.ts",
+          "line": 8,
+          "column": 1
+        },
+        {
+          "title": "slow first fetch and server failure never turn an existing account into a new one; retry restores it",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 17597,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:16.881Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9f0d2f92f2f1070ad2c6-3add125eed6f683c8fe7",
+          "file": "auth_resilience.spec.ts",
+          "line": 24,
+          "column": 1
+        },
+        {
+          "title": "401 during sync offers reauthentication and preserves a logged set through reload and retry",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 5013,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:34.488Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9f0d2f92f2f1070ad2c6-98b877a936beed857868",
+          "file": "auth_resilience.spec.ts",
+          "line": 53,
+          "column": 1
+        },
+        {
+          "title": "login and account creation are visible on the first small-mobile screen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 940,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:31:11.819Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9f0d2f92f2f1070ad2c6-62dfc82847b4c902891a",
+          "file": "auth_resilience.spec.ts",
+          "line": 8,
+          "column": 1
+        },
+        {
+          "title": "slow first fetch and server failure never turn an existing account into a new one; retry restores it",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 23469,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:31:12.768Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9f0d2f92f2f1070ad2c6-a95168d83e34fd3fa5c1",
+          "file": "auth_resilience.spec.ts",
+          "line": 24,
+          "column": 1
+        },
+        {
+          "title": "401 during sync offers reauthentication and preserves a logged set through reload and retry",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 15820,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:31:36.245Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9f0d2f92f2f1070ad2c6-cfc96323db40d9888f84",
+          "file": "auth_resilience.spec.ts",
+          "line": 53,
+          "column": 1
+        },
+        {
+          "title": "login and account creation are visible on the first small-mobile screen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 393,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:35:51.704Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9f0d2f92f2f1070ad2c6-6c8c56b1ea8feccbde1c",
+          "file": "auth_resilience.spec.ts",
+          "line": 8,
+          "column": 1
+        },
+        {
+          "title": "slow first fetch and server failure never turn an existing account into a new one; retry restores it",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 17369,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:35:52.106Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9f0d2f92f2f1070ad2c6-db0b83d7a9ab1e704651",
+          "file": "auth_resilience.spec.ts",
+          "line": 24,
+          "column": 1
+        },
+        {
+          "title": "401 during sync offers reauthentication and preserves a logged set through reload and retry",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 4892,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:09.486Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9f0d2f92f2f1070ad2c6-db3a54ddfe656a66a315",
+          "file": "auth_resilience.spec.ts",
+          "line": 53,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "auth.spec.ts",
+      "file": "auth.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "skapa konto med e-post och lösenord → bekräftelsekod → logga in igen med lösenord",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2860,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:26.859Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-bc360a59c0fd3609ea60",
+          "file": "auth.spec.ts",
+          "line": 46,
+          "column": 1
+        },
+        {
+          "title": "befintlig e-post vid skapa konto ger tydligt besked och leder till inloggning",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1381,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:29.727Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-4e905a910c8054faa885",
+          "file": "auth.spec.ts",
+          "line": 72,
+          "column": 1
+        },
+        {
+          "title": "fel lösenord och ogiltiga uppgifter ger tydliga fel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1654,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:31.116Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-2a55e697173705e81fb5",
+          "file": "auth.spec.ts",
+          "line": 83,
+          "column": 1
+        },
+        {
+          "title": "glömt lösenordet med kod → nytt lösenord; gamla slutar fungera",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3107,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:32.778Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-480930d4e05c830fae6d",
+          "file": "auth.spec.ts",
+          "line": 105,
+          "column": 1
+        },
+        {
+          "title": "glömt lösenordet via länken i mejlet (samma webbläsare) visar \"Välj nytt lösenord\"",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2441,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:35.895Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-c31d50a7c6649f33fcac",
+          "file": "auth.spec.ts",
+          "line": 127,
+          "column": 1
+        },
+        {
+          "title": "konto utan lösenord (skapat med kod) får hjälp och kan skapa lösenord via Glömt lösenordet",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3574,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:38.345Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-b87d0dafcfa181432d87",
+          "file": "auth.spec.ts",
+          "line": 141,
+          "column": 1
+        },
+        {
+          "title": "inloggning innan e-posten bekräftats ger besked och ny kod",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2794,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:41.929Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-df13d49c2c405bf2b126",
+          "file": "auth.spec.ts",
+          "line": 156,
+          "column": 1
+        },
+        {
+          "title": "byt lösenord under Data och konto",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2930,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:44.734Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-5128c7a13f6d7a5d8222",
+          "file": "auth.spec.ts",
+          "line": 174,
+          "column": 1
+        },
+        {
+          "title": "inloggning via e-post utan lösenord (kod) för befintligt konto; fel kod och okänt konto ger tydliga fel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3413,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:47.675Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-592fb9f11dd5b01d2e4b",
+          "file": "auth.spec.ts",
+          "line": 189,
+          "column": 1
+        },
+        {
+          "title": "länk öppnad i annan webbläsare eller utgången länk förklaras",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 543,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:51.097Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-a7eff8bc06e88d1cead4",
+          "file": "auth.spec.ts",
+          "line": 217,
+          "column": 1
+        },
+        {
+          "title": "skapa konto med e-post och lösenord → bekräftelsekod → logga in igen med lösenord",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 5167,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:31:28.382Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-a9e908e6ae42ce3e6da7",
+          "file": "auth.spec.ts",
+          "line": 46,
+          "column": 1
+        },
+        {
+          "title": "befintlig e-post vid skapa konto ger tydligt besked och leder till inloggning",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3189,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:31:33.556Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-7e19b2a238b04659e1ec",
+          "file": "auth.spec.ts",
+          "line": 72,
+          "column": 1
+        },
+        {
+          "title": "fel lösenord och ogiltiga uppgifter ger tydliga fel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 4261,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:31:36.753Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-582a88c2d0ea4f066c4d",
+          "file": "auth.spec.ts",
+          "line": 83,
+          "column": 1
+        },
+        {
+          "title": "glömt lösenordet med kod → nytt lösenord; gamla slutar fungera",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 6432,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:31:41.022Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-bfe20b4b1f13d5264384",
+          "file": "auth.spec.ts",
+          "line": 105,
+          "column": 1
+        },
+        {
+          "title": "glömt lösenordet via länken i mejlet (samma webbläsare) visar \"Välj nytt lösenord\"",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 5124,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:31:47.462Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-2891a6078b77e862c482",
+          "file": "auth.spec.ts",
+          "line": 127,
+          "column": 1
+        },
+        {
+          "title": "konto utan lösenord (skapat med kod) får hjälp och kan skapa lösenord via Glömt lösenordet",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 5567,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:31:52.595Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-fab09d0834106de5ec75",
+          "file": "auth.spec.ts",
+          "line": 141,
+          "column": 1
+        },
+        {
+          "title": "inloggning innan e-posten bekräftats ger besked och ny kod",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 4549,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:31:58.169Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-707e7c0e38050dc6a66a",
+          "file": "auth.spec.ts",
+          "line": 156,
+          "column": 1
+        },
+        {
+          "title": "byt lösenord under Data och konto",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 8232,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:32:02.726Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-a24af7405dc82ddee3dd",
+          "file": "auth.spec.ts",
+          "line": 174,
+          "column": 1
+        },
+        {
+          "title": "inloggning via e-post utan lösenord (kod) för befintligt konto; fel kod och okänt konto ger tydliga fel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 6327,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:32:10.965Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-5f1bd6ddc6cdb435fdf5",
+          "file": "auth.spec.ts",
+          "line": 189,
+          "column": 1
+        },
+        {
+          "title": "länk öppnad i annan webbläsare eller utgången länk förklaras",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 903,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:32:17.300Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-b44ad5a347166c0953a3",
+          "file": "auth.spec.ts",
+          "line": 217,
+          "column": 1
+        },
+        {
+          "title": "skapa konto med e-post och lösenord → bekräftelsekod → logga in igen med lösenord",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2608,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:02.174Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-831ee80d067f4516ee00",
+          "file": "auth.spec.ts",
+          "line": 46,
+          "column": 1
+        },
+        {
+          "title": "befintlig e-post vid skapa konto ger tydligt besked och leder till inloggning",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1285,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:04.792Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-4c4dd29ccc7275a5f917",
+          "file": "auth.spec.ts",
+          "line": 72,
+          "column": 1
+        },
+        {
+          "title": "fel lösenord och ogiltiga uppgifter ger tydliga fel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1475,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:06.085Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-c9dbab55332eb21fc60e",
+          "file": "auth.spec.ts",
+          "line": 83,
+          "column": 1
+        },
+        {
+          "title": "glömt lösenordet med kod → nytt lösenord; gamla slutar fungera",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3047,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:07.569Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-cac4a1a7fd55d7731643",
+          "file": "auth.spec.ts",
+          "line": 105,
+          "column": 1
+        },
+        {
+          "title": "glömt lösenordet via länken i mejlet (samma webbläsare) visar \"Välj nytt lösenord\"",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2304,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:10.624Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-bb9bcbffe6256bc688d8",
+          "file": "auth.spec.ts",
+          "line": 127,
+          "column": 1
+        },
+        {
+          "title": "konto utan lösenord (skapat med kod) får hjälp och kan skapa lösenord via Glömt lösenordet",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3340,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:12.938Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-92d20385ea7c382620f7",
+          "file": "auth.spec.ts",
+          "line": 141,
+          "column": 1
+        },
+        {
+          "title": "inloggning innan e-posten bekräftats ger besked och ny kod",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2740,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:16.288Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-73935303e4f1cae447ed",
+          "file": "auth.spec.ts",
+          "line": 156,
+          "column": 1
+        },
+        {
+          "title": "byt lösenord under Data och konto",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2925,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:19.038Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-6253790877a1a310ec65",
+          "file": "auth.spec.ts",
+          "line": 174,
+          "column": 1
+        },
+        {
+          "title": "inloggning via e-post utan lösenord (kod) för befintligt konto; fel kod och okänt konto ger tydliga fel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3271,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:21.971Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-d685d8a457e8cecefa71",
+          "file": "auth.spec.ts",
+          "line": 189,
+          "column": 1
+        },
+        {
+          "title": "länk öppnad i annan webbläsare eller utgången länk förklaras",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 475,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:25.250Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d748ac400d08b85935ef-1f7a7bb8dc934d5bbd8d",
+          "file": "auth.spec.ts",
+          "line": 217,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "e-postlänkar öppnade i en ANNAN webbläsare (t.ex. e-postappens)",
+          "file": "auth.spec.ts",
+          "line": 227,
+          "column": 6,
+          "specs": [
+            {
+              "title": "bekräftelselänk i annan webbläsare bekräftar kontot; \"Jag har bekräftat – logga in\" fungerar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "android-chrome",
+                  "projectName": "android-chrome",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1723,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:29:51.648Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-9502bb7d663b2789dd33",
+              "file": "auth.spec.ts",
+              "line": 228,
+              "column": 3
+            },
+            {
+              "title": "återställningslänk i annan webbläsare låter användaren välja nytt lösenord där",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "android-chrome",
+                  "projectName": "android-chrome",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2540,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:29:53.379Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-4fb1d76c88cb8010fdf7",
+              "file": "auth.spec.ts",
+              "line": 247,
+              "column": 3
+            },
+            {
+              "title": "bekräftelselänk i annan webbläsare bekräftar kontot; \"Jag har bekräftat – logga in\" fungerar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone-webkit",
+                  "projectName": "iphone-webkit",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 3749,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:32:18.210Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-9176d7767bfb4ecd2f28",
+              "file": "auth.spec.ts",
+              "line": 228,
+              "column": 3
+            },
+            {
+              "title": "återställningslänk i annan webbläsare låter användaren välja nytt lösenord där",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone-webkit",
+                  "projectName": "iphone-webkit",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5477,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:32:21.967Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-556990b37f15e88a721b",
+              "file": "auth.spec.ts",
+              "line": 247,
+              "column": 3
+            },
+            {
+              "title": "bekräftelselänk i annan webbläsare bekräftar kontot; \"Jag har bekräftat – logga in\" fungerar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "desktop-keyboard",
+                  "projectName": "desktop-keyboard",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1668,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:36:25.732Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-4ddebb152e8841be6f90",
+              "file": "auth.spec.ts",
+              "line": 228,
+              "column": 3
+            },
+            {
+              "title": "återställningslänk i annan webbläsare låter användaren välja nytt lösenord där",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "desktop-keyboard",
+                  "projectName": "desktop-keyboard",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2551,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:36:27.410Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-5368083413035822b1c2",
+              "file": "auth.spec.ts",
+              "line": 247,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "balance.spec.ts",
+      "file": "balance.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Balans under Utveckling: tomläge, fördelning, förslag, förhandsvisning och avböjande",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 6555,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:39.551Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "50759d9ccdefa0f61531-187d4f1eaa330685631f",
+          "file": "balance.spec.ts",
+          "line": 32,
+          "column": 1
+        },
+        {
+          "title": "Balans under Utveckling: tomläge, fördelning, förslag, förhandsvisning och avböjande",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 41175,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:31:52.105Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "50759d9ccdefa0f61531-934c546aa9d6c2f615d1",
+          "file": "balance.spec.ts",
+          "line": 32,
+          "column": 1
+        },
+        {
+          "title": "Balans under Utveckling: tomläge, fördelning, förslag, förhandsvisning och avböjande",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 6199,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:14.416Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "50759d9ccdefa0f61531-86c17fca75edcd57dd3b",
+          "file": "balance.spec.ts",
+          "line": 32,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "BAL37: mörkt läge och 320 px",
+          "file": "balance.spec.ts",
+          "line": 104,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Balans läsbar i mörkt läge på smal skärm",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "android-chrome",
+                  "projectName": "android-chrome",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 3638,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:29:46.116Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "50759d9ccdefa0f61531-c27b5637fdd96e177ac5",
+              "file": "balance.spec.ts",
+              "line": 106,
+              "column": 3
+            },
+            {
+              "title": "Balans läsbar i mörkt läge på smal skärm",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone-webkit",
+                  "projectName": "iphone-webkit",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 15238,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:32:33.288Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "50759d9ccdefa0f61531-26b2e70844d242dfa88d",
+              "file": "balance.spec.ts",
+              "line": 106,
+              "column": 3
+            },
+            {
+              "title": "Balans läsbar i mörkt läge på smal skärm",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "desktop-keyboard",
+                  "projectName": "desktop-keyboard",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 3258,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:36:20.624Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "50759d9ccdefa0f61531-e22dc7fcb3079bcd3071",
+              "file": "balance.spec.ts",
+              "line": 106,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "core_flow.spec.ts",
+      "file": "core_flow.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S01–S12: konto, intro, starta pass (≤2 tryck), logga set (1 tryck), ångra, paus, avsluta, utveckling",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 5961,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:49.793Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d3f0bfcb5678100d1709-a7d972c79fc06185e3ac",
+          "file": "core_flow.spec.ts",
+          "line": 8,
+          "column": 1
+        },
+        {
+          "title": "S10: spontanpass med standardtid nås med 3 tryck från Idag",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2134,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:55.765Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d3f0bfcb5678100d1709-10a49a121cb6437cd757",
+          "file": "core_flow.spec.ts",
+          "line": 85,
+          "column": 1
+        },
+        {
+          "title": "S01–S12: konto, intro, starta pass (≤2 tryck), logga set (1 tryck), ångra, paus, avsluta, utveckling",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 20152,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:32:27.472Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d3f0bfcb5678100d1709-bec8781ef6421865ecbe",
+          "file": "core_flow.spec.ts",
+          "line": 8,
+          "column": 1
+        },
+        {
+          "title": "S10: spontanpass med standardtid nås med 3 tryck från Idag",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 10343,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:32:47.632Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d3f0bfcb5678100d1709-f9c1f9a4fdcf91443371",
+          "file": "core_flow.spec.ts",
+          "line": 85,
+          "column": 1
+        },
+        {
+          "title": "S01–S12: konto, intro, starta pass (≤2 tryck), logga set (1 tryck), ångra, paus, avsluta, utveckling",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 5046,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:23.912Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d3f0bfcb5678100d1709-2276915941f9da6758d8",
+          "file": "core_flow.spec.ts",
+          "line": 8,
+          "column": 1
+        },
+        {
+          "title": "S10: spontanpass med standardtid nås med 3 tryck från Idag",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2143,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:28.968Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d3f0bfcb5678100d1709-0001b55c5217ee0cc1f6",
+          "file": "core_flow.spec.ts",
+          "line": 85,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "delete_workout.spec.ts",
+      "file": "delete_workout.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "radera registrerat pass: avbryt, bekräfta offline, historik och omladdning",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3966,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:55.949Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "34c40bb9a1d728ab5e5d-c56355fee40b0abecd73",
+          "file": "delete_workout.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "radera registrerat pass: avbryt, bekräfta offline, historik och omladdning",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 17826,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:32:48.569Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "34c40bb9a1d728ab5e5d-3515bfcd96524646b348",
+          "file": "delete_workout.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "radera registrerat pass: avbryt, bekräfta offline, historik och omladdning",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3641,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:30.004Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "34c40bb9a1d728ab5e5d-e5a4daa6d7c27c78f1fc",
+          "file": "delete_workout.spec.ts",
+          "line": 5,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "design_capture.spec.ts",
+      "file": "design_capture.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "design evidence light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Explicit before/after evidence capture only",
+                  "location": {
+                    "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_capture.spec.ts",
+                    "line": 6,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:57.909Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Explicit before/after evidence capture only",
+                      "location": {
+                        "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_capture.spec.ts",
+                        "line": 6,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "d75bed09395b989557ed-c09926816450f42422dd",
+          "file": "design_capture.spec.ts",
+          "line": 7,
+          "column": 49
+        },
+        {
+          "title": "design evidence dark",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Explicit before/after evidence capture only",
+                  "location": {
+                    "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_capture.spec.ts",
+                    "line": 6,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:57.909Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Explicit before/after evidence capture only",
+                      "location": {
+                        "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_capture.spec.ts",
+                        "line": 6,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "d75bed09395b989557ed-67a9f8c9bafe557352be",
+          "file": "design_capture.spec.ts",
+          "line": 7,
+          "column": 49
+        },
+        {
+          "title": "design evidence light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Explicit before/after evidence capture only",
+                  "location": {
+                    "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_capture.spec.ts",
+                    "line": 6,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:32:57.983Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Explicit before/after evidence capture only",
+                      "location": {
+                        "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_capture.spec.ts",
+                        "line": 6,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "d75bed09395b989557ed-1802c32da1e4ae26e212",
+          "file": "design_capture.spec.ts",
+          "line": 7,
+          "column": 49
+        },
+        {
+          "title": "design evidence dark",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Explicit before/after evidence capture only",
+                  "location": {
+                    "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_capture.spec.ts",
+                    "line": 6,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:32:57.983Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Explicit before/after evidence capture only",
+                      "location": {
+                        "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_capture.spec.ts",
+                        "line": 6,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "d75bed09395b989557ed-d1cd5a8ae61afea96d4b",
+          "file": "design_capture.spec.ts",
+          "line": 7,
+          "column": 49
+        },
+        {
+          "title": "design evidence light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Explicit before/after evidence capture only",
+                  "location": {
+                    "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_capture.spec.ts",
+                    "line": 6,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:31.119Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Explicit before/after evidence capture only",
+                      "location": {
+                        "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_capture.spec.ts",
+                        "line": 6,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "d75bed09395b989557ed-ee6cc3534f1d1b18c591",
+          "file": "design_capture.spec.ts",
+          "line": 7,
+          "column": 49
+        },
+        {
+          "title": "design evidence dark",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Explicit before/after evidence capture only",
+                  "location": {
+                    "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_capture.spec.ts",
+                    "line": 6,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:31.119Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Explicit before/after evidence capture only",
+                      "location": {
+                        "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_capture.spec.ts",
+                        "line": 6,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "d75bed09395b989557ed-3290ac9caa9bd1ae4946",
+          "file": "design_capture.spec.ts",
+          "line": 7,
+          "column": 49
+        }
+      ]
+    },
+    {
+      "title": "design_rollback.spec.ts",
+      "file": "design_rollback.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "DES rollback: classic theme and functional set/card without migration",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Run explicitly against a fresh classic build",
+                  "location": {
+                    "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_rollback.spec.ts",
+                    "line": 5,
+                    "column": 8
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "skipped",
+                  "duration": 131,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:57.940Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Run explicitly against a fresh classic build",
+                      "location": {
+                        "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_rollback.spec.ts",
+                        "line": 5,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "44884737c085fba7fef6-90b42b5567cae3cb0dae",
+          "file": "design_rollback.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "DES rollback: classic theme and functional set/card without migration",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Run explicitly against a fresh classic build",
+                  "location": {
+                    "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_rollback.spec.ts",
+                    "line": 5,
+                    "column": 8
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "skipped",
+                  "duration": 198,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:32:58.003Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Run explicitly against a fresh classic build",
+                      "location": {
+                        "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_rollback.spec.ts",
+                        "line": 5,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "44884737c085fba7fef6-68c35b76b50e8afc411d",
+          "file": "design_rollback.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "DES rollback: classic theme and functional set/card without migration",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Run explicitly against a fresh classic build",
+                  "location": {
+                    "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_rollback.spec.ts",
+                    "line": 5,
+                    "column": 8
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "skipped",
+                  "duration": 100,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:31.153Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Run explicitly against a fresh classic build",
+                      "location": {
+                        "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\design_rollback.spec.ts",
+                        "line": 5,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "44884737c085fba7fef6-5ab9ac6493ef3dd087ad",
+          "file": "design_rollback.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "design.spec.ts",
+      "file": "design.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "DES mobile states and 200% text: light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 6692,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:58.115Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a97bb9db443074d9bdd1-08cd545a4bb501acf410",
+          "file": "design.spec.ts",
+          "line": 17,
+          "column": 49
+        },
+        {
+          "title": "DES mobile states and 200% text: dark",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 6560,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:04.816Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a97bb9db443074d9bdd1-017c396b828a0066db5f",
+          "file": "design.spec.ts",
+          "line": 17,
+          "column": 49
+        },
+        {
+          "title": "DES mobile states and 200% text: light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 22643,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:32:58.239Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a97bb9db443074d9bdd1-1e8ac7b868a777fa26ef",
+          "file": "design.spec.ts",
+          "line": 17,
+          "column": 49
+        },
+        {
+          "title": "DES mobile states and 200% text: dark",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 22038,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:33:20.890Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a97bb9db443074d9bdd1-5b146dbcdfe9125645cb",
+          "file": "design.spec.ts",
+          "line": 17,
+          "column": 49
+        },
+        {
+          "title": "DES mobile states and 200% text: light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 6369,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:31.294Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a97bb9db443074d9bdd1-96da11b1458d2c0f63e1",
+          "file": "design.spec.ts",
+          "line": 17,
+          "column": 49
+        },
+        {
+          "title": "DES mobile states and 200% text: dark",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 6125,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:37.671Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a97bb9db443074d9bdd1-0244b548173419552080",
+          "file": "design.spec.ts",
+          "line": 17,
+          "column": 49
+        }
+      ]
+    },
+    {
+      "title": "effort.spec.ts",
+      "file": "effort.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "optional set feelings survive edits and offline reload; initial strength is a separate reference",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10932,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:29:59.947Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f3b9400517f8569669a4-43d02db26fdafeb8d043",
+          "file": "effort.spec.ts",
+          "line": 6,
+          "column": 1
+        },
+        {
+          "title": "optional set feelings survive edits and offline reload; initial strength is a separate reference",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 28181,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:33:06.432Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f3b9400517f8569669a4-360a471388fb1540a8b1",
+          "file": "effort.spec.ts",
+          "line": 6,
+          "column": 1
+        },
+        {
+          "title": "optional set feelings survive edits and offline reload; initial strength is a separate reference",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10515,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:33.686Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f3b9400517f8569669a4-1668fc9d4f348c3e02dd",
+          "file": "effort.spec.ts",
+          "line": 6,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "offline_privacy.spec.ts",
+      "file": "offline_privacy.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "29: flygplansläge hela passet + omladdning offline + återanslutning ⇒ exakt utförda set på servern",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5499,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:10.927Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0464dd1c9ea3a4c2fe6a-e15f18de24a6a3909b83",
+          "file": "offline_privacy.spec.ts",
+          "line": 28,
+          "column": 1
+        },
+        {
+          "title": "29: flygplansläge hela passet + omladdning offline + återanslutning ⇒ exakt utförda set på servern",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Playwright WebKit på Windows saknar stöd för service worker-offline; täcks av Chromium + manuell iOS-QA.",
+                  "location": {
+                    "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\offline_privacy.spec.ts",
+                    "line": 29,
+                    "column": 8
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "skipped",
+                  "duration": 202,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:33:34.647Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Playwright WebKit på Windows saknar stöd för service worker-offline; täcks av Chromium + manuell iOS-QA.",
+                      "location": {
+                        "file": "D:\\Projekt\\STYRKA\\styrka-app\\e2e\\offline_privacy.spec.ts",
+                        "line": 29,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "0464dd1c9ea3a4c2fe6a-fcbab7a7168c46f12c99",
+          "file": "offline_privacy.spec.ts",
+          "line": 28,
+          "column": 1
+        },
+        {
+          "title": "29: flygplansläge hela passet + omladdning offline + återanslutning ⇒ exakt utförda set på servern",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 4784,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:43.835Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0464dd1c9ea3a4c2fe6a-e32dab9519fdb90c2f94",
+          "file": "offline_privacy.spec.ts",
+          "line": 28,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "utloggning",
+          "file": "offline_privacy.spec.ts",
+          "line": 67,
+          "column": 6,
+          "specs": [
+            {
+              "title": "32: utloggning med osynkade data varnar; nästa användare på enheten ser inget av första",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "android-chrome",
+                  "projectName": "android-chrome",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4232,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:30:16.435Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0464dd1c9ea3a4c2fe6a-464e8de52a3cba900b68",
+              "file": "offline_privacy.spec.ts",
+              "line": 70,
+              "column": 1
+            },
+            {
+              "title": "32: utloggning med osynkade data varnar; nästa användare på enheten ser inget av första",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "iphone-webkit",
+                  "projectName": "iphone-webkit",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13584,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:33:34.857Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0464dd1c9ea3a4c2fe6a-97f59ba8b9657994726b",
+              "file": "offline_privacy.spec.ts",
+              "line": 70,
+              "column": 1
+            },
+            {
+              "title": "32: utloggning med osynkade data varnar; nästa användare på enheten ser inget av första",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "desktop-keyboard",
+                  "projectName": "desktop-keyboard",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 4004,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:36:48.627Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0464dd1c9ea3a4c2fe6a-f6fa981a4c6ef4277235",
+              "file": "offline_privacy.spec.ts",
+              "line": 70,
+              "column": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "plan.spec.ts",
+      "file": "plan.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Min träningsplan: kommande, genomförda, anteckning, planversioner och utskrift",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 7555,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:11.418Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0bcf17a0c6512d46058b-d942ad37e019769bd802",
+          "file": "plan.spec.ts",
+          "line": 21,
+          "column": 1
+        },
+        {
+          "title": "Min träningsplan: kommande, genomförda, anteckning, planversioner och utskrift",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 24828,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:33:42.965Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0bcf17a0c6512d46058b-54c44759997b70634c63",
+          "file": "plan.spec.ts",
+          "line": 21,
+          "column": 1
+        },
+        {
+          "title": "Min träningsplan: kommande, genomförda, anteckning, planversioner och utskrift",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6723,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:44.246Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0bcf17a0c6512d46058b-e22f83aa521e2ea77bfe",
+          "file": "plan.spec.ts",
+          "line": 21,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "recovery.spec.ts",
+      "file": "recovery.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "completed bench Lätt: next bench is Tung, offline and after reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3260,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:19.016Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ef78f3da5c9c24fceacf-f3cfc18dfb34c2a77d5f",
+          "file": "recovery.spec.ts",
+          "line": 7,
+          "column": 3
+        },
+        {
+          "title": "completed bench Lagom: next bench is Medel, offline and after reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3106,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:22.286Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ef78f3da5c9c24fceacf-6d151c2dd91994cb0126",
+          "file": "recovery.spec.ts",
+          "line": 7,
+          "column": 3
+        },
+        {
+          "title": "completed bench Maxansträngning: next bench is Medel, offline and after reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3107,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:25.400Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ef78f3da5c9c24fceacf-ee04a04708e5915547b5",
+          "file": "recovery.spec.ts",
+          "line": 7,
+          "column": 3
+        },
+        {
+          "title": "completed bench Lätt: next bench is Tung, offline and after reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 19178,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:33:48.482Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ef78f3da5c9c24fceacf-f064e055894a994a869c",
+          "file": "recovery.spec.ts",
+          "line": 7,
+          "column": 3
+        },
+        {
+          "title": "completed bench Lagom: next bench is Medel, offline and after reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 19481,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:34:07.668Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ef78f3da5c9c24fceacf-4d06400b70304f40ba03",
+          "file": "recovery.spec.ts",
+          "line": 7,
+          "column": 3
+        },
+        {
+          "title": "completed bench Maxansträngning: next bench is Medel, offline and after reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 19312,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:34:27.157Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ef78f3da5c9c24fceacf-c01a88dd323a6a7ad3e2",
+          "file": "recovery.spec.ts",
+          "line": 7,
+          "column": 3
+        },
+        {
+          "title": "completed bench Lätt: next bench is Tung, offline and after reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3069,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:51.009Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ef78f3da5c9c24fceacf-82dd6582fdb8211685ac",
+          "file": "recovery.spec.ts",
+          "line": 7,
+          "column": 3
+        },
+        {
+          "title": "completed bench Lagom: next bench is Medel, offline and after reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3044,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:54.086Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ef78f3da5c9c24fceacf-9bf4c2305cb46e5fc5b7",
+          "file": "recovery.spec.ts",
+          "line": 7,
+          "column": 3
+        },
+        {
+          "title": "completed bench Maxansträngning: next bench is Medel, offline and after reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3122,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:57.139Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ef78f3da5c9c24fceacf-93f320708fcdfc2dd0e1",
+          "file": "recovery.spec.ts",
+          "line": 7,
+          "column": 3
+        }
+      ]
+    },
+    {
+      "title": "science.spec.ts",
+      "file": "science.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "SUB17: utloggad besökare når /vetenskap från välkomstsidan; källor och begränsningar visas",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3186,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:20.702Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e4372e193051c8c249c-c517eba697c93872b656",
+          "file": "science.spec.ts",
+          "line": 15,
+          "column": 1
+        },
+        {
+          "title": "SUB18: direktlänk till algoritmregel och källa (DOI) fungerar",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 826,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:23.895Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e4372e193051c8c249c-3b2c22a96f0dbbf550e0",
+          "file": "science.spec.ts",
+          "line": 41,
+          "column": 1
+        },
+        {
+          "title": "inloggad: vetenskap är tillgänglig i Profil och hålls utanför träningen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2613,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:24.732Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e4372e193051c8c249c-c7ed1b993fb61c37febb",
+          "file": "science.spec.ts",
+          "line": 54,
+          "column": 1
+        },
+        {
+          "title": "SUB17: utloggad besökare når /vetenskap från välkomstsidan; källor och begränsningar visas",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3302,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:34:07.824Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e4372e193051c8c249c-bcfb845feddd9976050a",
+          "file": "science.spec.ts",
+          "line": 15,
+          "column": 1
+        },
+        {
+          "title": "SUB18: direktlänk till algoritmregel och källa (DOI) fungerar",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1445,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:34:11.134Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e4372e193051c8c249c-3973a97fa2499175ff02",
+          "file": "science.spec.ts",
+          "line": 41,
+          "column": 1
+        },
+        {
+          "title": "inloggad: vetenskap är tillgänglig i Profil och hålls utanför träningen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 9885,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:34:12.586Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e4372e193051c8c249c-f663c5b806ceaff48e66",
+          "file": "science.spec.ts",
+          "line": 54,
+          "column": 1
+        },
+        {
+          "title": "SUB17: utloggad besökare når /vetenskap från välkomstsidan; källor och begränsningar visas",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2982,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:52.659Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e4372e193051c8c249c-b4f610ccf2e019613243",
+          "file": "science.spec.ts",
+          "line": 15,
+          "column": 1
+        },
+        {
+          "title": "SUB18: direktlänk till algoritmregel och källa (DOI) fungerar",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 719,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:55.649Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e4372e193051c8c249c-89e1f8539df91247e3ef",
+          "file": "science.spec.ts",
+          "line": 41,
+          "column": 1
+        },
+        {
+          "title": "inloggad: vetenskap är tillgänglig i Profil och hålls utanför träningen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2514,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:56.377Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e4372e193051c8c249c-d26087f1c4915ef47737",
+          "file": "science.spec.ts",
+          "line": 54,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "skipped_exercises.spec.ts",
+      "file": "skipped_exercises.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "orsak till överhopp, tydligt förslag, godkännande och ångra på mobil",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4270,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:27.378Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "998badea062f4e31751a-572ebee7f2e947fb57b7",
+          "file": "skipped_exercises.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "orsak till överhopp, tydligt förslag, godkännande och ångra på mobil",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 20479,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:34:22.491Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "998badea062f4e31751a-23f76b649a212d5f3092",
+          "file": "skipped_exercises.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "orsak till överhopp, tydligt förslag, godkännande och ångra på mobil",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 4056,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:36:58.920Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "998badea062f4e31751a-77924444292e502cdd61",
+          "file": "skipped_exercises.spec.ts",
+          "line": 5,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "strength_inputs.spec.ts",
+      "file": "strength_inputs.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "separate strength views preserve independent values, drafts, back navigation, offline saves and profile editing",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 4181,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:28.547Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa8ee601d39ec8ce08bc-65ea95d2959517084806",
+          "file": "strength_inputs.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "incomplete entries can be postponed and source choice does not delete confirmed entries",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2442,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:32.736Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa8ee601d39ec8ce08bc-4940a6a96e4e756a25a5",
+          "file": "strength_inputs.spec.ts",
+          "line": 10,
+          "column": 1
+        },
+        {
+          "title": "new user can create a plan without strength data and change the source later",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1542,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:35.186Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa8ee601d39ec8ce08bc-5d3d02c650b18617180e",
+          "file": "strength_inputs.spec.ts",
+          "line": 42,
+          "column": 1
+        },
+        {
+          "title": "separate strength views preserve independent values, drafts, back navigation, offline saves and profile editing",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 12001,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:34:43.014Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa8ee601d39ec8ce08bc-88bbb1fcb21f04ee1170",
+          "file": "strength_inputs.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "incomplete entries can be postponed and source choice does not delete confirmed entries",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 10135,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:34:55.023Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa8ee601d39ec8ce08bc-65a53a2a829f6becb7d4",
+          "file": "strength_inputs.spec.ts",
+          "line": 10,
+          "column": 1
+        },
+        {
+          "title": "new user can create a plan without strength data and change the source later",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 5176,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:35:05.167Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa8ee601d39ec8ce08bc-c4e11c061e3a825f2d11",
+          "file": "strength_inputs.spec.ts",
+          "line": 42,
+          "column": 1
+        },
+        {
+          "title": "separate strength views preserve independent values, drafts, back navigation, offline saves and profile editing",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3829,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:37:00.301Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa8ee601d39ec8ce08bc-a1a6fa918b4c51942192",
+          "file": "strength_inputs.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "incomplete entries can be postponed and source choice does not delete confirmed entries",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2291,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:37:04.138Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa8ee601d39ec8ce08bc-4a35575f3f1bb777691c",
+          "file": "strength_inputs.spec.ts",
+          "line": 10,
+          "column": 1
+        },
+        {
+          "title": "new user can create a plan without strength data and change the source later",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1520,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:37:06.438Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "aa8ee601d39ec8ce08bc-049c8d0725b96df817b4",
+          "file": "strength_inputs.spec.ts",
+          "line": 42,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "substitution.spec.ts",
+      "file": "substitution.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "byte före start (hjälpskattning, Använd framöver) och under passet (kalibrering per hantel, ≤2 tryck)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5418,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:31.690Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d5b2c125878ca7c4dd8c-ee110247f432155140c0",
+          "file": "substitution.spec.ts",
+          "line": 15,
+          "column": 1
+        },
+        {
+          "title": "byte före start (hjälpskattning, Använd framöver) och under passet (kalibrering per hantel, ≤2 tryck)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 24661,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:34:46.509Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d5b2c125878ca7c4dd8c-f14f58afbbaecaf93a9d",
+          "file": "substitution.spec.ts",
+          "line": 15,
+          "column": 1
+        },
+        {
+          "title": "byte före start (hjälpskattning, Använd framöver) och under passet (kalibrering per hantel, ≤2 tryck)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 5234,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:37:03.010Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d5b2c125878ca7c4dd8c-aa6a0aaa3dfdb447b703",
+          "file": "substitution.spec.ts",
+          "line": 15,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "training_flow.spec.ts",
+      "file": "training_flow.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "warmup, unilateral cable, offline rest resume and separated history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 150000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 6353,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:36.767Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8cb489f2d7acfb24b12d-105617e7ab75daa29658",
+          "file": "training_flow.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "warmup, unilateral cable, offline rest resume and separated history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 150000,
+              "annotations": [
+                {
+                  "type": "limitation",
+                  "description": "Windows WebKit: reload online; actual offline PWA needs iPhone testing."
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 33002,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:35:10.380Z",
+                  "annotations": [
+                    {
+                      "type": "limitation",
+                      "description": "Windows WebKit: reload online; actual offline PWA needs iPhone testing."
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8cb489f2d7acfb24b12d-4b0120f5d6f60e9d3868",
+          "file": "training_flow.spec.ts",
+          "line": 5,
+          "column": 1
+        },
+        {
+          "title": "warmup, unilateral cable, offline rest resume and separated history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 150000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6059,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:37:07.987Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8cb489f2d7acfb24b12d-aa94ccb056059da81fdf",
+          "file": "training_flow.spec.ts",
+          "line": 5,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "workout_ux.spec.ts",
+      "file": "workout_ux.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "A–J: plan, autosave, register, effort, persistent rest, swap, reduce, undo and finish",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 150000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "android-chrome",
+              "projectName": "android-chrome",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6884,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:30:37.160Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "11fa9809edf4d6054d38-5babb218cd536a98d917",
+          "file": "workout_ux.spec.ts",
+          "line": 6,
+          "column": 1
+        },
+        {
+          "title": "A–J: plan, autosave, register, effort, persistent rest, swap, reduce, undo and finish",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 150000,
+              "annotations": [
+                {
+                  "type": "limitation",
+                  "description": "Windows WebKit: reload online; service worker offline requires physical iPhone QA."
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "iphone-webkit",
+              "projectName": "iphone-webkit",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 31928,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:35:11.209Z",
+                  "annotations": [
+                    {
+                      "type": "limitation",
+                      "description": "Windows WebKit: reload online; service worker offline requires physical iPhone QA."
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "11fa9809edf4d6054d38-d7db88365b4b16416f38",
+          "file": "workout_ux.spec.ts",
+          "line": 6,
+          "column": 1
+        },
+        {
+          "title": "A–J: plan, autosave, register, effort, persistent rest, swap, reduce, undo and finish",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 150000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop-keyboard",
+              "projectName": "desktop-keyboard",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 5888,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-24T14:37:08.286Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "11fa9809edf4d6054d38-ce4e8622c50118ccc4c5",
+          "file": "workout_ux.spec.ts",
+          "line": 6,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-24T14:28:36.892Z",
+    "duration": 517833.849,
+    "expected": 130,
+    "skipped": 11,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

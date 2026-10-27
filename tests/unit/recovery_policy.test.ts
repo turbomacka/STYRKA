@@ -18,43 +18,44 @@ function work(id: ExerciseId, n: number, hours: number, feeling?: PerceivedEffor
 describe('recovery policy: dose, effort and movement overlap', () => {
   it.each([
     [1, 'easy', 1, null], [2, 'too_easy', 20, null],
-    [1, 'ok', 23.99, 'moderate'], [1, 'ok', 24, null],
-    [2, 'hard', 47.99, 'light'], [2, 'hard', 48, null],
-    [1, 'maximal', 30, 'light'], [3, 'ok', 30, 'light'],
-    [3, 'easy', 20, 'moderate'], [3, 'easy', 30, null],
-    [6, 'easy', 30, 'light'],
+    [1, 'ok', 23.99, null], [1, 'ok', 24, null],
+    [2, 'hard', 47.99, null], [2, 'hard', 48, null],
+    [1, 'maximal', 30, null], [3, 'ok', 30, 'moderate'],
+    [3, 'easy', 20, 'moderate'], [3, 'easy', 30, 'moderate'],
+    [6, 'easy', 30, 'moderate'],
   ] as const)('%i %s sets after %s hours -> %s cap', (n, feeling, hours, cap) => {
     expect(assessRecovery('squat', [work('squat', n, hours, feeling)], NOW).modeCap).toBe(cap);
   });
 
   it('missing effort is ordinary work; a heavy plan alone does not imply maximal effort', () => {
     expect(assessRecovery('squat', [work('squat', 1, 30)], NOW).modeCap).toBeNull();
-    expect(assessRecovery('squat', [work('squat', 3, 30)], NOW).modeCap).toBe('light');
+    expect(assessRecovery('squat', [work('squat', 3, 30)], NOW).modeCap).toBe('moderate');
     const h = work('squat', 2, 30); h.sets.forEach((s) => s.rir = 1);
-    expect(assessRecovery('squat', [h], NOW).modeCap).toBe('light');
+    expect(assessRecovery('squat', [h], NOW).modeCap).toBe('moderate');
     h.sets.forEach((s) => s.rir = 5);
     expect(assessRecovery('squat', [h], NOW).modeCap).toBeNull();
   });
 
   it('distinguishes direct variants, partial overlap and unrelated work', () => {
     const h = [work('squat', 3, 30)];
-    expect(assessRecovery('front_squat', h, NOW).modeCap).toBe('light');
+    expect(assessRecovery('front_squat', h, NOW).modeCap).toBe('moderate');
     expect(assessRecovery('deadlift', h, NOW).modeCap).toBeNull();
-    expect(assessRecovery('deadlift', [work('squat', 3, 20)], NOW).modeCap).toBe('moderate');
+    expect(assessRecovery('deadlift', [work('squat', 3, 20)], NOW).residualDose).toBeGreaterThan(0); // partial overlap contributes without automatically capping mode
     expect(assessRecovery('deadlift', [work('squat', 1, 20)], NOW).modeCap).toBeNull();
-    expect(assessRecovery('overhead_press', [work('bench_press', 3, 20)], NOW).modeCap).toBe('moderate');
+    expect(assessRecovery('overhead_press', [work('bench_press', 3, 20)], NOW).residualDose).toBeGreaterThan(0);
     expect(assessRecovery('cable_row', [work('bench_press', 3, 20)], NOW).modeCap).toBeNull();
-    expect(assessRecovery('cable_curl', [work('biceps_curl', 3, 30)], NOW).modeCap).toBe('light');
+    expect(assessRecovery('cable_curl', [work('biceps_curl', 3, 30)], NOW).modeCap).toBe('moderate');
     expect(assessRecovery('triceps_pushdown', [work('biceps_curl', 3, 20)], NOW).modeCap).toBeNull();
   });
 
   it('easy work cannot hide or extend earlier demanding work; order and duplicate snapshots do not matter', () => {
     const old = work('squat', 3, 47), easy = work('squat', 1, 1, 'easy');
     const history = [old, easy]; const before = structuredClone(history);
-    expect(assessRecovery('squat', history, NOW).modeCap).toBe('light');
+    expect(assessRecovery('squat', history, NOW).modeCap).toBe('moderate');
     expect(assessRecovery('squat', [...history].reverse(), NOW)).toEqual(assessRecovery('squat', history, NOW));
     expect(assessRecovery('squat', [easy, easy, easy], NOW).modeCap).toBeNull();
-    expect(assessRecovery('squat', history, hoursBefore(NOW, -1)).modeCap).toBeNull();
+    expect(assessRecovery('squat', history, hoursBefore(NOW, -1)).modeCap).toBe('moderate');
+    expect(assessRecovery('squat', history, hoursBefore(NOW, -1)).residualDose).toBeLessThan(assessRecovery('squat',history,NOW).residualDose!);
     expect(history).toEqual(before);
   });
 
@@ -75,7 +76,7 @@ describe('recovery policy: dose, effort and movement overlap', () => {
     expect(assessRecovery(h.exerciseId,[h],NOW).modeCap).toBeNull();
     h.sets[0].status = 'partial'; h.sets[0].detail!.performances = [h.sets[0].detail!.performances[0]];
     h.sets[0].detail!.performances[0].effort = 'maximal';
-    expect(assessRecovery(h.exerciseId,[h],NOW).modeCap).toBe('light');
+    expect(assessRecovery(h.exerciseId,[h],NOW).modeCap).toBe('moderate');
     expect(assessRecovery(h.exerciseId,[h],NOW,{...c,executionMode:'single_side',startingSide:'left'}).modeCap).toBeNull();
   });
 
@@ -83,9 +84,9 @@ describe('recovery policy: dose, effort and movement overlap', () => {
     const hist = pastWork([work('squat', 2, 20, 'easy')], NOW);
     expect(gateFor('squat',hist,[],NOW).hoursSinceRelevant).toBeNull();
     expect(gateFor('squat',hist,[symptom({area:'knee',reaction:'transient'})],NOW).hoursSinceRelevant).toBe(20);
-    expect(gateFor('front_squat',hist,[symptom({area:'knee',reaction:'transient'})],NOW).hoursSinceRelevant).toBe(20);
+    expect(gateFor('front_squat',hist,[symptom({area:'knee',reaction:'transient'})],NOW).hoursSinceRelevant).toBeNull();
     const longBreak = gateFor('squat',pastWork([work('squat',3,700),work('deadlift',3,10)],NOW),[],NOW);
-    expect(longBreak.hoursSinceRelevant).toBe(700); expect(longBreak.recovery.modeCap).toBe('moderate');
+    expect(longBreak.hoursSinceRelevant).toBe(700); expect(longBreak.recovery.modeCap).toBeNull();
     const blocked = planRegular(input({exerciseSettings:ALL_ESTIMATES,history:hist,restrictions:[rule({kind:'block_exercise',exerciseA:'squat'})]}));
     expect(blocked.exercises.some((e)=>e.exerciseId==='squat')).toBe(false);
     const review = planRegular(input({exerciseSettings:ALL_ESTIMATES,history:hist,symptoms:[symptom({area:'knee',reaction:'persistent'})]}));
@@ -93,7 +94,7 @@ describe('recovery policy: dose, effort and movement overlap', () => {
   });
 
   it('regular, extra and replacement planning apply the same graded limits without moving rotation', () => {
-    const inp = input({exerciseSettings:ALL_ESTIMATES,history:[work('squat',1,20,'ok')]});
+    const inp = input({exerciseSettings:ALL_ESTIMATES,history:[work('squat',2,20,'ok')]});
     const next = planRegular(inp);
     expect(next.exercises.find((e)=>e.exerciseId==='squat')).toMatchObject({mode:'moderate',state:'caution'});
     expect(next.rotationIndex).toBe(inp.rotationIndex);
@@ -121,7 +122,7 @@ describe('machine progression respects the same hold', () => {
     expect(hold).toMatchObject({targetLoadValue:6,reps:10});
     expect(hold.reasons).toContain('RECOVERY_HOLD'); expect(hold.reasons).not.toContain('DOUBLE_PROGRESS_WEIGHT');
     if(kind==='independent') expect(hold.targetSecondLoadValue).toBe(7);
-    expect(configuredPrescription({...next,state:'normal'},[h],c).targetLoadValue).toBe(7);
+    expect(configuredPrescription({...next,state:'normal'},[h],c).targetLoadValue).toBe(kind==='levels'?7:6); // 16.7% mass jump lacks support; ordinal labels have no percentage meaning
     h.plan.bandMax=12; next.bandMax=12;
     expect(configuredPrescription(next,[h],c).reps).toBe(10);
     expect(configuredPrescription({...next,state:'normal'},[h],c).reps).toBe(11);
@@ -138,13 +139,13 @@ it('saved optional answers affect the next local/offline proposal without rewrit
   const p=await previewNext(h.ctx); p.exercises=[{...p.exercises[0],sets:1}];
   const session=await startSession(h.ctx,p), s=(await h.db.sets.toArray())[0];
   await recordPerformance(h.ctx,s.id,'both',{});await rateSet(h.ctx,s.id,'easy');
-  await finishSession(h.ctx,session.id); h.clock.advanceHours(30);
+  await finishSession(h.ctx,session.id); h.clock.advanceHours(12);
   const before=await h.db.sessions.get(session.id);
   const inp=input({nowUtc:h.clock.now(),exerciseSettings:ALL_ESTIMATES,history:await buildHistory(h.db)});
   expect(planRegular(inp).exercises.find((e)=>e.exerciseId==='squat')?.mode).toBe('heavy');
   await rateSet(h.ctx,s.id,'maximal');
   const changed=planRegular({...inp,history:await buildHistory(h.db)});
-  expect(changed.exercises.find((e)=>e.exerciseId==='squat')).toMatchObject({mode:'light',state:'caution'});
+  expect(changed.exercises.find((e)=>e.exerciseId==='squat')).toMatchObject({mode:'moderate',state:'caution'});
   expect(await h.db.sessions.get(session.id)).toEqual(before);
   const record=await h.db.sets.get(s.id);
   expect(record?.actualGrams).toBe(s.targetGrams); expect(record?.actualReps).toBe(s.targetReps);

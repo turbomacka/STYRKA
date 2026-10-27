@@ -15,6 +15,7 @@ import type { ExerciseId } from '../domain/catalog';
 import type { PlanSnapshot } from '../domain/model';
 import { outbox, type AppContext } from './context';
 import { cleanCalibrations, deletedWorkouts, purgeWorkout } from './deleteWorkout';
+import { invalidateFeedback } from './feedbackCache';
 
 function sameValue(a: unknown, b: unknown): boolean {
   if (a === b) return true;
@@ -350,7 +351,7 @@ export class SyncEngine {
    */
   async resolveConflict(conflictId: string, choice: 'mine' | 'server'): Promise<void> {
     const db = this.ctx.db;
-    await db.transaction('rw', [db.conflicts, db.outbox, db.sets, db.profile, db.notes], async () => {
+    await db.transaction('rw', [db.conflicts, db.outbox, db.sets, db.profile, db.notes, db.meta], async () => {
       const c = await db.conflicts.get(conflictId);
       if (!c) return;
       const pending = await db.outbox.where('recordId').equals(c.recordId).toArray();
@@ -360,6 +361,7 @@ export class SyncEngine {
         if (s) {
           if (choice === 'server') {
             await db.sets.put(applyServerSetValues(s, c.server, c.serverRevision));
+            await invalidateFeedback(db, { sessionId: s.sessionId, setId: s.id });
           } else {
             const updated: LocalSet = { ...s, serverRevision: c.serverRevision, syncState: 'queued' };
             await db.sets.put(updated);
@@ -487,6 +489,11 @@ export class SyncEngine {
       for (const r of snap.restrictions) if (!pendingErase && !pendingDeletes.has(r.id as string) && !keep(await db.restrictions.get(r.id as string))) await db.restrictions.put(restrictionFromRow(r));
       for (const r of snap.symptoms) if (!pendingErase && !pendingDeletes.has(r.id as string) && !keep(await db.symptoms.get(r.id as string))) await db.symptoms.put(symptomFromRow(r));
       for (const r of snap.consents) if (!pendingErase && !keep(await db.consents.get(r.user_id as string))) await db.consents.put(consentFromRow(r));
+      // Remote health changes also invalidate derived recommendations and prose.
+      // A saved Finish screen must not continue to display a removed or newly blocked dose.
+      if (!sameValue(beforeRestrictions, await db.restrictions.toArray()) || !sameValue(beforeSymptoms, await db.symptoms.toArray())) {
+        await invalidateFeedback(db, { all: true });
+      }
       for (const r of snap.programs) if (!keep(await db.programs.get(r.id as string))) await db.programs.put(programFromRow(r));
       for (const r of snap.sessions) {
         if (keep(await db.sessions.get(r.id as string))) continue;
@@ -501,7 +508,11 @@ export class SyncEngine {
         if (!se || keep(local)) continue;
         // A fetch begun before an acknowledged write must never lower its revision.
         if (local?.serverRevision != null && typeof r.revision === 'number' && r.revision < local.serverRevision) continue;
-        await db.sets.put(setFromRow(r, se));
+        const incoming = setFromRow(r, se);
+        await db.sets.put(incoming);
+        if (!local || !sameValue(setFullPatch(local), setFullPatch(incoming))) {
+          await invalidateFeedback(db, { sessionId: incoming.sessionId, setId: incoming.id });
+        }
       }
       for (const r of snap.audits) if (!keep(await db.audits.get(r.id as string))) await db.audits.put(auditFromRow(r));
       for (const r of snap.calibrations ?? []) if (!keep(await db.calibrations.get(r.id as string))) await db.calibrations.put(calibrationFromRow(r));

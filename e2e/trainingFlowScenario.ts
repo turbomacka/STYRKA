@@ -79,7 +79,7 @@ export async function runTrainingFlow(page: Page, context: BrowserContext, dir: 
   await page.screenshot({ path:`${dir}/unilateral-${offlineReload?'offline':'online-reload'}.png`, fullPage:true, scale:'css' });
   await context.setOffline(false);
   await page.getByRole('button',{ name:'Avsluta', exact:true }).click(); await page.getByRole('button',{ name:'Avsluta och spara', exact:true }).click();
-  await expect(page.getByRole('heading',{name:'Så påverkas nästa pass'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Så påverkas kommande träning'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible(); await page.getByRole('link',{ name:'Utveckling', exact:true }).click();
   await page.getByText('Set, sidor och uppvärmning',{ exact:true }).click();
   await expect(page.locator('.training-history').first()).toContainText('Uppvärmning');

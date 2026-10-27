@@ -102,7 +102,10 @@ describe('evidensregister', () => {
   it('registret innehåller inga persondata eller personfält', () => {
     const text = JSON.stringify(raw);
     expect(text).not.toMatch(/user_id|email|e-post:|@[a-z0-9-]+\.[a-z]{2,}/i);
-    const allowedTop = ['registryVersion', 'sourceRegister', 'methodVersion', 'ruleSetVersion', 'engineVersion', 'substitutionCatalogVersion', 'lastSubstantiveUpdate', 'verificationNote', 'sources', 'claims', 'limitations', 'rules', 'registryAdditions', 'balanceMethod'];
+    expect(raw.adaptiveResearch.sources).toHaveLength(8);
+    expect(raw.adaptiveResearch.sources.map(s=>s.doi)).toContain('10.1007/s40279-024-02069-2');
+    expect(raw.adaptiveResearch.limitation).toContain('produktantaganden');
+    const allowedTop = ['adaptiveResearch', 'registryVersion', 'sourceRegister', 'methodVersion', 'ruleSetVersion', 'engineVersion', 'substitutionCatalogVersion', 'lastSubstantiveUpdate', 'verificationNote', 'sources', 'claims', 'limitations', 'rules', 'registryAdditions', 'balanceMethod'];
     expect(Object.keys(raw).sort()).toEqual([...allowedTop].sort());
   });
 

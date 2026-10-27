@@ -11,6 +11,7 @@ import {
   activeSession,
   detailFor,
   ensureWarmups,
+  exceedsPlannedMaximum,
   displayOrder,
   initialConfiguration,
   mutateSet,
@@ -49,7 +50,9 @@ export async function beginPreparedSession(ctx: AppContext, id: string) {
           ((r.kind === 'limit_sets' && r.maxSets !== null && rows.filter((s) => s.sessionExerciseId === e.id).length > r.maxSets) ||
             (r.kind === 'limit_mode' && r.maxMode !== null && modeRank(e.mode) > modeRank(r.maxMode))),
       );
-      if (result.status !== 'ok' || limited) throw new AppError('RULE_UNSATISFIABLE', 'workout_needs_review');
+      const max=input.exerciseSettings.find(s=>s.exerciseId===e.exerciseId)?.maxLoadKg;
+      const loadLimited=max!=null && rows.filter(s=>s.sessionExerciseId===e.id).some(s=>exceedsPlannedMaximum(s,max*1000));
+      if (result.status !== 'ok' || limited || loadLimited) throw new AppError('RULE_UNSATISFIABLE', 'workout_needs_review');
     }
   }
   return trainingTransaction(ctx, async () => {
@@ -79,6 +82,7 @@ export async function editPlannedSet(
     const s = await ctx.db.sets.get(id);
     if (!s || s.deleted) throw new AppError('NOT_FOUND');
     await requireEditable(ctx, s.sessionId);
+    const maximum=(await ctx.db.exerciseSettings.toArray()).find(x=>x.exerciseId===s.exerciseId)?.maxLoadGrams;
     const saved = await mutateSet(ctx, id, (current, se) => {
       if (se.replacedById || current.status === 'done') throw new AppError('INVALID_STATE');
       const d = detailFor(current, se);
@@ -106,6 +110,11 @@ export async function editPlannedSet(
           throw new AppError('VALIDATION_ERROR', key);
       if (value.secondLoad !== null && (!Number.isFinite(value.secondLoad) || value.secondLoad < 0 || value.secondLoad > 500))
         throw new AppError('VALIDATION_ERROR', 'secondLoad');
+      if(d.configuration.equipment.unit==='kg' && maximum!=null && ((value.grams!=null && value.grams>maximum)||(value.secondLoad!=null && value.secondLoad*1000>maximum))) throw new AppError('VALIDATION_ERROR','maxLoadKg');
+      if (d.prescriptionOrigin) {
+        const editedSides = chosen ? [chosen] : requiredSides(d.configuration);
+        d.prescriptionOrigin.userEditedSides = [...new Set([...d.prescriptionOrigin.userEditedSides, ...editedSides])];
+      }
       if (d.warmupProposal) d.warmupProposal = { ...d.warmupProposal, managed: false };
       if (chosen) d.plannedSides = { ...d.plannedSides, [chosen]: value };
       const shared = !chosen || d.configuration.executionMode === 'bilateral';

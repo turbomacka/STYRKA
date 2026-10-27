@@ -1,8 +1,9 @@
+import { estimateCapacity } from './adaptiveProgression';
 import { exercise } from './catalog';
 import { comparableHistory } from './comparableTraining';
 import { recoveryGate } from './decision_engine';
 import type { PerformedExercise, PlannedExercise, PlannerInput, UserExerciseSettings } from './model';
-import { e1rmFromEstimate, submaxE1rm, type GateInput } from './prescription';
+import { e1rmFromEstimate, toExposure, type GateInput } from './prescription';
 import { allRelations } from './substitutionCatalog';
 import { comparisonKey, defaultConfiguration } from './trainingFlow';
 
@@ -15,10 +16,7 @@ export type RecommendationSource = keyof typeof SOURCE_LABELS;
 
 /** Only actual comparable work can establish an observed max; never inherit a forecast. */
 function observedMax(history: PerformedExercise[]): number | null {
-  const candidates = history.flatMap((h) => h.sets.filter((s) => s.kind === 'work' && s.status === 'done' && s.technique === 'controlled')
-    .flatMap((s) => s.actualKg !== null && s.actualReps !== null && s.rir !== null ? [submaxE1rm(s.actualKg, s.actualReps, s.rir)?.kg ?? null] : []))
-    .filter((x): x is number => x !== null);
-  return candidates.length ? Math.min(...candidates.slice(-6)) : null;
+  return estimateCapacity(history.filter(h=>h.sessionStatus!=='preview').map(toExposure)).estimatedMax;
 }
 
 /** Shared by regular, replacement and added exercises. Numerical fallbacks are product heuristics. */

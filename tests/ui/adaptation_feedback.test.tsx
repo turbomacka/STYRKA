@@ -1,0 +1,15 @@
+import { expect,it,vi } from 'vitest';
+import { fireEvent,render,screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { SlotRow } from '../../src/ui/screens/Plan';
+import { LiftCard } from '../../src/ui/components/widgets';
+import { planRegular } from '../../src/planner/planner';
+import { defaultConfiguration } from '../../src/domain/trainingFlow';
+import type { PlannerInput } from '../../src/domain/model';
+import type { PlanSlot } from '../../src/application/trainingPlan';
+vi.mock('../../src/ui/services',()=>({useServices:()=>({})}));
+const input:PlannerInput={nowUtc:'2026-10-26T12:00:00Z',profile:{plannedSessionsPerWeek:2,minutesPerSession:60,experience:'experienced',goals:{squat:3,bench_press:2},equipment:['barbell','bench','rack','cable','dumbbell','machines'],substitutions:{},favorites:[],bodyweightKg:80},exerciseSettings:[],restrictions:[],symptoms:[],history:[],rotationIndex:0};
+const base=()=>({...planRegular(input).exercises[0],kg:60,reps:4,sets:3,bandMin:6,bandMax:10,reasons:['USER_DOSE_ADAPTED']});
+it('M12: a provisional plan renders adapted 3 × 4 instead of the template interval, with no new input',()=>{const e=base();const slot:PlanSlot={slotSequence:2,plannedSlotId:'slot',programId:null,rotationIndex:1,templateKey:'B',approxWeek:1,estimatedMinutes:20,status:'provisional',planStatus:'ok',exercises:[{...e,variantKey:'default',loadBasis:e.loadBasis??null}],removed:[],warnings:[]};const {container}=render(<MemoryRouter><SlotRow slot={slot} live={null} activeSession={null} readOnly printing={false}/></MemoryRouter>);fireEvent.click(screen.getByRole('button',{name:/Pass 2/}));expect(screen.getByText('3 × 4 reps · 60 kg')).toBeTruthy();expect(screen.queryByText(/6–10/)).toBeNull();expect(container.querySelectorAll('input,select,textarea')).toHaveLength(0);});
+it('M12: the existing lift card renders unequal side targets without contradictory per-side hint',()=>{const e={...base(),exerciseId:'one_arm_dumbbell_row' as const,configuration:defaultConfiguration('one_arm_dumbbell_row'),sideTargets:{left:{kg:20,reps:4},right:{kg:22,reps:7}}};const {container}=render(<MemoryRouter><ul><LiftCard p={e} showRir={false}/></ul></MemoryRouter>);expect(screen.getByText(/Vänster 3 × 4 reps.*20 kg.*Höger 3 × 7 reps.*22 kg/)).toBeTruthy();expect(screen.queryByText(/reps per sida/)).toBeNull();expect(screen.queryByText(/6–10/)).toBeNull();expect(container.querySelectorAll('input,select,textarea')).toHaveLength(0);});
+it('structural future rows show structure without fabricated precise rep forecasts',()=>{const e=base();const slot:PlanSlot={slotSequence:8,plannedSlotId:'far',programId:null,rotationIndex:7,templateKey:'B',approxWeek:4,estimatedMinutes:20,status:'structural',planStatus:'ok',exercises:[{...e,variantKey:'default',loadBasis:null}],removed:[],warnings:[]};render(<MemoryRouter><SlotRow slot={slot} live={null} activeSession={null} readOnly printing={false}/></MemoryRouter>);fireEvent.click(screen.getByRole('button',{name:/Pass 8/}));expect(screen.getByText('3 arbetsset')).toBeTruthy();expect(screen.queryByText(/60 kg|6–10/)).toBeNull();});

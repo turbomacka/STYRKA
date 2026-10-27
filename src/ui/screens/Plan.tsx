@@ -10,11 +10,11 @@ import { PerformanceHistory } from '../components/TrainingHistory';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { exercise, type ExerciseId, type LoadKind } from '../../domain/catalog';
+import { exercise, type LoadKind } from '../../domain/catalog';
 import type { PlanSnapshot } from '../../domain/model';
 import { formatKg } from '../../domain/units';
 import { activeSession, previewNext } from '../../application/training';
-import { CHANGE_TYPE_SV, getFuturePlan, getNote, getWorkoutDetail, getWorkoutHistory, lastPerformed, NOTE_MAX_LENGTH, PLAN_HORIZONS, planRevisions, saveNote, type NoteTarget, type PlanSlot, type WorkoutDetail, type WorkoutSummary } from '../../application/trainingPlan';
+import { CHANGE_TYPE_SV, getFuturePlan, getNote, getWorkoutDetail, getWorkoutHistory, NOTE_MAX_LENGTH, PLAN_HORIZONS, planRevisions, saveNote, type NoteTarget, type PlanSlot, type WorkoutDetail, type WorkoutSummary } from '../../application/trainingPlan';
 import type { LocalPlanRevision, LocalSession, LocalSessionExercise, LocalSet } from '../../storage/db';
 import { Banner, Expandable, Icon, Segmented } from '../components/common';
 import { prescriptionText } from '../components/widgets';
@@ -75,7 +75,7 @@ export function Plan() {
       <div className="row spread no-print">
         <h1 style={{ margin: 0 }}>{PLAN.TITLE}</h1><SyncLink/>
       </div>
-      {feedback&&<section className="card stack no-print" role="status"><strong>Passet är sparat</strong><p>{feedback.text}</p><button type="button" className="btn" onClick={()=>choose('done')}>Visa genomfört pass</button></section>}
+      {feedback&&<section className="card stack no-print" role="status"><strong>Passet är sparat</strong><p>{feedback.text}</p>{feedback.messages&&<ul>{feedback.messages.slice(0,2).map(text=><li key={text}>{text}</li>)}</ul>}<button type="button" className="btn" onClick={()=>choose('done')}>Visa genomfört pass</button></section>}
       {!printing&&<NextWorkout/>}
       <div className="no-print">
         <Segmented label={PLAN.TAB_LABEL} value={tab} onChange={choose} options={[{ value: 'upcoming', label: PLAN.UPCOMING }, { value: 'done', label: PLAN.DONE }]} />
@@ -220,7 +220,7 @@ function PrintHeader({ revision }: { revision?: LocalPlanRevision }) {
   );
 }
 
-function SlotRow({ slot, live, activeSession: act, readOnly, printing }: { slot: PlanSlot; live: PlanSnapshot | null; activeSession: LocalSession | null; readOnly: boolean; printing: boolean }) {
+export function SlotRow({ slot, live, activeSession: act, readOnly, printing }: { slot: PlanSlot; live: PlanSnapshot | null; activeSession: LocalSession | null; readOnly: boolean; printing: boolean }) {
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
   const id = useId();
@@ -280,9 +280,9 @@ function SlotRow({ slot, live, activeSession: act, readOnly, printing }: { slot:
                       {e.substitutionFrom && <span className="small muted"> · ersätter {exercise(e.substitutionFrom).nameSv.toLowerCase()}</span>}
                     </span>
                     <span className="num">
-                      {e.sets} × {e.loadKind === 'duration_sec' ? 'tid' : e.bandMin === e.bandMax ? `${e.bandMin}` : `${e.bandMin}–${e.bandMax}`} {e.loadKind === 'duration_sec' ? '' : 'reps'}
-                      <br />
-                      <span className="small muted">{e.calibration ? PLAN.CALIBRATION : slot.status === 'provisional' ? <Reference exerciseId={e.exerciseId} variantKey={e.variantKey} loadKind={e.loadKind} perHand={e.loadBasis === 'per_hand_kg'} /> : PLAN.LATER}</span>
+                      {slot.status==='provisional'||slot.status==='ready' ? prescriptionText(e) : `${e.sets} arbetsset`}
+                      {slot.status==='structural'&&<><br/><span className="small muted">{PLAN.LATER}</span></>}
+
                     </span>
                     {printing && <span className="print-only print-write">{PLAN.PRINT_WRITE} ______________________</span>}
                   </li>
@@ -304,13 +304,6 @@ function SlotRow({ slot, live, activeSession: act, readOnly, printing }: { slot:
       </Expandable>
     </li>
   );
-}
-
-function Reference({ exerciseId, variantKey, loadKind, perHand }: { exerciseId: ExerciseId; variantKey: string; loadKind: LoadKind; perHand: boolean }) {
-  const { ctx } = useServices();
-  const ref = useLiveQuery(() => lastPerformed(ctx, exerciseId, variantKey), [ctx, exerciseId, variantKey]);
-  if (!ref) return <>{PLAN.LATER}</>;
-  return <>{PLAN.REFERENCE(loadText(ref.grams, ref.reps, ref.seconds, loadKind, perHand))}</>;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,0 +1,10 @@
+{
+  "ruleSetVersion": "STYRKA-RULES/2.1.0",
+  "plans": 2100,
+  "exercises": 7194,
+  "sha256": "2ad12897f1bd618f86c49d0024049ed4449cc10dc6ab8caf34a840276e163a31",
+  "originalBaseline": "plans_recovery_v2.json",
+  "previousPolicy": "plans_adaptive_v2.json",
+  "baselineCommit": "38e975ec63ed4c714996dbcd13e696f0399f8422",
+  "intentionalChange": "Shared rest, continuous recovery, frequency distribution, observed dose/progression, balanced horizontal pull and goal ordering. Common-exercise doses in fresh unconstrained plans checked against original commit; independent safety and functional tests also required."
+}

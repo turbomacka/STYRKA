@@ -1,0 +1,13 @@
+{
+  "engineVersion": "2.0.0",
+  "policyVersion": "ADAPTIVE/2.0.0",
+  "plans": 1,
+  "exercises": 2,
+  "workSets": 6,
+  "workRepetitions": 33,
+  "estimatedMinutes": 27.5,
+  "reasons": {
+    "TEMPLATE_A": 2,
+    "CALIBRATION_REQUIRED": 2
+  }
+}

@@ -8,7 +8,7 @@ Kodrepository: [turbomacka/STYRKA](https://github.com/turbomacka/STYRKA), huvudg
 
 ## Snabbstart (lokal testmiljö)
 
-Krav: Node 22+, Docker Desktop.
+Krav: Node 24.15+ (24 LTS används i CI; även 22.22.2+ inom 22 LTS stöds), Docker Desktop.
 
 ```bash
 npm ci
@@ -25,6 +25,8 @@ Byggd PWA med service worker: `npm run build && npm run preview` (http://127.0.0
 | Kommando | Vad |
 |---|---|
 | `npm run test:reference` | Paketets oberoende smoke-kontroll (26 assertions) mot **oförändrad** referensmotor, SHA256 verifieras mot manifestet |
+| `npm run test:adaptive` | Adaptiva acceptansfall A–P, 10 000 egenskapsfall och 24-veckorssimuleringar |
+| `npm run test:adaptive:comparison` | 2 100 planer och återhämtningsgränser jämförda mot versionssatt historisk kod |
 | `npx vitest run --project unit` | Motor, planerare, property-tester, offline/synk med IndexedDB (fake-indexeddb), övningsbyte SUB01–SUB24, evidensregister |
 | `npx vitest run --project ui` | Komponentkontrakt + axe i jsdom |
 | `npx vitest run --project db` | Kräver `supabase start`. RLS-negativtester, `apply_set_mutation`, samtycke, kontoradering, **demo två konton × 36 pass** |
@@ -37,7 +39,7 @@ Resultat och bevis: [docs/TESTPROTOKOLL.md](docs/TESTPROTOKOLL.md), [docs/eviden
 ## Arkitektur (03 §1)
 
 ```
-src/domain/       rena beräkningar – referensmotor (oförändrad), lastsemantik, katalog, enheter (gram), hash
+src/domain/       rena beräkningar – adaptiv motor 2.0, lastsemantik, katalog, enheter (gram), hash
 src/planner/      deterministisk schemagenerator 1–7 pass/vecka, spontanpass, återhämtning, parregler, tidsprunning
 src/application/  use cases: profil, träningstillståndsmaskin, synk (outbox), historik, export/radering
 src/storage/      Dexie/IndexedDB – en databas per användare, raderas vid utloggning
@@ -47,19 +49,19 @@ src/science/      evidensregister (källor, påståenden, metodregler) för den 
 supabase/         config + migrationer (001/002 oförändrade från paketet, 003 tillägg + RPC, 004 övningsbyte)
 ```
 
-Normhierarki enligt paketet: användarspärrar och säkerhetsgränser → numeriska regler i 02 + referensmotorn → UX-kontrakt → fixtures → evidens. Avvikelser och tolkningar: [docs/AVVIKELSER_OCH_BESLUT.md](docs/AVVIKELSER_OCH_BESLUT.md).
+Användarspärrar och säkerhetsgränser har högsta prioritet. För adaptiv progression, dos och återhämtning gäller [den samlade modellen 2.1](docs/ADAPTATION-IMPLEMENTATION-2026-10-27.md), som ersätter motsvarande äldre numeriska regler. Den oförändrade motorn i `spec/src/decision_engine.ts` används som historisk jämförelsebas. Övriga avvikelser och tolkningar: [docs/AVVIKELSER_OCH_BESLUT.md](docs/AVVIKELSER_OCH_BESLUT.md).
 
 ## Versioner
 
 | | |
 |---|---|
-| engineVersion | `1.0.0` (STYRKA-ENGINE, referensmotor) |
-| plannerVersion | `STYRKA-PLANNER/1.0.0` |
-| ruleSetVersion | `STYRKA-RULES/1.3.0` (inkl. [återhämtning utifrån faktiskt arbete](docs/ATERHAMTNING_2026-10-16.md); äldre H-regler i AVVIKELSER) |
+| engineVersion | `2.1.0` (gemensam adaptiv motor; fryst jämförelsemotor 1.0.0 i `spec/`) |
+| plannerVersion | `STYRKA-PLANNER/2.1.0` |
+| ruleSetVersion | `STYRKA-RULES/2.1.0` ([adaptiv progression, dos och återhämtning](docs/ADAPTIVE-ENGINE-2026-10-23.md)) |
 | catalogVersion | `2.0.1` (17 oförändrade + 31 erbjudna varianter enligt produktägarens kandidatmappning; `lunge` inaktiv) |
 | substitutionCatalogVersion | `SUBST/1.2.0` (`src/planner/replacement_seed.json`, enda källa; originalet oförändrat i `spec/cr-2026-10-10-01/`) |
-| evidensregister / metod | `EVIDENS/2.0.0` / `STYRKA-METOD/1.4.0` (`src/science/evidence.json` ur `spec/cr-2026-10-10-01/STYRKA_evidence_register.json`; publik sida `/vetenskap`) |
-| templateVersion | `1.0.0` (`fixtures/planner_templates.json`) |
+| evidensregister / metod | `EVIDENS/2.4.0` / `STYRKA-METOD/2.1.0` (historiskt källregister bevarat, adaptiva metodregler och forskningskomplettering i `src/science/evidence.json`) |
+| templateVersion | `2.1.0` (`src/planner/planner_templates.json`) |
 | privacyNoticeVersion | `PN-2026-10-v1-UTKAST` (ej juridiskt granskad) |
 | balans | `balance-patterns/1.0.0`, `balance-decisions/1.0.0`; flaggor `VITE_FLAG_BALANCE` (på), `VITE_FLAG_BALANCE_ADJUSTMENTS` (av) |
 | schemaMigration | `20261012000007` (007: beslut om balansförslag); tidigare `20261011000006` (004: kalibrering, revisionsposter, lastbas, upplevd ansträngning; 005: `barbell_row`, `lunge` inaktiv; 006: planrevisioner och anteckningar – "Min träningsplan", `/plan`) |
@@ -68,6 +70,9 @@ Feature flags (byggtid): `VITE_FLAG_LOAD_RECOMMENDATIONS=false` stänger av vikt
 
 ## Dokument
 
+- [Implementeringsrapport 2.1](docs/ADAPTATION-IMPLEMENTATION-2026-10-27.md) – manuell dos, ansträngning, synbar återkoppling och kvalitetssäkring
+
+- [docs/ADAPTIVE-ENGINE-2026-10-23.md](docs/ADAPTIVE-ENGINE-2026-10-23.md) – beslutsmodell, forskning, simuleringar, verifiering och begränsningar för motor 2.0
 - [docs/TESTPROTOKOLL.md](docs/TESTPROTOKOLL.md) – acceptanstest 1–45, fixturfall, grindar
 - [docs/SAKERHETSRAPPORT.md](docs/SAKERHETSRAPPORT.md) – RLS, RPC, hot och bevis
 - [docs/AVVIKELSER_OCH_BESLUT.md](docs/AVVIKELSER_OCH_BESLUT.md) – tolkningar, alla H-värden, öppna frågor

@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import {deleteTrainingSet,restorePlannedSet} from '../../src/application/workout';
+import {deleteTrainingSet,restorePlannedSet,editPlannedSet} from '../../src/application/workout';
 import {refreshFuturePlan} from '../../src/application/trainingPlan';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, it } from 'vitest';
@@ -33,10 +33,12 @@ it('real queue roundtrip: partial sides, snapshots, warmups, rest, ownership and
   const session = await startSession(c1,plan);
   const se = (await c1.db.sessionExercises.where('sessionId').equals(session.id).toArray())[0];
   const work = await c1.db.sets.toArray();
+  await editPlannedSet(c1,work[0].id,{grams:24000},'right');
   await recordPerformance(c1,work[0].id,'right',{ actualGrams: 25000, actualReps: 10 });
   expect(await s1.syncNow()).toMatchObject({ rejected: 0, conflicts: 0, stoppedBy: null }); await s2.pull();
   expect((await c2.db.sets.get(work[0].id))?.detail?.performances).toHaveLength(1);
   expect((await c2.db.sets.get(work[0].id))?.status).toBe('partial');
+  expect((await c2.db.sets.get(work[0].id))?.detail?.prescriptionOrigin).toMatchObject({version:1,original:{loadValue:25,reps:10},userEditedSides:['right']});
   await recordPerformance(c2,work[0].id,'left',{ actualGrams: 22000, actualReps: 8 });
   expect(await s2.syncNow()).toMatchObject({ rejected: 0, conflicts: 0, stoppedBy: null }); await s1.pull();
   expect((await c1.db.sets.get(work[0].id))?.detail?.performances).toHaveLength(2);

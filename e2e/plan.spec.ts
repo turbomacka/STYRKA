@@ -48,7 +48,7 @@ test('Min träningsplan: kommande, genomförda, anteckning, planversioner och ut
   await page.getByRole('button', { name: /^Pass 20 · / }).click();
   const p20 = upcoming.locator(':scope > li').nth(19);
   await expect(p20.getByText('Vikt beräknas närmare passet').first()).toBeVisible();
-  await expect(p20.locator('.ex-line').first()).toContainText(/\d+ × \d+(–\d+)? reps/);
+  await expect(p20.locator('.ex-line').first()).toContainText(/\d+ arbetsset/);
   await expect(p20.getByText(/\d+(,\d+)? kg/)).toHaveCount(0);
 
   // Horisont 12 / 72.
@@ -71,7 +71,7 @@ test('Min träningsplan: kommande, genomförda, anteckning, planversioner och ut
   await page.getByRole('button', { name: 'Registrera set 1' }).click();
   await expect(page.getByRole('button', { name: 'Set 1 utfört. Ändra eller ångra' })).toBeVisible();
   await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
-  await page.getByRole('button', { name: 'Avsluta och spara' }).click(); await expect(page.getByRole('heading',{name:'Så påverkas nästa pass'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
+  await page.getByRole('button', { name: 'Avsluta och spara' }).click(); await expect(page.getByRole('heading',{name:'Så påverkas kommande träning'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
 
   // Genomförda: verkliga set, status och åtskilda vikttyper.

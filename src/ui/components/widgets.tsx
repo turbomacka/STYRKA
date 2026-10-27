@@ -4,30 +4,15 @@ import type { Mode } from '../../domain/decision_engine';
 import type { ExerciseId } from '../../domain/catalog';
 import { ALL_AREAS, AREA_LABEL_SV, CATALOG, OFFERED_CATALOG, V1_SLUGS, exercise, isAvailable, type Area, type EquipmentSlug } from '../../domain/catalog';
 import type { PlannedExercise, RuleKind, Side } from '../../domain/model';
-import { formatKg } from '../../domain/units';
 import type { ConflictEntry } from '../../storage/db';
 import type { NewRestriction } from '../../application/profile';
 import { TEMPLATES } from '../../planner/planner';
 import { MODE_SV, SIDE_SV, T } from '../strings';
 import { Icon, LoadConfidence, ReasonPopover, Sheet } from './common';
 
-export function prescriptionText(p: PlannedExercise): string {
-  // Lastbas och "per sida" visas endast för övningar med definierad semantik (katalog 2.0.0); äldre data tolkas inte om.
-  const mode = p.configuration?.executionMode;
-  const perSide = mode ? (mode === 'sequential' || mode === 'alternating' ? ' per sida' : mode === 'single_side' ? ` · ${p.configuration!.startingSide === 'right' ? 'höger' : 'vänster'}` : '') : exercise(p.exerciseId).unilateral && exercise(p.exerciseId).catalogSince !== '1.0.0' ? ' per sida' : '';
-  const equipment = p.configuration?.equipment;
-  const perHand = equipment ? equipment.measurement === 'per_dumbbell' ? ' per hantel' : equipment.basis === 'per_stack' ? ' per stapel' : equipment.basis === 'per_handle' ? ' per handtag' : '' : p.loadBasis === 'per_hand_kg' ? ' per hantel' : '';
-  const reps = p.loadKind === 'duration_sec' ? `${p.targetSeconds ?? '?'} s` : `${p.reps} reps${perSide}`;
-  if (equipment && (equipment.unit === 'level' || equipment.basis === 'independent')) {
-    const value = p.targetLoadValue;
-    const unit = equipment.unit === 'level' ? 'nivå' : 'kg';
-    const load = value == null ? 'välj belastning' : `${value.toLocaleString('sv-SE')} ${unit}${equipment.basis === 'independent' ? ` + ${p.targetSecondLoadValue?.toLocaleString('sv-SE') ?? '?'} ${unit} · separata staplar` : ''}`;
-    return `${p.sets} × ${reps} · ${load}`;
-  }
-  const suggestion = p.calibrationSuggestionKg != null ? ` · osäkert förslag ${formatKg(Math.round(p.calibrationSuggestionKg * 1000))} kg${perHand}` : ' · välj startvikt';
-  const kg = p.loadKind === 'duration_sec' || p.loadKind === 'reps_only' ? '' : p.kg === null ? suggestion : p.loadKind === 'assistance_kg' ? ` · ${formatKg(Math.round(p.kg * 1000))} kg assistans` : p.loadKind === 'bodyweight_plus_kg' ? (p.kg === 0 ? ' · kroppsvikt' : ` · +${formatKg(Math.round(p.kg * 1000))} kg`) : ` · ${formatKg(Math.round(p.kg * 1000))} kg${perHand}`;
-  return `${p.sets} × ${reps}${kg}`;
-}
+export { prescriptionText } from '../../domain/prescriptionDisplay';
+import { prescriptionText } from '../../domain/prescriptionDisplay';
+import { recommendRest } from '../../domain/restPolicy';
 
 /** Övningskort i förhandsvisning (S07). */
 export function LiftCard({ p, showRir, onSwap }: { p: PlannedExercise; showRir: boolean; onSwap?: () => void }) {
@@ -41,9 +26,9 @@ export function LiftCard({ p, showRir, onSwap }: { p: PlannedExercise; showRir: 
         {prescriptionText(p)}
       </p>
       <div className="row wrap small muted">
-        <span>
+        {p.reps>=p.bandMin&&p.reps<=p.bandMax&&!p.sideTargets&&<span>
           {T.INFO_RECOMMEND}: {p.bandMin === p.bandMax ? `${p.bandMin}` : `${p.bandMin}–${p.bandMax}`} reps per set
-        </span>
+        </span>}
         {showRir && p.mode === 'heavy' && <span>· sikta på 2–3 repetitioner kvar</span>}
         {p.kg !== null && <LoadConfidence confidence={p.confidence} />}
         {p.substitutionFrom && <span>· ersätter {exercise(p.substitutionFrom).nameSv}</span>}
@@ -82,9 +67,7 @@ export function RestTimer({ seconds, onClose }: { seconds: number; onClose: () =
 }
 
 export function restSecondsFor(p: PlannedExercise): number {
-  const kind = exercise(p.exerciseId).timeKind;
-  const min = kind === 'barbell_compound' ? (p.mode === 'heavy' ? 2.5 : 1.5) : kind === 'isolation' ? 1 : 1.5;
-  return Math.round(min * 60);
+  return recommendRest({category:exercise(p.exerciseId).timeKind,mode:p.mode,strengthFocus:true,experience:'experienced',adaptive:false,kind:'work',nextKind:'work',overrideSeconds:p.configuration?.restSeconds}).seconds;
 }
 
 /** S09: likvärdiga rörelsemönster; otillgängliga markeras med skäl. */

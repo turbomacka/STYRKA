@@ -52,7 +52,7 @@ describe('Balans i appen', () => {
     const after = await getBalanceOverview(h.ctx);
     expect(after.summaries).toEqual(before.summaries);
     const vp = after.summaries.find((s) => s.patternId === 'vertical_pull')!;
-    expect(vp).toMatchObject({ eligiblePlannedWorkSets: 4, matchedCompletedWorkSets: 0 }); // 2 + 2 set ur de accepterade snapshotsen
+    expect(vp).toMatchObject({ eligiblePlannedWorkSets: 2, matchedCompletedWorkSets: 0 }); // A has two vertical-pull sets; B now has horizontal pulling.
     // Användare med bara spontanpass: 36 framtida platser ger ingen nämnare.
     const x = harness();
     await onboard(x);
@@ -67,7 +67,8 @@ describe('Balans i appen', () => {
   it('BAL31/BAL32: läsning och förhandsvisning har inga sidoeffekter; avböjt förslag återkommer inte vid nya öppningar', async () => {
     const h = harness();
     await onboard(h);
-    for (let i = 0; i < 3; i++) await doSession(h, ['lat_pulldown']);
+    // A/B/C/A provides three vertical-pull exposures; B contains a horizontal row.
+    for (let i = 0; i < 4; i++) await doSession(h, ['lat_pulldown']);
     await refreshFuturePlan(h.ctx);
     const snap = await dump(h);
     const revCount = (await planRevisions(h.ctx)).length;

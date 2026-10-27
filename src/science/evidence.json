@@ -1,17 +1,17 @@
 {
-  "registryVersion": "EVIDENS/2.2.0",
+  "registryVersion": "EVIDENS/2.4.0",
   "sourceRegister": {
     "file": "spec/cr-2026-10-10-01/STYRKA_evidence_register.json",
     "schema_version": "1.0.0",
     "reviewed_at": "2026-10-10",
     "warning_sv": "Evidensregistret är beskrivande: det validerar inte STYRKA:s rekommendationsmotor eller medicinsk säkerhet."
   },
-  "methodVersion": "STYRKA-METOD/1.5.0",
-  "ruleSetVersion": "STYRKA-RULES/1.3.0",
-  "engineVersion": "1.0.0",
+  "methodVersion": "STYRKA-METOD/2.1.0",
+  "ruleSetVersion": "STYRKA-RULES/2.1.0",
+  "engineVersion": "2.1.0",
   "substitutionCatalogVersion": "SUBST/1.2.0",
-  "lastSubstantiveUpdate": "2026-10-22",
-  "verificationNote": "Källor och påståenden kommer från produktägarens evidensregister (schema 1.0.0, granskat 2026-10-10). DOI och länkar kontrollerade mot Crossref, PMC och utgivarnas sidor 2026-10-11. Innehållet är en sammanfattning för allmänheten, inte en fullständig granskning av varje studie. Förnyad granskning 2026-10-22: tillgängliga abstracts och öppna förlagstexter. Numeriska ramper och överföringsandelar är dokumenterade produktheuristiker. Förstaförfattaren för DOI 10.1007/s42978-025-00361-9 är Neves enligt förlaget.",
+  "lastSubstantiveUpdate": "2026-10-26",
+  "verificationNote": "Källor och påståenden kommer från produktägarens evidensregister (schema 1.0.0, granskat 2026-10-10). DOI och länkar kontrollerade mot Crossref, PMC och utgivarnas sidor 2026-10-11. Innehållet är en sammanfattning för allmänheten, inte en fullständig granskning av varje studie. Förnyad granskning 2026-10-22: tillgängliga abstracts och öppna förlagstexter. Numeriska ramper och överföringsandelar är dokumenterade produktheuristiker. Förstaförfattaren för DOI 10.1007/s42978-025-00361-9 är Neves enligt förlaget. Riktad granskning 2026-10-23 av progression, dos, RIR och kliniska begränsningar. Exakta försöks-, bekräftelse- och återhämtningsregler är produktantaganden, inte kliniskt validerade mått.",
   "sources": [
     {
       "source_id": "currier2026",
@@ -316,6 +316,36 @@
       "added_in": "EVIDENS/2.2.0"
     }
   ],
+  "adaptiveResearch": {
+    "reviewedAt": "2026-10-26",
+    "report": "docs/ADAPTATION-REVIEW-2026-10-25.md",
+    "sources": [
+      {
+        "doi": "10.7717/peerj.14142",
+        "authors": "Plotkin m.fl.",
+        "year": 2022,
+        "principle": "43 tränade personer under åtta veckor: både fler repetitioner och ökad vikt gav utveckling. Stöder flera progressionsvägar, inte exakta individuella steg."
+      },
+      {
+        "doi": "10.1007/s40279-024-02069-2",
+        "authors": "Robinson m.fl.",
+        "year": 2024,
+        "principle": "Explorativa metaregressioner fann liknande styrkeökning över ett brett uppskattat RIR-intervall. Osäkra RIR-skattningar och gruppdata validerar inte en enskild apps trösklar."
+      },
+      {
+        "doi": "10.3389/fphys.2018.00247",
+        "authors": "Helms m.fl.",
+        "year": 2018,
+        "principle": "21 tränade män under åtta veckor: både RPE-styrd och procentstyrd belastning fungerade utan säker mellan-gruppsskillnad. Autoreglering är ett alternativ, inte bevisad överlägsen individanpassning."
+      },
+      { "doi": "10.1007/s40279-023-01937-7", "authors": "Nuzzo m.fl.", "year": 2024, "principle": "Repetitionsförmåga varierar mellan personer och övningar; ingen exakt individuell kilogramkonvertering." },
+      { "doi": "10.1007/s40279-025-02344-w", "authors": "Pelland m.fl.", "year": 2026, "principle": "Volym och frekvens har avtagande utbyte; direkt och indirekt träning skiljs åt. Förlagsabstract granskat." },
+      { "doi": "10.1519/JSC.0000000000004653", "authors": "Refalo m.fl.", "year": 2024, "principle": "God genomsnittlig RIR-träffsäkerhet i bänkpress hos 24 tränade personer; individuell osäkerhet kvarstår." },
+      { "doi": "10.1002/msc.70110", "authors": "de Wit m.fl.", "year": 2025, "principle": "Inget tydligt samband mellan total föreskriven dos och smärta eller funktion vid knäartros. Heterogenitet och låg studiekvalitet begränsar slutsatserna." },
+      { "doi": "10.1001/jama.2021.0411", "authors": "Messier m.fl., START", "year": 2021, "principle": "Högre intensitet gav inte bättre primära symtomutfall i denna kliniska population. Ingen universell dosgräns följer av detta." }
+    ],
+    "limitation": "De exakta bekräftelse-, försöks-, dos- och återhämtningsreglerna är produktantaganden. Kliniska studier används inte för diagnos eller bedömning av läkning."
+  },
   "claims": [
     {
       "claim_id": "claims.strength_basics",
@@ -568,6 +598,26 @@
   ],
   "rules": [
     {
+      "rule_id": "vald-arbetsdos",
+      "group": "B",
+      "title_sv": "Din valda arbetsdos",
+      "method_sv": "En samstämmig genomförd ändring får vara ny preliminär arbetsdos utan att historisk kapacitet skrivs över. Lätt eller För lätt i minst två tredjedelar av vanliga arbetsset, minst två set, kan stödja ett litet försök direkt nästa gång. Ett enstaka set kräver tidigare jämförbar prestation. Lagom ger underlag för bekräftelse men ger inte ensamt ett omedelbart försök. Extra set och blandade belastningar omdefinierar inte hela övningen. Problemrelaterad dos omprövas först efter nya upprepade positiva prestationer; varningssignaler och hårda begränsningar går före.",
+      "value_sv": "Separata nivåer för bekräftad kapacitet, vald arbetsdos och försök",
+      "rationale_sv": "Autoreglering och upprepade prestationer motiverar principen. Exakta andelar, bekräftelser och försök är oprövade produktregler som följs upp i simuleringar och verklig användning.",
+      "heuristic": true,
+      "reason_codes": ["MANUAL_WORKING_DOSE", "EASY_SELECTED_DOSE_TRIAL", "USER_DOSE_REVIEW_TRIAL", "MIXED_WORK_DOSE_HOLD"]
+    },
+    {
+      "rule_id": "planering-over-tid",
+      "group": "B",
+      "title_sv": "Fördelning och tillfällig dos",
+      "method_sv": "Befintliga mål kan flytta fram prioriterade lyft eller ersätta lågprioriterad komplettering inom samma tidsbudget. Horisontellt drag finns i grundrotationen för två och tre pass. Preliminära framtidspass fördelas i ett separat planeringsunderlag och får aldrig bli prestationsbevis. Tillfälligt borttaget set kan återinföras ett i taget när orsaken upphört; relevant problemrelaterad dosminskning har företräde.",
+      "value_sv": "Ingen träningsskuld efter kortare pass",
+      "rationale_sv": "Frekvens är också ett sätt att fördela arbete. Den exakta rotationen, prioriteringen och överlappningen är produktpolicy, inte ett fysiologiskt optimum.",
+      "heuristic": true,
+      "reason_codes": ["TEMPORARY_SETS_RESTORED", "GOAL_PRIORITY_ORDER", "GOAL_PRIORITY_DISTRIBUTION", "PLANNED_OVERLAP_DISTRIBUTION"]
+    },
+    {
       "rule_id": "e1rm-uppskattning",
       "group": "B",
       "title_sv": "Uppskattad maxstyrka (e1RM)",
@@ -634,23 +684,25 @@
       "rule_id": "dubbel-progression",
       "group": "B",
       "title_sv": "Dubbel progression",
-      "method_sv": "Klarar du alla set och repetitioner ökar först antalet repetitioner. När du når toppen av intervallet ökar vikten ett steg och repetitionerna börjar om. Ökningen får inte överstiga en procentsats; är ditt minsta viktsteg för stort hålls vikten.",
-      "value_sv": "Högst +5 % (nybörjare och van), +3 % (mycket van) per ökning",
-      "rationale_sv": "Gradvis ökning enligt principen om progressiv belastning; exakta procentsatser är produktval.",
+      "method_sv": "Genomförda jämförbara pass etablerar en nivå. Högre vikt eller fler repetitioner är ett försök tills nivån bekräftats. Nästa tillgängliga viktsteg bedöms mot utförda repetitioner och försiktigt använd RIR. Ett stort steg kan föregås av högst två extra repetitioner över målintervallet.",
+      "value_sv": "Bekräftelse normalt två exponeringar; högst två extra reps, aldrig över 15 i repetitionsbryggan.",
+      "rationale_sv": "Konservativ och spårbar produktpolicy. Forskningen stöder de generella principerna men validerar inte dessa trösklar.",
       "heuristic": true,
       "reason_codes": [
         "DOUBLE_PROGRESS_REPS",
         "DOUBLE_PROGRESS_WEIGHT",
         "STEP_EXCEEDS_PROGRESS_CAP",
-        "NO_EXPOSURE_YET"
+        "NO_EXPOSURE_YET",
+        "EQUIPMENT_BRIDGE_REPS",
+        "EQUIPMENT_STEP_NOT_SUPPORTED"
       ]
     },
     {
       "rule_id": "reps-i-reserv",
       "group": "B",
       "title_sv": "Reps i reserv (frivilligt)",
-      "method_sv": "Har du angett 0–1 reps i reserv höjs inte vikten. Anger du inget krävs två lyckade, kontrollerade pass i rad innan något ökar.",
-      "value_sv": "Håll vid 0–1; utan uppgift: två lyckade pass",
+      "method_sv": "RIR är frivillig och osäker. Övervägande hög ansträngning, maximal ansträngning i minst hälften av seten eller motstridiga svar pausar ökning. Ett enskilt sista set med låg marginal avgör inte hela övningen. Saknad RIR kan ersättas av upprepade genomförda prestationer. Lätt och Lagom omvandlas inte till påhittade RIR-värden.",
+      "value_sv": "Bekräftelse normalt två tillfällen; ett enda arbetsset kräver tre",
       "rationale_sv": "Konservativt när ansträngningen är okänd.",
       "heuristic": true,
       "reason_codes": [
@@ -662,15 +714,20 @@
       "rule_id": "missade-mal",
       "group": "B",
       "title_sv": "Missade mål, avbrott och teknik",
-      "method_sv": "Ett missat mål ger samma vikt nästa gång. Två fullständiga pass i rad under målet sänker vikten ett steg (eller 5 % om det är mer). Ett pass som avslutas tidigt räknas inte som misslyckande. Dålig teknik ger ingen ökning.",
-      "value_sv": "Sänkning: max(ett steg, 5 %)",
-      "rationale_sv": "Undviker att fastna och att straffa avbrott.",
+      "method_sv": "Misslyckade försök återgår till den dokumenterade nivå försöket utgick från, även när det var en ny manuellt vald arbetsdos. Det räknas inte som en miss på tidigare bekräftad nivå. Upprepade svårigheter på basnivån kan motivera en mindre sänkning. Tydliga relevanta dosval bevaras i vikt, repetitioner och set och kan omprövas efter nya prestationer. Avbrutna pass är inte styrkemisslyckanden.",
+      "value_sv": "Minst två nya lyckade exponeringar inför återförsök; fler efter upprepade misslyckanden.",
+      "rationale_sv": "Konservativ och spårbar produktpolicy. Forskningen stöder de generella principerna men validerar inte dessa trösklar.",
       "heuristic": true,
       "reason_codes": [
         "FIRST_MISS_HOLD",
+        "SHORT_OBSERVED_REST_HOLD",
         "TWO_CONSECUTIVE_MISSES",
         "PARTIAL_NOT_FAILURE",
-        "TECHNIQUE_NOT_CONTROLLED"
+        "TECHNIQUE_NOT_CONTROLLED",
+        "TRIAL_RETURN_TO_CONFIRMED",
+        "TRIAL_RETRY_WAIT",
+        "USER_DOSE_ADAPTED",
+        "DOSE_REESTABLISHED"
       ]
     },
     {
@@ -687,9 +744,9 @@
       "rule_id": "aterhamtning",
       "group": "B",
       "title_sv": "Träningsmängd, ansträngning och återhämtning",
-      "method_sv": "Förslaget väger samman utförda arbetsset, frivillig ansträngningsbedömning och tid. Samma rörelsemönster påverkar mer än delvis överlappande övningar. Ett eller två uttryckligen lätta set begränsar inte nästa förslag. Vanligt arbete kan begränsa till medelnivå under 24 timmar; större eller mer krävande arbete kan begränsa till lätt nivå under 48 timmar. Krävande arbete i ett överlappande mönster begränsar högst till medelnivå under 24 timmar. Automatisk ökning pausas medan begränsningen gäller. Uppvärmning räknas inte, och ensidiga set räknas per sida.",
-      "value_sv": "Krävande: minst ett maxset, två tunga set, tre set som inte uttryckligen var lätta, eller sex arbetsset totalt. Tre lätta set ger kortare försiktighet. Saknade känslosvar behandlas som vanligt arbete.",
-      "rationale_sv": "Konfigurerbara produktantaganden, inte individuella återhämtningstider. Känslosvar översätts inte till gissade repetitionsreserver. Äldre krävande arbete ligger kvar tills dess tidsfönster löper ut. Smärta, egna begränsningar och omstart efter uppehåll hanteras separat.",
+      "method_sv": "Arbetsset, faktiska repetitioner, ansträngning, relativ intensitet när den är jämförbar samt överlappande rörelser bidrar till en gradvis avklingande planeringssignal. Minst tre jämförbara lyckade efterföljande pass kan mildra en lättare generell begränsning, men inte spärren vid hög beräknad dos. Veckodos begränsas inte enbart för att ett fast setantal passerats. Set räknas per sida; uppvärmning och preliminära framtidspass räknas inte som genomförd träning. Signalen anger inte fysiologisk återhämtning.",
+      "value_sv": "Avklingning med 24 timmars halveringstid; graderade nivåval. Alla koefficienter är prövbara produktantaganden.",
+      "rationale_sv": "Konservativ och spårbar produktpolicy. Forskningen stöder de generella principerna men validerar inte dessa trösklar.",
       "heuristic": true,
       "reason_codes": [
         "RECOVERY_UNDER_24H",
@@ -704,7 +761,9 @@
         "NO_RECENT_HEAVY_FLAG",
         "RECOVERY_MATCHED_WORK",
         "RECOVERY_OVERLAPPING_WORK",
-        "RECOVERY_MODE_REDUCED"
+        "RECOVERY_MODE_REDUCED",
+        "ROLLING_WEEK_DOSE_HOLD",
+        "WEEKLY_FREQUENCY_DISTRIBUTION"
       ]
     },
     {
@@ -717,7 +776,8 @@
       "heuristic": true,
       "reason_codes": [
         "RESTART_AFTER_13D",
-        "RESTART_28D"
+        "RESTART_28D",
+        "RESTART_PRESERVES_CAPACITY"
       ]
     },
     {
@@ -1103,11 +1163,11 @@
       "rule_id": "adaptiv-vila",
       "group": "B",
       "title_sv": "Vila inför nästa återstående set",
-      "method_sv": "REST/1.1.0 behåller 30–300 sekunders gränser. Grundvila efter övning och mål; hög relativ intensitet, få RIR, rapporterad ansträngning och jämförbart repetitionstapp kan höja. Korrelerade signaler tar största tillägget. Sen återkoppling behåller starttid och manuellt tillägg. Timern visas endast i rätt övning. Ingen obligatorisk timer mellan övningar.",
+      "method_sv": "REST/1.2.0 behåller 30–300 sekunders gränser. Grundvila efter övning och mål; hög relativ intensitet, få RIR, rapporterad ansträngning och jämförbart repetitionstapp kan höja. Repetitionstapp utan RIR kan ge ett försiktigt tillägg om 15 sekunder. Korrelerade signaler tar största tillägget. Sen återkoppling behåller starttid och manuellt tillägg. Timern visas endast i rätt övning. Ingen obligatorisk timer mellan övningar.",
       "value_sv": "Längsta motiverade tillägget, inte summan av ansträngningssignaler",
       "rationale_sv": "Vila stödjer fortsatt prestation. Exakta timergränser är produktregler; hypertrofistudier validerar inte en individuell återhämtningsprognos.",
       "heuristic": true,
-      "reason_codes": []
+      "reason_codes": ["REPETITIONS_DECREASED_UNCERTAIN"]
     },
     {
       "rule_id": "generell-startmodell",

@@ -20,6 +20,17 @@ function row(over: Partial<LocalSet> = {}, props: Partial<Parameters<typeof SetR
 }
 
 describe('SetRow', () => {
+  it('registers the saved draft when the live-query props have not caught up after closing', async () => {
+    const onPlan = vi.fn(async () => undefined);
+    const { onLog } = row({ targetGrams: null }, { onPlan });
+    fireEvent.click(screen.getByRole('button', { name: /Vikt set 2:/ }));
+    fireEvent.change(screen.getByLabelText('Vikt (kg)'), { target: { value: '20' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Stäng' }));
+    await waitFor(() => expect(screen.queryByLabelText('Vikt (kg)')).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Registrera set 2' }));
+    await waitFor(() => expect(onLog).toHaveBeenCalledWith(expect.objectContaining({ actualGrams: 20_000 })));
+    expect(onPlan).toHaveBeenCalledTimes(1);
+  });
   it('visar Set 2 | 80 kg | 5 reps | Klart och loggar förifyllt set med ett tryck', async () => {
     const { onLog } = row();
     expect(screen.getByText('2')).toBeTruthy();

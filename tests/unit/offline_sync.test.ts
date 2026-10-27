@@ -197,14 +197,14 @@ describe('offline local-first', () => {
 
     const s2 = await startSession(h.ctx, await previewNext(h.ctx));
     const sets2 = await h.db.sets.where('sessionId').equals(s2.id).sortBy('ordinal');
-    await logSet(h.ctx, sets2[0].id, {});
+    await logSet(h.ctx, sets2[0].id, { actualGrams: sets2[0].targetGrams ?? 20_000 });
     await finishSession(h.ctx, s2.id, { status: 'abandoned' });
     expect((await h.db.sets.get(sets2[0].id))!.deleted).toBe(false);
     expect((await previewNext(h.ctx)).templateKey).toBe('B'); // abandoned flyttar inte rotationen
 
     const s3 = await startSession(h.ctx, await previewNext(h.ctx));
     const sets3 = await h.db.sets.where('sessionId').equals(s3.id).sortBy('ordinal');
-    await logSet(h.ctx, sets3[0].id, {});
+    await logSet(h.ctx, sets3[0].id, { actualGrams: sets3[0].targetGrams ?? 20_000 });
     await finishSession(h.ctx, s3.id, { status: 'abandoned', keepLoggedSets: false });
     expect((await h.db.sets.get(sets3[0].id))!.deleted).toBe(true);
   });
@@ -269,7 +269,7 @@ describe('offline local-first', () => {
     expect(j.profile).toMatchObject({ userId: h.userId, plannedSessionsPerWeek: 2 });
     expect(j.sessions).toHaveLength(1);
     const sess = j.sessions[0] as { snapshot: { engineVersion: string; templateVersion: string; inputsHash: string }; exercises: Array<{ snapshot: { reasons: string[] }; sets: unknown[] }> };
-    expect(sess.snapshot).toMatchObject({ engineVersion: '1.0.0', templateVersion: '1.0.0' });
+    expect(sess.snapshot).toMatchObject({ engineVersion: '2.1.0', templateVersion: '2.1.0' });
     expect(sess.exercises[0].snapshot.reasons.length).toBeGreaterThan(0);
     expect(sess.exercises.flatMap((e) => e.sets).length).toBeGreaterThan(0);
     expect(j.recommendationAudits).toHaveLength(1);

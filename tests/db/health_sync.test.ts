@@ -23,6 +23,8 @@ it('another device erases health data in real Supabase; a full pull removes it l
     const set = (await h.db.sets.where('sessionId').equals(session.id).first())!;
     await logSet(h.ctx, set.id, { actualGrams: 20_000 });
     const pending = await h.db.outbox.toArray();
+    await h.db.meta.put({ key: `workout-feedback:${session.id}`, value: { sessionId: session.id, sourceSessionIds: [session.id], sourceSetIds: [set.id], text: 'Derived health decision' } });
+    await h.db.meta.put({ key: `feedback-choice:${session.id}`, value: { templateId: 'protected:0' } });
     const login = await second.auth.signInWithPassword({ email: user.email, password: 'Testlosen-123!' });
     expect(login.error).toBeNull();
     await new SupabaseTransport(second).eraseHealthData();
@@ -30,6 +32,8 @@ it('another device erases health data in real Supabase; a full pull removes it l
     expect(await h.db.restrictions.count()).toBe(0);
     expect(await h.db.symptoms.count()).toBe(0);
     expect((await h.db.consents.get(user.id))?.withdrawnAt).toBeTruthy();
+    expect(await h.db.meta.get(`workout-feedback:${session.id}`)).toBeUndefined();
+    expect(await h.db.meta.get(`feedback-choice:${session.id}`)).toBeUndefined();
     expect(await h.db.outbox.toArray()).toEqual(pending);
     expect(await h.db.sets.get(set.id)).toMatchObject({ status: 'done', actualGrams: 20_000 });
     const exported = await exportJson(h.ctx);

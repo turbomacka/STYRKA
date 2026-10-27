@@ -1,0 +1,9 @@
+{
+  "ruleSetVersion": "STYRKA-RULES/2.0.0",
+  "plans": 2100,
+  "exercises": 7180,
+  "sha256": "491a8083105743b9da3923203cfc9748ceeb07f712cb265ea2b0c7e60f9eab6a",
+  "originalBaseline": "plans_recovery_v2.json",
+  "baselineCommit": "38e975ec63ed4c714996dbcd13e696f0399f8422",
+  "intentionalChange": "Shared rest, continuous recovery, frequency distribution and history-driven progression. Unaffected fresh 90-minute prescriptions checked against prior commit."
+}

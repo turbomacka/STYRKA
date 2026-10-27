@@ -1,3 +1,5 @@
+import { muscleWorkOverlap, rollingDose, weeklyDoseGuard } from '../domain/trainingDose';
+import { recommendRest } from '../domain/restPolicy';
 import { resolveStartingLoad } from '../domain/startingLoad';
 import { recoveryMode } from '../domain/recoveryPolicy';
 import { comparableHistory } from '../domain/comparableTraining';
@@ -43,6 +45,7 @@ type Item = {
   templateSlug: ExerciseId;
   mode: Mode;
   sets: number;
+  ordinarySets?: number;
   role: Role;
   order: number;
   reasons: string[];
@@ -59,6 +62,12 @@ type Ctx = {
   removed: Array<{ exerciseId: ExerciseId; reason: string }>;
   reasons: string[];
   minutes: number;
+  horizon: PlanningHorizonContext;
+};
+
+/** Hypothetical schedule only. Never placed in performed history or capacity/recovery evidence. */
+export type PlanningHorizonContext = {
+  plannedExposure?: Array<{ exerciseId: ExerciseId; whenUtc: string; sets: number; mode: Mode }>;
 };
 
 export class PlannerInputError extends Error {}
@@ -112,7 +121,7 @@ function applySubstitutions(ctx: Ctx, items: Item[]): void {
       continue;
     }
     if (isAvailable(it.slug, ctx.equipment)) continue;
-    const candidates = family.filter((c) => isAvailable(c, ctx.equipment) && !isBlocked(c, ctx.input.restrictions));
+    const candidates = family.filter((c) => isAvailable(c, ctx.equipment) && !isBlocked(c, ctx.input.restrictions,ctx.input.profile.trainingPreferences?.exerciseDefaults[c]));
     const fav = candidates.find((c) => ctx.input.profile.favorites.includes(c));
     const pick = fav ?? candidates[0];
     if (!pick) {
@@ -142,12 +151,13 @@ function applyUserRules(ctx: Ctx, items: Item[]): void {
   const rules = ctx.input.restrictions;
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
-    if (isBlocked(it.slug, rules)) {
+    const configuration=ctx.input.profile.trainingPreferences?.exerciseDefaults[it.slug];
+    if (isBlocked(it.slug, rules,configuration)) {
       remove(ctx, items, i--, 'USER_BLOCK_EXERCISE');
       continue;
     }
     for (const r of rules) {
-      if (!ruleTargets(r, it.slug)) continue;
+      if (!ruleTargets(r, it.slug,configuration)) continue;
       if (r.kind === 'limit_sets' && r.maxSets !== null && it.sets > r.maxSets) {
         it.sets = r.maxSets;
         it.reasons.push('USER_LIMIT_SETS');
@@ -164,7 +174,7 @@ function applyUserRules(ctx: Ctx, items: Item[]): void {
 function applyRecovery(ctx: Ctx, items: Item[]): void {
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
-    const g = gateFor(it.slug, ctx.history, ctx.active, ctx.input.nowUtc, ctx.input.profile.trainingPreferences?.exerciseDefaults[it.slug]);
+    const g = gateFor(it.slug, ctx.history, ctx.active, ctx.input.nowUtc, ctx.input.profile.trainingPreferences?.exerciseDefaults[it.slug], ctx.input.restrictions);
     if (g.impactedRegion && ['persistent', 'limping', 'swelling'].includes(g.relevantSymptoms)) {
       remove(ctx, items, i--, 'SYMPTOM_REVIEW_REQUIRED');
       continue;
@@ -178,10 +188,48 @@ function applyRecovery(ctx: Ctx, items: Item[]): void {
 }
 
 function priorityScore(ctx: Ctx, it: Item): number {
-  const goal = ctx.input.profile.goals[it.slug] ?? (exercise(it.slug).priorityLift ? 1 : 0);
-  const h = exercise(it.slug).priorityLift ? hoursSinceExercise(ctx.history, it.slug, ctx.input.nowUtc) : null;
-  const overdue = exercise(it.slug).priorityLift && ctx.history.length > 0 && (h === null || h > OVERDUE_HOURS) ? 1 : 0;
-  return goal * 10 + overdue * 5;
+  const goal = ctx.input.profile.goals[it.slug] ?? ctx.input.profile.goals[it.templateSlug] ?? (exercise(it.slug).priorityLift ? 1 : 0);
+  const pattern=exercise(it.slug).pattern,now=Date.parse(ctx.input.nowUtc);
+  const actual=ctx.history.filter(h=>exercise(h.exerciseId).pattern===pattern).map(h=>Date.parse(h.whenUtc));
+  const projected=(ctx.horizon.plannedExposure??[]).filter(h=>exercise(h.exerciseId).pattern===pattern && Date.parse(h.whenUtc)<now).map(h=>Date.parse(h.whenUtc));
+  const latest=Math.max(...actual,...projected);
+  const days=Number.isFinite(latest)?Math.max(0,(now-latest)/86400000):ctx.history.length||projected.length?14:0;
+  // Recency can eventually outweigh a preference; lower priority is never an exclusion.
+  const coverage=exercise(it.slug).timeKind==='isolation'?0:Math.min(42,days*3);
+  return goal*10+coverage;
+}
+
+/** A higher explicit goal may replace a lower-priority supplementary slot. The
+ * rotation and time budget remain bounded; this never adds an extra exercise. */
+function distributeGoals(ctx: Ctx, items: Item[]): void {
+  const goals=Object.entries(ctx.input.profile.goals).filter(([,v])=>(v??0)>=2).sort((a,b)=>(b[1]??0)-(a[1]??0)||a[0].localeCompare(b[0]));
+  for(const [slug] of goals) {
+    const id=slug as ExerciseId;
+    if(items.some(it=>it.slug===id||it.templateSlug===id) || !isAvailable(id,ctx.equipment) || isBlocked(id,ctx.input.restrictions,ctx.input.profile.trainingPreferences?.exerciseDefaults[id])) continue;
+    const candidate:Item={slug:id,templateSlug:id,mode:'moderate',sets:2,ordinarySets:2,role:'supplementary',order:items.length,reasons:['GOAL_PRIORITY_DISTRIBUTION'],substitutionFrom:null,substitutionReason:null,acceptedByUserAt:null};
+    const replace=items.filter(it=>it.role==='supplementary' && !it.substitutionReason && !it.reasons.includes('USER_ACCEPTED_CATCH_UP'))
+      .sort((a,b)=>priorityScore(ctx,a)-priorityScore(ctx,b)||Number(exercise(b.slug).priorityLift)-Number(exercise(a.slug).priorityLift)||b.order-a.order)[0];
+    if(!replace || priorityScore(ctx,candidate)<=priorityScore(ctx,replace)) continue;
+    candidate.order=replace.order;
+    items[items.indexOf(replace)]=candidate;
+    ctx.removed.push({exerciseId:replace.slug,reason:'GOAL_PRIORITY_DISTRIBUTION'});
+    break;
+  }
+}
+
+function orderByGoals(ctx:Ctx,items:Item[]):void {
+  const before=items.map(it=>it.slug).join('|');
+  items.sort((a,b)=>Number(exercise(a.slug).timeKind==='isolation')-Number(exercise(b.slug).timeKind==='isolation') || priorityScore(ctx,b)-priorityScore(ctx,a) || a.order-b.order);
+  items.forEach((it,i)=>{ it.role=roleFor(it.slug,i); if(before!==items.map(x=>x.slug).join('|')) it.reasons.push('GOAL_PRIORITY_ORDER'); });
+}
+
+function distributeProjectedWork(ctx:Ctx,items:Item[]):void {
+  const now=Date.parse(ctx.input.nowUtc);
+  for(const it of items) {
+    const nearby=(ctx.horizon.plannedExposure??[]).filter(h=>{const age=(now-Date.parse(h.whenUtc))/3_600_000;return age>0&&age<36;});
+    const overlapping=nearby.reduce((sum,h)=>sum+muscleWorkOverlap(it.slug,h.exerciseId)*h.sets,0);
+    if(it.mode==='heavy'&&overlapping>=3) {it.mode='moderate';it.reasons.push('PLANNED_OVERLAP_DISTRIBUTION');}
+  }
 }
 
 /** 02 §7: känslig underkroppsprofil får endast EN av knäböj/marklyft i samma pass. */
@@ -246,13 +294,17 @@ function variantData(ctx: Ctx, slug: ExerciseId, variantKey: string) {
 }
 
 function prescribeItem(ctx: Ctx, it: Item, variantKey = activeVariant(ctx.input.profile, it.slug)): PlannedExercise {
-  const gate = gateFor(it.slug, ctx.history, ctx.active, ctx.input.nowUtc, ctx.input.profile.trainingPreferences?.exerciseDefaults[it.slug]);
+  const gate = gateFor(it.slug, ctx.history, ctx.active, ctx.input.nowUtc, ctx.input.profile.trainingPreferences?.exerciseDefaults[it.slug], ctx.input.restrictions);
   const { history, settings } = variantData(ctx, it.slug, variantKey);
   const p = prescribe({
+    equipmentStep: ctx.input.profile.trainingPreferences?.exerciseDefaults[it.slug]?.equipment.step,
+    availableLoads: ctx.input.profile.trainingPreferences?.exerciseDefaults[it.slug]?.equipment.increments.length ? ctx.input.profile.trainingPreferences.exerciseDefaults[it.slug]!.equipment.increments : undefined,
     performedSetsOnly: ctx.input.profile.trainingPreferences?.loadRecommendationSource === 'performed_sets',
     exerciseId: it.slug,
     mode: it.mode,
     sets: it.sets,
+    ordinarySets: it.ordinarySets??it.sets,
+    temporaryReasons: it.reasons.filter(r=>['WEEKLY_FREQUENCY_DISTRIBUTION','ROLLING_WEEK_DOSE_HOLD','RECOVERY_MODE_REDUCED','PLANNED_OVERLAP_DISTRIBUTION'].includes(r)),
     role: it.role,
     experience: experienceFor(ctx, it.slug),
     settings,
@@ -263,13 +315,39 @@ function prescribeItem(ctx: Ctx, it: Item, variantKey = activeVariant(ctx.input.
   const configuration = ctx.input.profile.trainingPreferences?.exerciseDefaults[it.slug];
   const withVariant = { ...(variantKey !== 'default' ? { variantKey } : {}), ...(configuration ? { configuration } : {}) };
   const recommended = resolveStartingLoad(ctx.input, p, history, settings, gate);
-  const adapted = configuration ? configuredPrescription(recommended, ctx.history, configuration) : recommended;
-  return { ...adapted, ...withVariant, reasons: [...it.reasons, ...adapted.reasons], substitutionFrom: it.substitutionFrom, substitutionReason: it.substitutionReason, acceptedByUserAt: it.acceptedByUserAt };
+  let adapted = configuration ? configuredPrescription(recommended, ctx.history, configuration, {experience:ctx.input.profile.experience,impactedRegion:gate.impactedRegion,hoursSinceRelevant:gate.hoursSinceRelevant,maxLoadKg:settings?.maxLoadKg,recovery:gate.recovery,relevantSymptoms:gate.relevantSymptoms}) : recommended;
+  if(settings?.maxLoadKg!=null && adapted.kg!=null && adapted.kg>settings.maxLoadKg) adapted={...adapted,kg:Math.floor(settings.maxLoadKg/adapted.incrementKg)*adapted.incrementKg,reasons:[...adapted.reasons,'USER_MAX_LOAD_CAP']};
+  if(configuration && ['sequential','alternating'].includes(configuration.executionMode) && exercise(it.slug).loadKind==='external_kg' && configuration.equipment.unit==='kg' && configuration.equipment.basis!=='independent') {
+    const sideTargets:NonNullable<PlannedExercise['sideTargets']>={};
+    for(const side of ['left','right'] as const) {
+      const sideHistory=comparableHistory(ctx.history,it.slug,configuration,variantKey,side);
+      if(!sideHistory.length) continue;
+      const sideGate=gateFor(it.slug,ctx.history,ctx.active,ctx.input.nowUtc,{...configuration,executionMode:'single_side',startingSide:side},ctx.input.restrictions);
+      const sideRaw=prescribe({equipmentStep:configuration.equipment.step,exerciseId:it.slug,mode:it.mode,sets:adapted.sets,role:it.role,experience:experienceFor(ctx,it.slug),settings,history:sideHistory,gate:sideGate,bodyweightKg:ctx.input.profile.bodyweightKg,availableLoads:configuration.equipment.increments.length?configuration.equipment.increments:undefined,performedSetsOnly:ctx.input.profile.trainingPreferences?.loadRecommendationSource==='performed_sets'});
+      const sidePlan=configuredPrescription(sideRaw,sideHistory,configuration,{maxLoadKg:settings?.maxLoadKg,recovery:sideGate.recovery,relevantSymptoms:sideGate.relevantSymptoms,impactedRegion:sideGate.impactedRegion,hoursSinceRelevant:sideGate.hoursSinceRelevant,experience:experienceFor(ctx,it.slug)});
+      sideTargets[side]={kg:sidePlan.kg,reps:sidePlan.reps};
+    }
+    if(Object.keys(sideTargets).length) adapted={...adapted,sideTargets};
+  }
+  const temporaryReasons=[...new Set([...(adapted.doseContext?.temporaryReasons??[]),...it.reasons.filter(r=>['WEEKLY_FREQUENCY_DISTRIBUTION','ROLLING_WEEK_DOSE_HOLD','RECOVERY_MODE_REDUCED','PLANNED_OVERLAP_DISTRIBUTION','TIME_MAIN_LIFT_SHORT_ALTERNATIVE'].includes(r))])];
+  return { ...adapted, ...withVariant, doseContext:{version:'DOSE/2.1.0',ordinarySets:it.ordinarySets??it.sets,temporaryReasons}, reasons: [...it.reasons, ...adapted.reasons], substitutionFrom: it.substitutionFrom, substitutionReason: it.substitutionReason, acceptedByUserAt: it.acceptedByUserAt };
 }
 
 /** 08 §2 steg 6–7: efter viktberäkning kan relativ last ≥75 % e1RM göra en övning tung (02 §2). */
 function prescribeWithPairCheck(ctx: Ctx, items: Item[]): PlannedExercise[] {
-  let planned = items.map((it) => prescribeItem(ctx, it));
+  let planned = items.map(it=>{
+    const initial=prescribeItem(ctx,it);
+    const dose=weeklyDoseGuard(it.slug,ctx.history,ctx.input.nowUtc);
+    // General guard, with bounded support from actual outcomes. Repetitions alone
+    // do not turn a previously tolerable week into a permanent two-set ceiling.
+    // A selected problem dose is already a response to the relevant signal; the
+    // generic weekly guard is not independent evidence for a second reduction.
+    if(dose.sets>=dose.ceilingSets && initial.sets>2 && initial.adaptive?.chosenReason!=='problem') {
+      it.sets=Math.min(it.sets,2);it.reasons.push('ROLLING_WEEK_DOSE_HOLD');
+      return prescribeItem(ctx,it);
+    }
+    return initial;
+  });
   const rules = pairRules(ctx);
   for (let guard = 0; guard <= items.length * 2 + 2; guard++) {
     const violation = rules.find((r) => !heavyPairAllowed(heavyList(planned), r.a, r.b));
@@ -291,7 +369,7 @@ function prescribeWithPairCheck(ctx: Ctx, items: Item[]): PlannedExercise[] {
   throw new Error('PAIR_RULE_UNSATISFIABLE');
 }
 
-function minutesFor(exs: PlannedExercise[]): number {
+function minutesFor(exs: PlannedExercise[], ctx?: Ctx): number {
   if (!exs.length) return 0;
   let firstBarbellSeen = false;
   return estimateMinutes(
@@ -300,8 +378,10 @@ function minutesFor(exs: PlannedExercise[]): number {
       const firstBarbell = kind === 'barbell_compound' && !firstBarbellSeen;
       if (kind === 'barbell_compound') firstBarbellSeen = true;
       // H: ensidiga övningar i katalog 2.0.0 räknas för båda sidor (tidsfaktor 2); version 1 har faktor 1.
-      const sets = Math.min(6, p.sets * exercise(p.exerciseId).timeMultiplier);
-      return { mode: p.mode, sets, kind, firstBarbell };
+      const c=p.configuration;
+      const sideMultiplier=c ? (c.executionMode==='sequential'||c.executionMode==='alternating'?2:1) : exercise(p.exerciseId).timeMultiplier;
+      const restSeconds=recommendRest({category:kind,mode:p.mode,strengthFocus:true,experience:ctx?.input.profile.experience??'intermediate',adaptive:ctx?.input.profile.trainingPreferences?.adaptiveRestEnabled??true,kind:'work',nextKind:'work',overrideSeconds:c?.restSeconds??ctx?.input.profile.trainingPreferences?.preferredRestOverrides[p.exerciseId],relativeIntensity:p.kg!==null&&p.estimatedOneRM?p.kg/p.estimatedOneRM:null}).seconds;
+      return { mode:p.mode,sets:p.sets,kind,firstBarbell,restSeconds,reps:p.reps,seconds:p.targetSeconds??undefined,sideMultiplier,betweenSidesSeconds:sideMultiplier>1?c?.betweenSidesSeconds:0 };
     }),
   );
 }
@@ -310,7 +390,7 @@ function minutesFor(exs: PlannedExercise[]): number {
 function pruneToBudget(ctx: Ctx, exs: PlannedExercise[]): { exercises: PlannedExercise[]; status: PlanStatus; warnings: WarningCode[] } {
   const budget = ctx.minutes + TIME_TOLERANCE_MIN;
   const list = exs.map((x) => ({ ...x }));
-  const fits = () => minutesFor(list) <= budget;
+  const fits = () => minutesFor(list,ctx) <= budget;
   if (fits()) return { exercises: list, status: 'ok', warnings: [] };
   const dropLast = (pred: (p: PlannedExercise) => boolean, reason: string): boolean => {
     for (let i = list.length - 1; i >= 0; i--) {
@@ -325,7 +405,8 @@ function pruneToBudget(ctx: Ctx, exs: PlannedExercise[]): { exercises: PlannedEx
   const reduceLast = (pred: (p: PlannedExercise) => boolean, min: number): boolean => {
     for (let i = list.length - 1; i >= 0; i--) {
       if (pred(list[i]) && list[i].sets > min) {
-        list[i] = { ...list[i], sets: list[i].sets - 1, reasons: list[i].reasons.includes('TIME_SETS_REDUCED') ? list[i].reasons : [...list[i].reasons, 'TIME_SETS_REDUCED'] };
+        const dose=list[i].doseContext??{version:'DOSE/2.1.0' as const,ordinarySets:list[i].sets,temporaryReasons:[]};
+        list[i] = { ...list[i], sets: list[i].sets - 1, doseContext:{...dose,temporaryReasons:[...new Set([...dose.temporaryReasons,'TIME_SETS_REDUCED'])]}, reasons: list[i].reasons.includes('TIME_SETS_REDUCED') ? list[i].reasons : [...list[i].reasons, 'TIME_SETS_REDUCED'] };
         return true;
       }
     }
@@ -357,7 +438,7 @@ function shortAlternative(ctx: Ctx, items: Item[]): PlannedExercise[] {
   for (let sets = Math.min(2, alt.sets); sets >= 1; sets--) {
     const p = prescribeItem(ctx, { ...alt, sets });
     const one = [{ ...p, sets: Math.min(p.sets, sets) }];
-    if (minutesFor(one) <= ctx.minutes + TIME_TOLERANCE_MIN) return one;
+    if (minutesFor(one,ctx) <= ctx.minutes + TIME_TOLERANCE_MIN) return one;
   }
   return [];
 }
@@ -374,8 +455,8 @@ function warningsFor(exs: PlannedExercise[], ctx: Ctx): WarningCode[] {
 export function verifyInvariants(snapshot: PlanSnapshot, input: PlannerInput): void {
   const active = activeSymptoms(input.symptoms, pastWork(input.history, input.nowUtc));
   for (const e of snapshot.exercises) {
-    if (isBlocked(e.exerciseId, input.restrictions)) throw new Error(`INVARIANT_BLOCKED_${e.exerciseId}`);
-    const hit = active.find((s) => ['persistent', 'limping', 'swelling'].includes(s.reaction) && impactsAreas(e.exerciseId, [s.area]));
+    if (isBlocked(e.exerciseId, input.restrictions,e.configuration)) throw new Error(`INVARIANT_BLOCKED_${e.exerciseId}`);
+    const hit = active.find((s) => ['persistent', 'limping', 'swelling'].includes(s.reaction) && impactsAreas(e.exerciseId, [s.area]) && (e.configuration?.executionMode!=='single_side'||!s.side||s.side==='both'||s.side==='not_applicable'||s.side===e.configuration.startingSide));
     if (hit) throw new Error(`INVARIANT_REVIEW_${e.exerciseId}`);
     if (e.loadKind === 'external_kg' && e.kg !== null && (e.kg < 0 || e.kg > 500)) throw new Error('INVARIANT_KG_RANGE');
   }
@@ -398,9 +479,9 @@ function finalize(ctx: Ctx, base: { kind: 'planned' | 'extra'; templateKey: stri
     ruleSetVersion: RULESET_VERSION,
     catalogVersion: CATALOG_VERSION,
     generatedAtUtc: ctx.input.nowUtc,
-    inputsHash: hashOf({ input: ctx.input, extra: base.extraInputs ?? null, v: [ENGINE_VERSION, PLANNER_VERSION, RULESET_VERSION, CATALOG_VERSION, TEMPLATE_VERSION] }),
+    inputsHash: hashOf({ input: ctx.input, horizon:ctx.horizon, extra: base.extraInputs ?? null, v: [ENGINE_VERSION, PLANNER_VERSION, RULESET_VERSION, CATALOG_VERSION, TEMPLATE_VERSION] }),
     budgetMinutes: ctx.minutes,
-    estimatedMinutes: minutesFor(exs),
+    estimatedMinutes: minutesFor(exs,ctx),
     readiness: base.readiness,
     status,
     exercises: exs,
@@ -412,7 +493,7 @@ function finalize(ctx: Ctx, base: { kind: 'planned' | 'extra'; templateKey: stri
   return snapshot;
 }
 
-function makeCtx(input: PlannerInput): Ctx {
+function makeCtx(input: PlannerInput, horizon:PlanningHorizonContext={}): Ctx {
   validatePlannerInput(input);
   const history = pastWork(input.history, input.nowUtc);
   return {
@@ -423,6 +504,7 @@ function makeCtx(input: PlannerInput): Ctx {
     removed: [],
     reasons: [],
     minutes: input.minutes ?? input.profile.minutesPerSession,
+    horizon,
   };
 }
 
@@ -433,8 +515,8 @@ export function templateKeyFor(frequency: number, rotationIndex: number): string
 }
 
 /** Nästa ordinarie pass. */
-export function planRegular(input: PlannerInput): PlanSnapshot {
-  const ctx = makeCtx(input);
+export function planRegular(input: PlannerInput, horizon:PlanningHorizonContext={}): PlanSnapshot {
+  const ctx = makeCtx(input,horizon);
   const key = templateKeyFor(input.profile.plannedSessionsPerWeek, input.rotationIndex);
   const entries = TEMPLATES.templates[key];
   const items: Item[] = entries.map(([slug, mode, sets], i) => ({
@@ -455,9 +537,14 @@ export function planRegular(input: PlannerInput): PlanSnapshot {
       it.reasons.push('NOVICE_MAX_SETS');
     }
     if (it.slug === 'deadlift' && it.mode === 'heavy' && it.sets > DEADLIFT_HEAVY_MAX_SETS) it.sets = DEADLIFT_HEAVY_MAX_SETS;
+    it.ordinarySets=it.sets;
+  }
+  if(input.profile.plannedSessionsPerWeek===3) for(const it of items) {
+    if(it.role!=='main' && it.sets>1) { it.sets=Math.max(1,Math.round(it.sets*2/3));it.reasons.push('WEEKLY_FREQUENCY_DISTRIBUTION'); }
   }
   const templateCount = items.length;
   applySubstitutions(ctx, items);
+  distributeGoals(ctx,items);
   const catchUp = input.catchUp?.targetRotationIndex === input.rotationIndex ? input.catchUp : undefined;
   if (catchUp && !items.some((i) => i.slug === catchUp.exerciseId) && isAvailable(catchUp.exerciseId, ctx.equipment)) {
     const index = items.findIndex((i) => i.slug === catchUp.replacesExerciseId && i.role !== 'main' && !exercise(i.slug).priorityLift);
@@ -470,16 +557,21 @@ export function planRegular(input: PlannerInput): PlanSnapshot {
     }
   }
   applyUserRules(ctx, items);
+  // Explicit set limits define the allowed ordinary dose and cannot be restored away.
+  for(const it of items) if(it.reasons.includes('USER_LIMIT_SETS')) it.ordinarySets=Math.min(it.ordinarySets??it.sets,it.sets);
   applyRecovery(ctx, items);
+  distributeProjectedWork(ctx,items);
   applyLowerSensitivity(ctx, items);
   applyPairRulesByMode(ctx, items);
+  orderByGoals(ctx,items);
   // Roll: om huvudlyftet försvunnit blir första kvarvarande flerledsövning huvudlyft.
   if (items.length && !items.some((i) => i.role === 'main')) {
     const first = items.find((i) => i.role === 'supplementary') ?? items[0];
     first.role = 'main';
   }
   for (const it of items) {
-    if (exercise(it.slug).priorityLift && priorityScore(ctx, it) % 10 >= 5) it.reasons.push('PRIORITY_LIFT_OVERDUE_14D');
+    const hours=hoursSinceExercise(ctx.history,it.slug,ctx.input.nowUtc);
+    if (exercise(it.slug).priorityLift && ctx.history.length>0 && (hours===null||hours>OVERDUE_HOURS)) it.reasons.push('PRIORITY_LIFT_OVERDUE_14D');
   }
   if (!items.length) {
     return finalize(ctx, { kind: 'planned', templateKey: key, rotationIndex: input.rotationIndex, readiness: null }, [], 'empty', ['WARN_EMPTY', 'WARN_NO_FULL_SCHEDULE']);
@@ -501,14 +593,14 @@ export function planRegular(input: PlannerInput): PlanSnapshot {
   if (!exs.length && !warnings.includes('WARN_EMPTY')) warnings.push('WARN_EMPTY');
   const result = finalize(ctx, { kind: 'planned', templateKey: key, rotationIndex: input.rotationIndex, readiness: null }, exs, exs.length ? status : 'empty', warnings);
   if (catchUp) {
-    const original = planRegular({ ...input, catchUp: undefined });
+    const original = planRegular({ ...input, catchUp: undefined },horizon);
     const main = original.exercises.find((e) => e.role === 'main');
     const preservedMain = !main || result.exercises.some((e) => e.exerciseId === main.exerciseId && e.mode === main.mode && e.sets === main.sets);
     const preservedOthers = original.exercises.filter((e) => e.exerciseId !== catchUp.replacesExerciseId).every((e) => result.exercises.some((r) => r.exerciseId === e.exerciseId && r.mode === e.mode && r.sets === e.sets));
     // A changed situation must fall back to the normal plan, not silently drop more work or the requested exercise.
     if (!preservedMain || !preservedOthers || result.exercises.length !== original.exercises.length || result.status === 'empty' || result.status === 'time_insufficient' || !result.exercises.some((e) => e.exerciseId === catchUp.exerciseId && e.reasons.includes('USER_ACCEPTED_CATCH_UP'))) return original;
     result.catchUp = { sourceExerciseId: catchUp.sourceExerciseId, exerciseId: catchUp.exerciseId, replacesExerciseId: catchUp.replacesExerciseId, reason: catchUp.reason, decisionId: catchUp.decisionId };
-    result.plannerVersion = 'STYRKA-PLANNER/1.1.0';
+    result.plannerVersion = PLANNER_VERSION;
   }
   return result;
 }
@@ -533,11 +625,11 @@ export function planExtra(input: PlannerInput, opts: ExtraOptions): PlanSnapshot
   CATALOG.filter((ex) => V1_SLUGS.has(ex.slug) || chosenTargets.has(ex.slug)).forEach((ex, order) => {
     const slug = ex.slug;
     if (!isAvailable(slug, ctx.equipment)) return;
-    if (isBlocked(slug, input.restrictions)) {
+    if (isBlocked(slug, input.restrictions,input.profile.trainingPreferences?.exerciseDefaults[slug])) {
       ctx.removed.push({ exerciseId: slug, reason: 'USER_RESTRICTION' });
       return;
     }
-    const g = gateFor(slug, ctx.history, ctx.active, now, ctx.input.profile.trainingPreferences?.exerciseDefaults[slug]);
+    const g = gateFor(slug, ctx.history, ctx.active, now, ctx.input.profile.trainingPreferences?.exerciseDefaults[slug], ctx.input.restrictions);
     if (g.impactedRegion && ['persistent', 'limping', 'swelling'].includes(g.relevantSymptoms)) {
       ctx.removed.push({ exerciseId: slug, reason: 'SYMPTOM_REVIEW_REQUIRED' });
       return;
@@ -547,7 +639,8 @@ export function planExtra(input: PlannerInput, opts: ExtraOptions): PlanSnapshot
       return;
     }
     const sevenDays = ctx.history.filter((h) => (Date.parse(now) - Date.parse(h.whenUtc)) / 3_600_000 <= 168 && (h.exerciseId === slug || (ex.recoveryGroup !== 'own' && exercise(h.exerciseId).recoveryGroup === ex.recoveryGroup)));
-    const exposure7d = sevenDays.reduce((n, h) => n + h.sets.filter((s) => s.kind === 'work' && s.status === 'done').length, 0);
+    const dose=rollingDose(slug,sevenDays,now);
+    const exposure7d=Math.max(dose.left.sets,dose.right.sets)+Math.max(dose.left.repetitions,dose.right.repetitions)/30;
     const fav = input.profile.favorites.includes(slug) ? 1 : 0;
     const goal = input.profile.goals[slug] ?? (ex.priorityLift ? 1 : 0);
     const exH = hoursSinceExercise(ctx.history, slug, now);
@@ -678,8 +771,8 @@ export function planReplacement(input: PlannerInput, args: ReplacementArgs): Rep
   const relation = sameExercise ? null : (relationBetween(from.exerciseId, to) ?? null);
   if (!sameExercise && !relation && !revert) return fail('NOT_IN_CATALOG');
   if (!isAvailable(to, ctx.equipment)) return fail('EQUIPMENT_UNAVAILABLE', relation);
-  if (isBlocked(to, input.restrictions)) return fail('USER_BLOCK_EXERCISE', relation);
-  const gate = gateFor(to, ctx.history, ctx.active, input.nowUtc, input.profile.trainingPreferences?.exerciseDefaults[to]);
+  if (isBlocked(to, input.restrictions,input.profile.trainingPreferences?.exerciseDefaults[to])) return fail('USER_BLOCK_EXERCISE', relation);
+  const gate = gateFor(to, ctx.history, ctx.active, input.nowUtc, input.profile.trainingPreferences?.exerciseDefaults[to],input.restrictions);
   if (gate.impactedRegion && ['persistent', 'limping', 'swelling'].includes(gate.relevantSymptoms)) return fail('SYMPTOM_REVIEW_REQUIRED', relation);
   const variantKey = args.variantKey ?? activeVariant(input.profile, to);
   if (args.others.some((o) => o.exerciseId === to && variantOf(o) === variantKey)) return fail('ALREADY_IN_SESSION', relation);
@@ -705,12 +798,8 @@ export function planReplacement(input: PlannerInput, args: ReplacementArgs): Rep
 
   // Auktoritetsordning för startvikt (§3.1).
   const { history, settings } = variantData(ctx, to, variantKey);
-  const experience = experienceFor(ctx, to);
   const hasHistory = history.some((h) => h.sets.some((s) => s.kind === 'work' && s.status === 'done'));
-  const raw = prescribe({ performedSetsOnly: input.profile.trainingPreferences?.loadRecommendationSource === 'performed_sets', exerciseId: to, mode: it.mode, sets: it.sets, role: it.role, experience, settings, history, gate, bodyweightKg: input.profile.bodyweightKg });
-  const configuration = input.profile.trainingPreferences?.exerciseDefaults[to];
-  const recommended = resolveStartingLoad(input, raw, history, settings, gate);
-  const p = configuration ? { ...configuredPrescription(recommended, ctx.history, configuration), configuration } : recommended;
+  const p = prescribeItem(ctx,it,variantKey);
   const kind: LoadEstimationKind = hasHistory ? 'target_observed' : settings?.estimate && p.kg !== null ? 'target_estimated' : p.kg !== null || p.targetSeconds !== null ? 'calibration' : 'none';
   const needsFamiliarity = false, requiresConfirmation = false;
   const prior: SubstitutionMeta['prior'] = undefined;

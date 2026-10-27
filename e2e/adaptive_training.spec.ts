@@ -40,8 +40,8 @@ test('active workout: add, undo, delete, restore, offline reload and real replan
   await page.getByRole('button',{name:'Avsluta',exact:true}).click();
   await page.getByRole('button',{name:'Avsluta och spara'}).click();
   await expect(page.getByRole('heading',{name:'Passet är sparat',exact:true})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Så påverkas nästa pass'})).toBeVisible();
-  await expect(page.getByText('Dina extra arbetsset ingår i underlaget för belastning och återhämtning.')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Så påverkas kommande träning'})).toBeVisible();
+  await expect(page.getByText('Dina extra arbetsset räknas in när kommande träningsdos planeras.')).toBeVisible();
   await page.screenshot({path:dir+'/extra-offline-finish.png',fullPage:true});
   await context.setOffline(false);
   await page.getByRole('button',{name:'Till planen',exact:true}).click();

@@ -25,7 +25,7 @@ async function shortSession(page: Page) {
   await page.getByRole('button', { name: 'Registrera set 1' }).click();
   await expect(page.getByRole('button', { name: 'Set 1 utfört. Ändra eller ångra' })).toBeVisible();
   await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
-  await page.getByRole('button', { name: 'Avsluta och spara' }).click(); await expect(page.getByRole('heading',{name:'Så påverkas nästa pass'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
+  await page.getByRole('button', { name: 'Avsluta och spara' }).click(); await expect(page.getByRole('heading',{name:'Så påverkas kommande träning'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
 }
 
@@ -48,7 +48,8 @@ test('Balans under Utveckling: tomläge, fördelning, förslag, förhandsvisning
   await expect(page.getByText(/poäng|betyg/i)).toHaveCount(0);
   await axe(page, 'balans-tom');
 
-  // Två korta ordinarie pass där vertikalt drag hoppas över.
+  // En hel A/B/C-rotation: A och C har vertikalt drag, B har horisontell rodd.
+  await shortSession(page);
   await shortSession(page);
   await shortSession(page);
   await page.getByRole('link', { name: 'Utveckling' }).click();
@@ -59,7 +60,7 @@ test('Balans under Utveckling: tomläge, fördelning, förslag, förhandsvisning
   const vertical = section.locator('li.balance-row', { hasText: 'Vertikalt drag' });
   await expect(vertical).toContainText('0 arbetsset');
   await expect(vertical).toContainText('0 av 4 planerade set i genomförda ordinarie pass');
-  await expect(section.getByText('Du har genomfört två träningspass under de senaste 28 dagarna.')).toBeVisible();
+  await expect(section.getByText('Du har genomfört tre träningspass under de senaste 28 dagarna.')).toBeVisible();
   await expect(section.getByText('Vi behöver fler jämförbara prestationer innan vi kan jämföra utvecklingen mellan övningar.')).toBeVisible();
   await expect(section.getByText(/Balans är en hjälp att förstå och planera din träning\. Den kan inte avgöra om du kommer att skadas\./)).toBeVisible();
   // Högst ett förslag, transparent underlag.

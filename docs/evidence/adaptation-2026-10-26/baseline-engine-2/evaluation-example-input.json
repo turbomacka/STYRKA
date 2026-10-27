@@ -1,0 +1,29 @@
+[
+  {
+    "nowUtc": "2026-10-23T08:00:00.000Z",
+    "profile": {
+      "plannedSessionsPerWeek": 2,
+      "minutesPerSession": 45,
+      "experience": "experienced",
+      "goals": {
+        "squat": 1,
+        "bench_press": 1,
+        "deadlift": 1
+      },
+      "equipment": [
+        "rack",
+        "barbell",
+        "plates",
+        "bench"
+      ],
+      "substitutions": {},
+      "favorites": [],
+      "bodyweightKg": null
+    },
+    "exerciseSettings": [],
+    "restrictions": [],
+    "symptoms": [],
+    "history": [],
+    "rotationIndex": 0
+  }
+]

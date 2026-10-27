@@ -14,7 +14,7 @@ import { planExtra, planRegular } from '../../src/planner/planner';
 import { ALL_ESTIMATES, NOW, hoursBefore, input, performed, rule, sets, symptom } from './helpers';
 
 type In = Parameters<typeof input>[0];
-it('2 100 planer följer verifierad återhämtningsreferens; ursprunglig referens bevarad', () => {
+it('2 100 planer följer verifierad adaptiv referens; ursprunglig referens bevarad', () => {
   const out: Array<ReturnType<typeof strip>> = [];
   const strip = (p: PlanSnapshot) => ({ status: p.status, est: p.estimatedMinutes, removed: p.removed, warnings: p.warnings, ex: p.exercises.map((e) => [e.exerciseId, e.mode, e.sets, e.reps, e.kg, e.targetSeconds, e.calibration, [...e.reasons].sort().join(',')]) });
   for (const freq of [1, 2, 3, 4, 5, 6, 7]) for (const exp of ['novice', 'intermediate', 'experienced'] as const) for (const rot of [0, 1, 2, 3, 4]) for (const min of [20, 30, 45, 60, 90]) {
@@ -27,7 +27,7 @@ it('2 100 planer följer verifierad återhämtningsreferens; ursprunglig referen
   const json = JSON.stringify(out);
   const original = JSON.parse(readFileSync('tests/unit/golden/plans_pre_cr_3ec01ef.json', 'utf8')) as { sha256: string };
   expect(original.sha256).toBe('b04aa62d7c78a105e4d49c34a8b31953ef173e20d2fe68394217f9c5aa09e3e8');
-  const golden = JSON.parse(readFileSync('tests/unit/golden/plans_recovery_v2.json', 'utf8')) as { ruleSetVersion: string; plans: number; exercises: number; sha256: string };
+  const golden = JSON.parse(readFileSync('tests/unit/golden/plans_adaptive_v2_1.json', 'utf8')) as { ruleSetVersion: string; plans: number; exercises: number; sha256: string };
   expect(golden.ruleSetVersion).toBe(RULESET_VERSION);
   expect({ plans: out.length, exercises: out.reduce((n: number, p: ReturnType<typeof strip>) => n + p.ex.length, 0), sha256: createHash('sha256').update(json).digest('hex') }).toEqual({ plans: golden.plans, exercises: golden.exercises, sha256: golden.sha256 });
 });

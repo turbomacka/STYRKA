@@ -255,6 +255,7 @@ export function SetRow({
   const [draft, setDraft] = useState<Draft>(() => draftFrom(set, done, secondLoad));
   const draftRef = useRef(draft);
   draftRef.current = draft;
+  const observedDraft = useRef(JSON.stringify({ id: set.id, draft: draftFrom(set, done, secondLoad) }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<'' | 'pending' | 'saved' | 'failed'>('');
@@ -281,8 +282,14 @@ export function SetRow({
   useEffect(() => {
     if (!editing) {
       const next = draftFrom(set, done, secondLoad);
-      setDraft(next);
-      draftRef.current = next;
+      const key = JSON.stringify({ id: set.id, draft: next });
+      // Closing can precede the live-query update from a successful save.
+      // Keep that saved draft until the persisted values actually change.
+      if (key !== observedDraft.current) {
+        observedDraft.current = key;
+        setDraft(next);
+        draftRef.current = next;
+      }
     }
   }, [set, done, editing, secondLoad]);
   const flush = useRef<() => void>(() => {});

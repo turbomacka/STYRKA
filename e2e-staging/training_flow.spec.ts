@@ -42,6 +42,15 @@ test('staging: integrated training, offline reload and exact remote side/warmup/
       expect(r.error).toBeNull();
       return r.data?.filter((s) => s.status === 'done').length;
     }, { timeout: 30000 }).toBe(3);
+    // The set can already be done while the later timer mutation is still queued.
+    await expect.poll(async () => {
+      const r = await client.from('training_sets').select('detail').eq('status', 'done');
+      expect(r.error).toBeNull();
+      return (r.data as Array<{ detail: SetDetail | null }> | null)
+        ?.find((s) => s.detail?.configuration.executionMode === 'sequential')?.detail?.rests[0]?.outcome;
+    }, { timeout: 30000 }).toBe('started');
+    await expect.poll(async () => (await client.from('training_sessions').select('status')).data,
+      { timeout: 30000 }).toEqual([{ status: 'partial' }]);
     const result = await client.from('training_sets').select('kind,status,detail');
     expect(result.error).toBeNull();
     const sets = result.data! as Array<{ kind: string; status: string; detail: SetDetail | null }>;

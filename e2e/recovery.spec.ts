@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { onboard, signUp, uniqueEmail } from './helpers';
 
-for (const scenario of [{ feeling: 'Lätt', nextMode: 'Tung' }, { feeling: 'Lagom', nextMode: 'Medel' }, { feeling: 'Maxansträngning', nextMode: 'Lätt' }]) {
+// A single short maximal set retains a moderate cap; it is not a whole high-volume session.
+for (const scenario of [{ feeling: 'Lätt', nextMode: 'Tung' }, { feeling: 'Lagom', nextMode: 'Medel' }, { feeling: 'Maxansträngning', nextMode: 'Medel' }]) {
   test(`completed bench ${scenario.feeling}: next bench is ${scenario.nextMode}, offline and after reload`, async ({page, context}, info) => {
     await signUp(page, uniqueEmail('recovery')); await onboard(page);
     await page.getByRole('button',{name:'Öppna passet'}).click();
@@ -14,7 +15,7 @@ for (const scenario of [{ feeling: 'Lätt', nextMode: 'Tung' }, { feeling: 'Lago
     await first.getByRole('button',{name:scenario.feeling==='Maxansträngning'?/Maxansträngning/:scenario.feeling,exact:scenario.feeling!=='Maxansträngning'}).click();
     await expect(first).toContainText(`Känsla: ${scenario.feeling}`);
     await page.getByRole('button',{name:'Avsluta',exact:true}).click();
-    await page.getByRole('button',{name:'Avsluta och spara',exact:true}).click(); await expect(page.getByRole('heading',{name:'Så påverkas nästa pass'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
+    await page.getByRole('button',{name:'Avsluta och spara',exact:true}).click(); await expect(page.getByRole('heading',{name:'Så påverkas kommande träning'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
     await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
     await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
     await context.setOffline(true);
@@ -29,6 +30,9 @@ for (const scenario of [{ feeling: 'Lätt', nextMode: 'Tung' }, { feeling: 'Lago
       const dir=`docs/evidence/adaptive-2026-10-22/regression/ux-2026-10-18/regression/recovery/${info.project.name}`;mkdirSync(dir,{recursive:true});
       await page.screenshot({path:`${dir}/${scenario.feeling==='Lätt'?'easy':scenario.feeling==='Lagom'?'normal':'maximal'}.png`,fullPage:true});
       await page.getByRole('button',{name:'Starta passet',exact:true}).click();
+      await page.getByRole('button',{name:'Hela passet',exact:true}).click();
+      await bench.locator('.workout-title').click();
+      await bench.getByRole('button',{name:'Till övningen',exact:true}).click();
       await expect(page.locator('.train-head h1')).toHaveText('Bänkpress');
       await page.getByRole('listitem',{name:'Arbetsset 1',exact:true}).getByRole('button',{name:'Registrera set 1',exact:true}).click();
       await expect(page.getByRole('button',{name:'Set 1 utfört. Ändra eller ångra',exact:true})).toBeVisible();

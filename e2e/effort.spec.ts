@@ -56,7 +56,7 @@ test('optional set feelings survive edits and offline reload; initial strength i
   await expect(second).toContainText('Känsla: Maxansträngning');
   await context.setOffline(false);
   await page.getByRole('button',{name:'Avsluta',exact:true}).click();
-  await page.getByRole('button',{name:'Avsluta och spara',exact:true}).click(); await expect(page.getByRole('heading',{name:'Så påverkas nästa pass'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
+  await page.getByRole('button',{name:'Avsluta och spara',exact:true}).click(); await expect(page.getByRole('heading',{name:'Så påverkas kommande träning'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
   await page.getByRole('link',{name:'Utveckling',exact:true}).click();
   await expect(page.locator('.latest-strength')).toContainText('Senaste maxskattning: 96 kg');

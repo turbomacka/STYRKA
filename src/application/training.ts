@@ -1,12 +1,10 @@
-import { recoveryMode } from '../domain/recoveryPolicy';
 /**
  * TrainingService: pass-tillståndsmaskin och setloggning (01 §3.1, 03 §5.1, 09).
  * Varje användarhandling = en lokal IndexedDB-transaktion som skriver post + köpost atomärt.
  * UI får "sparat" ENDAST när transaktionen har commitats.
  */
-import type { Mode } from '../domain/decision_engine';
+import { ENGINE_VERSION, type Mode } from '../domain/decision_engine';
 import Dexie from 'dexie';
-import { heavyPairAllowed } from '../domain/heavyPair';
 import type { ExerciseId } from '../domain/catalog';
 import { exercise } from '../domain/catalog';
 import { RULESET_VERSION, type ChoiceScope, type Familiarity, type PendingSubstitution, type PerceivedEffort, type PlanSnapshot, type PlannedExercise, type Readiness, type SessionStatus, type Side, type SymptomReaction, type Technique } from '../domain/model';
@@ -14,8 +12,6 @@ import { kgToGrams, MAX_GRAMS } from '../domain/units';
 import { hashOf, uuidFromSeed } from '../domain/hash';
 import { SUBSTITUTION_CATALOG_VERSION } from '../domain/substitutionCatalog';
 import { canCountAsPlanned, estimatedMinutesFor, planExtra, planRegular, planReplacement, substitutionCandidates, type ExtraOptions, type ReplacementResult } from '../planner/planner';
-import { prescribe } from '../domain/prescription';
-import { gateFor, activeSymptoms, pastWork } from '../planner/history';
 import type { Area } from '../domain/catalog';
 import { LocalSaveError, type LocalCalibration, type LocalProfile, type LocalSession, type LocalSessionExercise, type LocalSet, type LocalSubstitutionEvent, type LocalSymptom } from '../storage/db';
 import { auditRow, calibrationRow, profileRow, programRow, sessionExerciseRow, sessionRow, setCreatePayload, setPatchPayload, substitutionEventRow, symptomRow } from '../server/mapping';
@@ -25,6 +21,7 @@ import { comparisonKey, defaultConfiguration, detailStatus, executionDefinition,
 import { observedRestSeconds, recommendRest, type RestPerformance, type RestInput } from '../domain/restPolicy';
 import { warmupSuggestions } from '../domain/warmupPolicy';
 import { effectiveRir, validEffort } from '../domain/effort';
+import { invalidateFeedback } from './feedbackCache';
 
 const ALLOWED: Record<SessionStatus, SessionStatus[]> = {
   preview: ['in_progress'],
@@ -39,11 +36,22 @@ export function canTransition(from: SessionStatus, to: SessionStatus): boolean {
   return ALLOWED[from].includes(to);
 }
 
+/** Validate prospective mass targets, including independent stacks and per-side overrides.
+ * Historical actual values remain factual and are never rewritten to satisfy a later limit.
+ */
+export function exceedsPlannedMaximum(set: Pick<LocalSet,'targetGrams'|'detail'>, maximumGrams: number): boolean {
+  const detail=set.detail;
+  if(detail && detail.configuration.equipment.unit!=='kg') return false;
+  return (set.targetGrams??0)>maximumGrams || (detail?.targetLoadValue??0)*1000>maximumGrams ||
+    (detail?.targetSecondLoadValue??0)*1000>maximumGrams ||
+    Object.values(detail?.plannedSides??{}).some(x=>(x.grams??0)>maximumGrams || (x.secondLoad??0)*1000>maximumGrams);
+}
+
 export async function trainingTransaction<T>(ctx: AppContext, fn: () => Promise<T>): Promise<T> {
   const { db } = ctx;
   try {
     let queued = false;
-    const r = await db.transaction('rw', [db.sets, db.outbox, db.sessions, db.sessionExercises, db.audits, db.programs, db.symptoms, db.calibrations, db.substitutionEvents, db.profile, db.skipEvents], async () => {
+    const r = await db.transaction('rw', [db.sets, db.outbox, db.sessions, db.sessionExercises, db.audits, db.programs, db.symptoms, db.calibrations, db.substitutionEvents, db.profile, db.skipEvents, db.exerciseSettings, db.meta], async () => {
       const before = await db.outbox.count();
       const result = await fn();
       queued = await db.outbox.count() > before;
@@ -82,7 +90,13 @@ export function plannedSetsFor(ctx: AppContext, sessionId: string, se: LocalSess
   const startKg = p.kg ?? p.calibrationSuggestionKg ?? null;
   const target = opts.targetGrams !== undefined ? opts.targetGrams : startKg === null ? null : kgToGrams(startKg);
   return Array.from({ length: p.sets }, (_, i) => ({
-    ...(se.configuration && (se.configuration.equipment.unit === 'level' || se.configuration.equipment.basis === 'independent') ? { detail: { version: 1 as const, configuration: structuredClone(se.configuration), performances: [], rests: [], aborted: false, targetLoadValue: p.targetLoadValue ?? null, targetSecondLoadValue: p.targetSecondLoadValue ?? null } } : {}),
+    ...(se.configuration && (p.sideTargets || se.configuration.equipment.unit === 'level' || se.configuration.equipment.basis === 'independent') ? { detail: {
+      version: 1 as const, configuration: structuredClone(se.configuration), performances: [], rests: [], aborted: false,
+      targetLoadValue: p.targetLoadValue ?? p.kg, targetSecondLoadValue: p.targetSecondLoadValue ?? null,
+      ...(p.sideTargets ? { plannedSides: Object.fromEntries(Object.entries(p.sideTargets).map(([side, sideTarget]) => [side, {
+        grams: sideTarget.kg === null ? null : kgToGrams(sideTarget.kg), reps: sideTarget.reps, seconds: null, secondLoad: null,
+      }])) } : {}),
+    } } : {}),
     id: opts.deterministic ? uuidFromSeed(`${se.id}|set|${i + 1}|work`) : ctx.ids.uuid(),
     sessionId,
     sessionExerciseId: se.id,
@@ -169,6 +183,8 @@ export async function startSession(ctx: AppContext, snapshot: PlanSnapshot, prep
   await trainingTransaction(ctx, async () => {
     if (await activeSession(ctx)) throw new AppError('INVALID_STATE', 'active_session_exists');
     if (prepare && (await ctx.db.sessions.where('status').equals('preview').count())) throw new AppError('INVALID_STATE', 'preview_exists');
+    const limits=await ctx.db.exerciseSettings.toArray();
+    for(const set of sets) {const max=limits.find(x=>x.exerciseId===set.exerciseId)?.maxLoadGrams;if(max!=null && exceedsPlannedMaximum(set,max)) throw new AppError('VALIDATION_ERROR','maxLoadKg');}
     await ctx.db.sessions.add(session);
     await ctx.db.sessionExercises.bulkAdd(exs);
     await ctx.db.sets.bulkAdd(sets);
@@ -239,6 +255,7 @@ export async function mutateSet(ctx: AppContext, setId: string, change: (s: Loca
     }
     after.syncState = before.syncState === 'conflict' ? 'conflict' : 'queued';
     await ctx.db.sets.put(after);
+    if (hashOf(recordedBefore) !== hashOf(recordedAfter)) await invalidateFeedback(ctx.db, { sessionId: after.sessionId, setId });
     result = after;
     if (post) await post(after, se);
     if (after.kind === 'work' && ['completed','partial'].includes(session.status)) await updateCalibrationsTx(ctx,session.id);
@@ -452,25 +469,12 @@ export async function swapExerciseLegacy(ctx: AppContext, sessionExerciseId: str
   const old = await ctx.db.sessionExercises.get(sessionExerciseId);
   if (!old) throw new AppError('NOT_FOUND');
   const input = await buildPlannerInput(ctx.db, ctx.userId, ctx.clock.now());
-  if (input.restrictions.some((r) => r.active && r.kind === 'block_exercise' && (r.exerciseA === to || (!r.exerciseA && r.area && exercise(to).areas.includes(r.area))))) throw new AppError('RULE_UNSATISFIABLE', 'USER_BLOCK_EXERCISE');
-  const history = pastWork(input.history, input.nowUtc);
-  const active = activeSymptoms(input.symptoms, history);
-  const gate = gateFor(to, history, active, input.nowUtc, input.profile.trainingPreferences?.exerciseDefaults[to]);
-  if (gate.impactedRegion && ['persistent', 'limping', 'swelling'].includes(gate.relevantSymptoms)) throw new AppError('RULE_UNSATISFIABLE', 'SYMPTOM_REVIEW_REQUIRED');
-  let mode: Mode = opts.mode ?? old.mode;
-  mode = recoveryMode(mode, gate.recovery);
-  const remaining = (await ctx.db.sets.where('sessionExerciseId').equals(old.id).toArray()).filter((s) => !s.deleted && s.kind === 'work' && s.status !== 'done' && !s.detail?.performances.some((p) => p.status === 'done'));
-  if (!remaining.length || old.replacedById) throw new AppError('INVALID_STATE');
-  const sets = remaining.length;
-  const settings = input.exerciseSettings.find((s) => s.exerciseId === to) ?? null;
-  const p: PlannedExercise = prescribe({ exerciseId: to, mode, sets, role: old.snapshot.role, experience: settings?.experience ?? input.profile.experience, settings, history: history.filter((h) => h.exerciseId === to), gate, bodyweightKg: input.profile.bodyweightKg });
-  const now = ctx.clock.now();
-  // Parregel får inte brytas genom byte under passet.
-  const siblings = (await ctx.db.sessionExercises.where('sessionId').equals(old.sessionId).toArray()).filter((e) => !e.replacedById && e.id !== old.id);
-  for (const r of input.restrictions.filter((r) => r.active && r.kind === 'block_pair_heavy' && r.exerciseA && r.exerciseB)) {
-    const list = [...siblings.map((e) => ({ exerciseId: e.exerciseId, mode: e.mode, sets: e.targetSets, plannedKg: e.snapshot.kg, estimatedOneRM: e.snapshot.estimatedOneRM })), { exerciseId: to, mode: p.mode, sets: p.sets, plannedKg: p.kg, estimatedOneRM: p.estimatedOneRM }];
-    if (!heavyPairAllowed(list, r.exerciseA!, r.exerciseB!)) throw new AppError('RULE_UNSATISFIABLE', 'PAIR_RULE');
-  }
+  const remaining = (await ctx.db.sets.where('sessionExerciseId').equals(old.id).toArray()).filter(s=>!s.deleted&&s.kind==='work'&&s.status!=='done'&&!s.detail?.performances.some(p=>p.status==='done'));
+  if(!remaining.length||old.replacedById) throw new AppError('INVALID_STATE');
+  const siblings=(await ctx.db.sessionExercises.where('sessionId').equals(old.sessionId).toArray()).filter(e=>!e.replacedById&&e.id!==old.id);
+  const result=planReplacement(input,{from:{...old.snapshot,mode:opts.mode??old.mode,sets:remaining.length},to,others:siblings.map(e=>e.snapshot)});
+  if(result.status!=='ok'||!result.planned) throw new AppError('RULE_UNSATISFIABLE',result.status);
+  const p=result.planned,now=ctx.clock.now();
   const all = await ctx.db.sessionExercises.where('sessionId').equals(old.sessionId).toArray();
   const ne: LocalSessionExercise = {
     id: ctx.ids.uuid(),
@@ -657,6 +661,8 @@ export async function swapExercise(ctx: AppContext, sessionExerciseId: string, t
   const proposedKg = planned.kg ?? planned.calibrationSuggestionKg ?? null;
   if (res.requiresConfirmation && opts.startGrams === undefined) throw new AppError('VALIDATION_ERROR', 'CONFIRM_START_WEIGHT');
   if (opts.startGrams !== undefined && opts.startGrams !== null && (!Number.isInteger(opts.startGrams) || opts.startGrams < 0 || opts.startGrams > MAX_GRAMS)) throw new AppError('VALIDATION_ERROR', 'startKg');
+  const maxStart=input.exerciseSettings.find(s=>s.exerciseId===to)?.maxLoadKg;
+  if(opts.startGrams!=null && maxStart!=null && opts.startGrams>maxStart*1000) throw new AppError('VALIDATION_ERROR','maxLoadKg');
   const proposedGrams = proposedKg === null ? null : kgToGrams(proposedKg);
   const userOverride = opts.startGrams !== undefined && opts.startGrams !== proposedGrams;
   const now = ctx.clock.now();
@@ -735,6 +741,8 @@ export async function swapInPreview(ctx: AppContext, snapshot: PlanSnapshot, ind
   if (res.status !== 'ok' || !res.planned) throw new AppError('RULE_UNSATISFIABLE', res.status);
   if (res.requiresConfirmation && opts.startGrams === undefined) throw new AppError('VALIDATION_ERROR', 'CONFIRM_START_WEIGHT');
   if (opts.startGrams !== undefined && opts.startGrams !== null && (!Number.isInteger(opts.startGrams) || opts.startGrams < 0 || opts.startGrams > MAX_GRAMS)) throw new AppError('VALIDATION_ERROR', 'startKg');
+  const maxStart=input.exerciseSettings.find(s=>s.exerciseId===to)?.maxLoadKg;
+  if(opts.startGrams!=null && maxStart!=null && opts.startGrams>maxStart*1000) throw new AppError('VALIDATION_ERROR','maxLoadKg');
   const planned = res.planned;
   const proposedKg = planned.kg ?? planned.calibrationSuggestionKg ?? null;
   const proposedGrams = proposedKg === null ? null : kgToGrams(proposedKg);
@@ -773,7 +781,10 @@ async function continueCalibration(ctx: AppContext, se: LocalSessionExercise, sa
   const step = Math.round(se.snapshot.incrementKg * 1000);
   const assistance = lk === 'assistance_kg';
   let target = saved.actualGrams;
+  const settings=(await ctx.db.exerciseSettings.toArray()).find(x=>x.exerciseId===se.exerciseId);
+  const maximum=settings?.maxLoadGrams;
   if (saved.perceivedEffort === 'too_heavy') target = assistance ? Math.min(MAX_GRAMS, target + step) : Math.max(0, target - step);
+  if(maximum!=null) target=Math.min(target,Math.floor(maximum/step)*step);
   for (const s of mine) {
     if (s.status !== 'planned' || s.detail?.plannedSides || s.detail?.performances.length || s.ordinal < saved.ordinal || s.targetGrams === target) continue;
     await mutateSet(ctx,s.id,(x)=>({...x,targetGrams:target,detail:x.detail ? {...x.detail,targetLoadValue:target/1000} : undefined}));
@@ -868,7 +879,19 @@ export function initialConfiguration(p: PlannedExercise, profile: LocalProfile |
 }
 
 export function detailFor(s: LocalSet, se: LocalSessionExercise): SetDetail {
-  return structuredClone(s.detail ?? { version: 1, configuration: se.configuration ?? defaultConfiguration(se.exerciseId), performances: [], rests: [], aborted: false });
+  const d: SetDetail = structuredClone(s.detail ?? { version: 1 as const, configuration: se.configuration ?? defaultConfiguration(se.exerciseId), performances: [], rests: [], aborted: false });
+  if (s.kind === 'work' && !d.prescriptionOrigin) {
+    const p = se.snapshot;
+    d.prescriptionOrigin = {
+      version: 1,
+      source: p.engineVersion === ENGINE_VERSION ? 'engine' : 'unknown',
+      role: s.ordinal > p.sets ? 'extra' : 'ordinary',
+      original: { loadValue: p.targetLoadValue ?? p.kg ?? p.calibrationSuggestionKg ?? null, secondLoadValue: p.targetSecondLoadValue ?? null, reps: p.loadKind === 'duration_sec' ? null : p.reps, seconds: p.targetSeconds },
+      ...(p.sideTargets ? { originalSides: Object.fromEntries(Object.entries(p.sideTargets).map(([side, t]) => [side, { loadValue: t.kg, secondLoadValue: null, reps: t.reps, seconds: null }])) } : {}),
+      userEditedSides: [],
+    };
+  }
+  return d;
 }
 
 function withDetail(s: LocalSet, d: SetDetail): LocalSet {

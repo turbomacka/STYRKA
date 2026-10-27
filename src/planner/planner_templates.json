@@ -1,5 +1,5 @@
 {
-  "version":"1.0.0",
+  "version":"2.1.0",
   "note":"Deterministiska startmallar. H-regler; motorn tillämpar utrustning, begränsningar, nivå och tidsbudget före visning. main/heavy beskriver planeringsroll, inte klinisk säkert läge.",
   "exerciseSets":{"mainHeavy":3,"deadliftHeavy":2,"moderate":2,"light":2,"accessory":2},
   "splits":{
@@ -13,7 +13,7 @@
   },
   "templates":{
     "A":[["squat","heavy",3],["bench_press","moderate",3],["lat_pulldown","moderate",2],["cable_lateral_raise","light",2]],
-    "B":[["bench_press","heavy",3],["deadlift","light",2],["lat_pulldown","moderate",2],["biceps_curl","light",2],["triceps_pushdown","light",2]],
+    "B":[["bench_press","heavy",3],["deadlift","light",2],["cable_row","moderate",2],["biceps_curl","light",2],["triceps_pushdown","light",2]],
     "C":[["deadlift","heavy",2],["squat","light",2],["overhead_press","moderate",3],["lat_pulldown","moderate",2],["cable_lateral_raise","light",2]],
     "single_A":[["squat","heavy",3],["bench_press","moderate",2],["lat_pulldown","moderate",2]],
     "single_B":[["bench_press","heavy",3],["romanian_deadlift","moderate",2],["cable_row","moderate",2]],
@@ -28,7 +28,7 @@
   },
   "replacementFamilies":{
     "lat_pulldown":["assisted_pullup","pullup"],
-    "cable_row":["chest_supported_row"],
+    "cable_row":["chest_supported_row","barbell_row","one_arm_dumbbell_row"],
     "deadlift":["romanian_deadlift"],
     "squat":["leg_press","split_squat"],
     "cable_lateral_raise":[]

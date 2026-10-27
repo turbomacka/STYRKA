@@ -4,8 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ALL_AREAS, AREA_LABEL_SV, exercise, type Area } from '../../domain/catalog';
 import { SkipExercise } from '../components/SkipExercise';
-import { refreshFuturePlan } from '../../application/trainingPlan';
-import { savedWorkoutFeedback } from '../../application/workoutFeedback';
+import { refreshFuturePlan, type FuturePlanningResult } from '../../application/trainingPlan';
+import { savedWorkoutFeedback, type SavedWorkoutFeedback } from '../../application/workoutFeedback';
 import type { Side, SymptomReaction } from '../../domain/model';
 import { canOfferCountAsPlanned, countExtraAsPlanned, finishSession, reportSymptom } from '../../application/training';
 import { Banner, PageHeader } from '../components/common';
@@ -39,11 +39,18 @@ export function Finish() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (session && ['completed','partial','abandoned'].includes(session.status) && !done && !saving.current) {
-      setDone({status:session.status,offer:session.kind==='extra'&&!session.countsAsPlannedAt,text:'Dina registrerade set är sparade.'});
-      setErr('Passet finns sparat. Beräkna kommande rekommendationer från dina lokala data.');
-    }
-  }, [session, done]);
+    if (!session || !['completed','partial','abandoned'].includes(session.status) || done || saving.current) return;
+    let cancelled=false;
+    void (async()=>{
+      const cached=(await ctx.db.meta.get(`workout-feedback:${session.id}`))?.value as SavedWorkoutFeedback|undefined;
+      const calculation=cached?.decisionHash ? (await ctx.db.meta.get(`replanning:${session.id}:${cached.decisionHash}`))?.value as ReplanningFeedback|undefined : undefined;
+      if(cancelled)return;
+      setDone({status:session.status,offer:session.kind==='extra'&&!session.countsAsPlannedAt,text:cached?.text??'Dina registrerade set är sparade.'});
+      if(calculation){setComparison(calculation);setSteps(4);}
+      else if(session.kind!=='extra'||session.countsAsPlannedAt)setErr('Passet finns sparat. Beräkna kommande rekommendationer från dina lokala data.');
+    })().catch(()=>{if(!cancelled){setDone({status:session.status,offer:false,text:'Dina registrerade set är sparade.'});setErr('Träningen är sparad. Återkopplingen kunde inte läsas. Försök beräkna igen.');}});
+    return ()=>{cancelled=true;};
+  }, [session, done, ctx]);
 
   if (!session || !sets || !exs) return <p className="page" aria-busy="true">Laddar…</p>;
   const active = exs.filter((e) => !e.replacedById);
@@ -54,11 +61,14 @@ export function Finish() {
   const minutes = session.startedAt ? Math.max(1, Math.round((Date.now() - Date.parse(session.startedAt)) / 60000)) : null;
 
   async function returnToPlan() {
-    setCalculating(true);setErr(null);setDone((d)=>d ? {...d,offer:false}:d);
+    setCalculating(true);setComparison(null);setErr(null);setDone((d)=>d ? {...d,offer:false}:d);
     try {
       setSteps(0);
-      await refreshFuturePlan(ctx, { onProgress: (step) => setSteps(step === 'inputs' ? 1 : step === 'computed' ? 2 : 3) });
-      setComparison(await compareSessionRecommendations(ctx, id!));
+      let result:FuturePlanningResult|undefined;
+      await refreshFuturePlan(ctx, { onProgress: (step) => setSteps(step === 'inputs' ? 1 : step === 'computed' ? 2 : 3), onPlanningResult: value=>{result=value;} });
+      const next=await compareSessionRecommendations(ctx, id!, result);
+      const feedback=await savedWorkoutFeedback(ctx,id!,next);
+      setComparison(next);setDone(d=>d?{...d,text:feedback.text}:d);
       setSteps(4);
     }
     catch { setErr('Träningen är sparad. Nästa pass kunde inte räknas fram just nu.'); }
@@ -72,9 +82,8 @@ export function Finish() {
       const fin=await finishSession(ctx,session!.id,abandon?{status:'abandoned',keepLoggedSets:keep}:{});
       // The completed session is already committed even if feedback or planning fails.
       setDone({status:fin.status,offer:false,text:'Dina registrerade set är sparade.'});
-      const feedback=await savedWorkoutFeedback(ctx,fin.id);
       const offer=fin.kind==='extra'?await canOfferCountAsPlanned(ctx,fin.id):false;
-      setDone({status:fin.status,offer,text:feedback.text});
+      setDone({status:fin.status,offer,text:'Dina registrerade set är sparade.'});
       if(!offer)await returnToPlan();
     } catch {
       const stored=await ctx.db.sessions.get(id!);
@@ -90,7 +99,7 @@ export function Finish() {
       <ol>{['Genomförd träning', 'Belastning och återhämtning', 'Kommande rekommendationer', 'Uppdaterad plan'].map((label,i) => <li key={label}>{steps > i ? '✓ ' : ''}{label}{calculating && steps === i ? ' …' : ''}</li>)}</ol>
       <p role="status">{calculating ? 'Beräknar från sparade träningsdata…' : comparison ? 'Beräkningen är klar.' : ''}</p>
     </section>
-    {comparison && !calculating && <section className="card stack"><h2>Så påverkas nästa pass</h2><ul>{comparison.messages.map((text) => <li key={text}>{text}</li>)}</ul><p className="small muted">Jämförelsen visar nästa pass med och utan passets registrerade träning, vid samma tidpunkt. Förslagen kan ändras när du öppnar nästa pass.</p><button type="button" className="btn primary" onClick={() => nav(`/?klart=${id}`, { replace:true })}>Till planen</button></section>}
+    {comparison && !calculating && <section className="card stack"><h2>Så påverkas kommande träning</h2><ul>{comparison.messages.map((text) => <li key={text}>{text}</li>)}</ul><p className="small muted">Förslagen är preliminära. De räknas om från aktuella uppgifter när du öppnar ett pass.</p><button type="button" className="btn primary" onClick={() => nav(`/?klart=${id}`, { replace:true })}>Till planen</button></section>}
     {done.offer&&!calculating&&<div className="card stack"><p>Räkna spontanpasset som ditt ordinarie pass?</p><button type="button" className="btn primary" disabled={busy} onClick={async()=>{setBusy(true);try{await countExtraAsPlanned(ctx,id!);await returnToPlan();}catch{setErr('Passet är sparat. Kunde inte ändra hur det räknas.');}finally{setBusy(false);}}}>Räkna som ordinarie</button><button type="button" className="btn" onClick={()=>void returnToPlan()}>Behåll som spontanpass</button></div>}
     {err&&<><Banner kind="warn">{err}</Banner><button type="button" className="btn" disabled={calculating} onClick={()=>void returnToPlan()}>Försök beräkna igen</button><button type="button" className="btn" onClick={()=>nav(`/?klart=${id}`,{replace:true})}>Till planen</button></>}
   </div>;

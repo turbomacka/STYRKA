@@ -4,7 +4,7 @@ import { exercise, impactsAreas, isRelevantFor, type Area } from '../domain/cata
 import type { PerformedExercise, RestrictionRule, SymptomReport } from '../domain/model';
 import { hasWork, type GateInput } from '../domain/prescription';
 import { assessRecovery } from '../domain/recoveryPolicy';
-import type { ExerciseConfiguration } from '../domain/trainingFlow';
+import { comparisonKey, type ExerciseConfiguration } from '../domain/trainingFlow';
 
 export const HOUR_MS = 3_600_000;
 
@@ -19,7 +19,7 @@ export function hoursBetween(earlierUtc: string, laterUtc: string): number {
 export function pastWork(history: PerformedExercise[], nowUtc: string): PerformedExercise[] {
   const now = Date.parse(nowUtc);
   return history
-    .filter((h) => hasWork(h) && Date.parse(h.whenUtc) <= now)
+    .filter((h) => h.sessionStatus !== 'preview' && hasWork(h) && Date.parse(h.whenUtc) <= now)
     .sort((a, b) => Date.parse(a.whenUtc) - Date.parse(b.whenUtc) || a.sessionId.localeCompare(b.sessionId));
 }
 
@@ -46,7 +46,11 @@ export function activeSymptoms(symptoms: SymptomReport[], history: PerformedExer
     if (SEVERE.includes(s.reaction)) return true;
     if (s.reaction !== 'transient') return false;
     const reported = Date.parse(s.reportedAt);
-    const laterRelevant = history.some((h) => Date.parse(h.whenUtc) > reported && h.sessionId !== s.sessionId && impactsAreas(h.exerciseId, [s.area]));
+    const laterRelevant = history.some((h) => h.sessionId !== s.sessionId && impactsAreas(h.exerciseId, [s.area]) && h.sets.some(set=>{
+      if(set.kind!=='work') return false;
+      if(set.detail) return set.detail.performances.some(p=>p.status==='done' && (!s.side||s.side==='both'||s.side==='not_applicable'||p.side==='both'||p.side===s.side) && Date.parse(p.completedAt??set.occurredAt??h.whenUtc)>reported);
+      return set.status==='done'&&Date.parse(set.occurredAt??h.whenUtc)>reported;
+    }));
     return !laterRelevant;
   });
 }
@@ -63,28 +67,33 @@ export function symptomFor(ex: ExerciseId, active: SymptomReport[]): { state: Sy
  * annars används den aktuella mängd-/ansträngningsbedömningen. En utgången korttidsbegränsning
  * skickas som null till referensmotorn, inte som påhittade timmar. Långt uppehåll och symtom bevaras.
  */
-export function gateFor(ex: ExerciseId, history: PerformedExercise[], active: SymptomReport[], nowUtc: string, configuration?: ExerciseConfiguration): GateInput & { groupHours: number | null; recovery: ReturnType<typeof assessRecovery> } {
-  const exHours = hoursSinceExercise(history, ex, nowUtc);
+export function gateFor(ex: ExerciseId, history: PerformedExercise[], active: SymptomReport[], nowUtc: string, configuration?: ExerciseConfiguration, restrictions: RestrictionRule[] = []): GateInput & { groupHours: number | null; recovery: ReturnType<typeof assessRecovery> } {
+  const comparable=configuration?history.filter(h=>h.exerciseId===ex && h.sets.some(s=>s.kind==='work' && (s.detail?s.detail.performances.some(p=>p.status==='done' && p.comparisonKey===comparisonKey(ex,{...configuration,executionMode:s.detail!.configuration.executionMode,startingSide:s.detail!.configuration.startingSide}) && (configuration.executionMode!=='single_side'||p.side==='both'||p.side===configuration.startingSide)):s.status==='done'&&(h.plan.variantKey??'default')==='default'))):history;
+  const exHours = hoursSinceExercise(comparable, ex, nowUtc);
   const groupHours = hoursSinceGroup(history, ex, nowUtc);
   const recovery = assessRecovery(ex, history, nowUtc, configuration);
-  const sym = symptomFor(ex, active);
+  const sideMatches = (side: string | null) => configuration?.executionMode !== 'single_side' || !side || side === 'both' || side === 'not_applicable' || side === configuration.startingSide;
+  const sym = symptomFor(ex, active.filter(s=>sideMatches(s.side)));
+  if(restrictions.some(r=>r.active&&sideMatches(r.side)&&((r.area&&impactsAreas(ex,[r.area]))||r.exerciseA===ex))) sym.impacted=true;
   let hours: number | null;
   if (exHours !== null && exHours > 312) hours = exHours;
-  else if (recovery.activeHours !== null) hours = recovery.activeHours;
-  else if (sym.impacted) hours = exHours ?? groupHours;
-  else hours = exHours !== null && exHours >= 48 ? exHours : null;
+  // The continuous assessment is authoritative for short-term work. Retain actual
+  // elapsed time only for a symptom decision or a longer-break restart.
+  else if(sym.state!=='none') hours=exHours;
+  else hours = null;
   return { hoursSinceRelevant: hours, relevantSymptoms: sym.state, impactedRegion: sym.impacted, groupHours, recovery };
 }
 
-export function ruleTargets(rule: RestrictionRule, ex: ExerciseId): boolean {
+export function ruleTargets(rule: RestrictionRule, ex: ExerciseId, configuration?: ExerciseConfiguration): boolean {
   if (!rule.active) return false;
+  if(configuration?.executionMode==='single_side'&&rule.side&&rule.side!=='both'&&rule.side!=='not_applicable'&&rule.side!==configuration.startingSide) return false;
   if (rule.exerciseA) return rule.exerciseA === ex;
   if (rule.area) return impactsAreas(ex, [rule.area]);
   return false;
 }
 
-export function isBlocked(ex: ExerciseId, rules: RestrictionRule[]): boolean {
-  return rules.some((r) => r.kind === 'block_exercise' && ruleTargets(r, ex));
+export function isBlocked(ex: ExerciseId, rules: RestrictionRule[], configuration?: ExerciseConfiguration): boolean {
+  return rules.some((r) => r.kind === 'block_exercise' && ruleTargets(r, ex, configuration));
 }
 
 const MODE_RANK: Record<Mode, number> = { light: 0, moderate: 1, heavy: 2 };

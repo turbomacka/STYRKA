@@ -1,6 +1,7 @@
 import type { StyrkaDB } from '../storage/db';
 import { AppError, outbox, type AppContext } from './context';
 import { ordinarySequence } from './trainingPlan';
+import { invalidateFeedback } from './feedbackCache';
 
 export const deletedWorkoutKey = (id: string) => `deletedWorkout:${id}`;
 export type DeletedWorkout = { id: string; sequence: number | null };
@@ -13,7 +14,7 @@ export async function deletedWorkouts(db: StyrkaDB): Promise<DeletedWorkout[]> {
 export async function purgeWorkout(db: StyrkaDB, deleted: DeletedWorkout): Promise<void> {
   const id = deleted.id;
   await db.meta.put({ key: deletedWorkoutKey(id), value: deleted });
-  await db.meta.delete(`workout-feedback:${id}`);
+  await invalidateFeedback(db, { sessionId: id, deleted: true });
   const ids = new Set<string>([id]);
   for (const table of [db.sets, db.sessionExercises, db.audits, db.substitutionEvents, db.notes, db.skipEvents, db.workoutOrderEvents]) {
     const rows = await table.where('sessionId').equals(id).toArray();

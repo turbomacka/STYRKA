@@ -109,8 +109,10 @@ describe('04 §2.1 acceptanstest – motor och planerare', () => {
     for (let rot = 0; rot < 3; rot++) {
       const snap = planRegular(input({ rotationIndex: rot, exerciseSettings: ALL_ESTIMATES, profile: { equipment: ['rack', 'barbell', 'plates', 'bench', 'pullup-assist', 'dumbbell'] } }));
       for (const e of snap.exercises) for (const req of exercise(e.exerciseId).equipment) expect(['rack', 'barbell', 'plates', 'bench', 'pullup-assist', 'dumbbell']).toContain(req);
-      const sub = snap.exercises.find((e) => e.substitutionFrom === 'lat_pulldown');
-      expect(sub?.exerciseId).toBe('assisted_pullup');
+      // Rotation B now supplies horizontal pulling. Its available barbell variant
+      // must be substituted just as the vertical pull is in rotations A and C.
+      const sub = snap.exercises.find((e) => e.substitutionFrom === (rot===1?'cable_row':'lat_pulldown'));
+      expect(sub?.exerciseId).toBe(rot===1?'barbell_row':'assisted_pullup');
       expect(sub?.reasons).toContain('EQUIPMENT_SUBSTITUTION');
     }
   });
@@ -237,7 +239,8 @@ describe('04 §2.1 acceptanstest – motor och planerare', () => {
     const h: Exposure[] = [{ ...exp(), exerciseId: 'cable_lateral_raise', plannedTargetReps: top.reps, sets: exp().sets.map((s) => ({ ...s, plannedKg: 15, actualKg: 15, plannedReps: top.reps, actualReps: top.reps })) }];
     const r = recommendNext({ previous: top, history: h, experience: 'intermediate', increment: 2.5, hoursSinceRelevant: 72, relevantSymptoms: 'none', impactedRegion: false });
     expect(r.kg).toBe(15);
-    expect(r.reasons[0]).toBe('STEP_EXCEEDS_PROGRESS_CAP');
+    expect(r.reasons[0]).toBe('EQUIPMENT_BRIDGE_REPS');
+    expect(r.reps).toBe(top.reps+1); // bounded bridge, not a permanent percentage stop
   });
 
   it('24: decimal 102,5 sparas 102.500; punkt och komma ger samma värde', () => {

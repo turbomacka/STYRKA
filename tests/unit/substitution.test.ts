@@ -302,10 +302,13 @@ describe('§5 SUB-fall (domän/planerare)', () => {
     expect(same.planned!.reasons).toContain('SUB_NEW_MACHINE_PROFILE');
     // Standardmaskinen behåller sin historik i vanlig planering.
     const normal = planRegular(input({ exerciseSettings: [est('leg_press', 200)], history: h, profile: { substitutions: { squat: 'leg_press' } } }));
-    expect(normal.exercises[0]).toMatchObject({ exerciseId: 'leg_press' });
-    expect(normal.exercises[0].kg).not.toBeNull();
+    const standard=normal.exercises.find(e=>e.exerciseId==='leg_press');
+    expect(standard).toBeDefined();
+    expect(standard!.kg).not.toBeNull();
     const otherMachine = planRegular(input({ exerciseSettings: [est('leg_press', 200)], history: h, profile: { substitutions: { squat: 'leg_press' }, equipmentProfiles: { leg_press: 'gym-b' } } }));
-    expect([otherMachine.exercises[0].kg, otherMachine.exercises[0].variantKey]).toEqual([null, 'gym-b']);
+    const changed=otherMachine.exercises.find(e=>e.exerciseId==='leg_press');
+    expect(changed).toBeDefined();
+    expect([changed!.kg, changed!.variantKey]).toEqual([null, 'gym-b']);
   });
 
   it('SUB24: frontböj → knäböj: ingen invertering av 0,80 (1,25); egna knäböjsdata eller kalibrering', () => {

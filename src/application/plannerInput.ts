@@ -42,6 +42,16 @@ export async function buildHistory(db: StyrkaDB): Promise<PerformedExercise[]> {
     const own = (setsByEx.get(e.id) ?? []).sort((a, b) => a.ordinal - b.ordinal);
     const hs: HistorySet[] = own.map((s) => ({
       ...(s.detail ? { detail: s.detail } : {}),
+      provenance: {
+        original: s.detail?.prescriptionOrigin?.original ?? {
+          loadValue: e.snapshot.targetLoadValue ?? e.snapshot.kg,
+          secondLoadValue: e.snapshot.targetSecondLoadValue ?? null,
+          reps: e.snapshot.loadKind === 'duration_sec' ? null : e.snapshot.reps,
+          seconds: e.snapshot.targetSeconds,
+        },
+        source: s.detail?.prescriptionOrigin?.userEditedSides.length ? 'user' : s.detail?.prescriptionOrigin?.source ?? 'unknown',
+        role: s.detail?.prescriptionOrigin?.role ?? (s.ordinal > e.snapshot.sets ? 'extra' : 'ordinary'),
+      },
       kind: s.kind,
       status: s.status,
       plannedKg: kg(s.targetGrams),

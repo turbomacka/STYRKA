@@ -3,8 +3,8 @@ import type { ExerciseId } from './catalog';
 import type { Area, EquipmentSlug, LoadDisplayBasis, LoadKind } from './catalog';
 
 /** Versionsnummer som sparas i varje plansnapshot (04 §4). */
-export const RULESET_VERSION = 'STYRKA-RULES/1.3.0' as const;
-export const PLANNER_VERSION = 'STYRKA-PLANNER/1.1.0' as const;
+export const RULESET_VERSION = 'STYRKA-RULES/2.1.0' as const;
+export const PLANNER_VERSION = 'STYRKA-PLANNER/2.1.0' as const;
 
 export type Readiness = 'good' | 'normal' | 'tired' | 'pain';
 export type SessionKind = 'planned' | 'extra' | 'calibration';
@@ -83,6 +83,10 @@ export type PlannerProfile = {
 
 /** Föreskrift för en övning i ett plansnapshot. Immutabel efter skapande. */
 export type PlannedExercise = {
+  /** Ordinary dose survives temporary time/recovery reductions; never a debt to repay. */
+  doseContext?: { version: 'DOSE/2.1.0'; ordinarySets: number; temporaryReasons: string[] };
+  sideTargets?: Partial<Record<'left'|'right', {kg:number|null;reps:number}>>;
+  adaptive?: import('./adaptiveProgression').AdaptiveEvidence;
   recommendation?: { version: string; source: import('./startingLoad').RecommendationSource; confidence: Confidence; sourceExerciseId?: string; suggestedKg?: number | null };
   /** Present only when the user explicitly selects the performed-set source policy. */
   loadSourcePolicyVersion?: 'STYRKA-LOAD-SOURCE/1.0.0';
@@ -186,6 +190,11 @@ export type PlanSnapshot = {
 
 /** Ett utfört set i historiken (från lokal databas), kg som tal. */
 export type HistorySet = {
+  provenance?: {
+    original?: { loadValue: number | null; secondLoadValue?: number | null; reps: number | null; seconds?: number | null };
+    source?: 'engine' | 'user' | 'unknown';
+    role?: 'ordinary' | 'extra';
+  };
   detail?: import('./trainingFlow').SetDetail;
   kind: SetKind;
   status: SetStatus;

@@ -1,0 +1,576 @@
+{
+  "baselineCommit": "38e975ec63ed4c714996dbcd13e696f0399f8422",
+  "previousGolden": "35ef08fc839ea9586259191f3dbe5e7c8a2a3b1e6a62876074d31b018cb4fa34",
+  "baselineIsExactCheckout": true,
+  "previous": {
+    "plans": 2100,
+    "exercises": 7333,
+    "sha256": "35ef08fc839ea9586259191f3dbe5e7c8a2a3b1e6a62876074d31b018cb4fa34"
+  },
+  "current": {
+    "plans": 2100,
+    "exercises": 7194,
+    "sha256": "2ad12897f1bd618f86c49d0024049ed4449cc10dc6ab8caf34a840276e163a31"
+  },
+  "changed": 2015,
+  "unchanged": 85,
+  "recoveryBoundary": [
+    {
+      "hours": 47.983333333333334,
+      "before": {
+        "version": "RECOVERY/2.0.0",
+        "modeCap": "light",
+        "activeHours": 47.983333333333334,
+        "reason": "RECOVERY_MATCHED_WORK"
+      },
+      "after": {
+        "version": "RECOVERY/3.1.0",
+        "modeCap": "moderate",
+        "activeHours": 47.983333333333334,
+        "reason": "RECOVERY_MATCHED_WORK",
+        "residualDose": 0.99682,
+        "workReps": 21,
+        "tolerance": {
+          "comparableOutcomes": 0,
+          "moderateThreshold": 0.7
+        }
+      }
+    },
+    {
+      "hours": 48,
+      "before": {
+        "version": "RECOVERY/2.0.0",
+        "modeCap": null,
+        "activeHours": null,
+        "reason": null
+      },
+      "after": {
+        "version": "RECOVERY/3.1.0",
+        "modeCap": "moderate",
+        "activeHours": 48,
+        "reason": "RECOVERY_MATCHED_WORK",
+        "residualDose": 0.99634,
+        "workReps": 21,
+        "tolerance": {
+          "comparableOutcomes": 0,
+          "moderateThreshold": 0.7
+        }
+      }
+    }
+  ],
+  "recoveryDose": [
+    {
+      "sets": 2,
+      "reps": 1,
+      "intensity": 0.5,
+      "currentDose": 0.8117335854398791
+    },
+    {
+      "sets": 2,
+      "reps": 1,
+      "intensity": 0.9,
+      "currentDose": 1.3915432893255069
+    },
+    {
+      "sets": 2,
+      "reps": 20,
+      "intensity": 0.5,
+      "currentDose": 1.9288363353766125
+    },
+    {
+      "sets": 2,
+      "reps": 20,
+      "intensity": 0.9,
+      "currentDose": 3.306576574931336
+    },
+    {
+      "sets": 3,
+      "reps": 1,
+      "intensity": 0.5,
+      "currentDose": 1.2176003781598186
+    },
+    {
+      "sets": 3,
+      "reps": 1,
+      "intensity": 0.9,
+      "currentDose": 2.08731493398826
+    },
+    {
+      "sets": 3,
+      "reps": 20,
+      "intensity": 0.5,
+      "currentDose": 2.893254503064919
+    },
+    {
+      "sets": 3,
+      "reps": 20,
+      "intensity": 0.9,
+      "currentDose": 4.959864862397004
+    }
+  ],
+  "changeScopes": [
+    "shared rest and time budget",
+    "continuous recovery",
+    "frequency distribution",
+    "observed progression",
+    "balanced horizontal pull in template B",
+    "goal priority ordering",
+    "individual recovery tolerance and temporary dose restoration"
+  ],
+  "examples": [
+    {
+      "freq": 1,
+      "exp": "novice",
+      "rot": 0,
+      "min": 20,
+      "variant": 0,
+      "before": {
+        "status": "time_reduced",
+        "est": 20.5,
+        "removed": [],
+        "warnings": [
+          "WARN_TIME"
+        ],
+        "ex": [
+          [
+            "squat",
+            "heavy",
+            2,
+            8,
+            77.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,NOVICE_MAX_SETS,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            1,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A,TIME_SETS_REDUCED"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            1,
+            8,
+            47.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A,TIME_SETS_REDUCED"
+          ]
+        ]
+      },
+      "after": {
+        "status": "time_reduced",
+        "est": 21,
+        "removed": [],
+        "warnings": [
+          "WARN_TIME"
+        ],
+        "ex": [
+          [
+            "squat",
+            "heavy",
+            2,
+            8,
+            77.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,NOVICE_MAX_SETS,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            1,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A,TIME_SETS_REDUCED"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            1,
+            8,
+            47.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A,TIME_SETS_REDUCED"
+          ]
+        ]
+      }
+    },
+    {
+      "freq": 1,
+      "exp": "novice",
+      "rot": 0,
+      "min": 20,
+      "variant": 1,
+      "before": {
+        "status": "time_reduced",
+        "est": 19.5,
+        "removed": [],
+        "warnings": [
+          "WARN_TIME",
+          "WARN_RECOVERY"
+        ],
+        "ex": [
+          [
+            "squat",
+            "light",
+            2,
+            10,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,NOVICE_MAX_SETS,RECOVERY_24_TO_48H,RECOVERY_MATCHED_WORK,RECOVERY_MODE_REDUCED,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            1,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,PRIORITY_LIFT_OVERDUE_14D,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A,TIME_SETS_REDUCED"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            1,
+            8,
+            47.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A,TIME_SETS_REDUCED"
+          ]
+        ]
+      },
+      "after": {
+        "status": "time_reduced",
+        "est": 20,
+        "removed": [],
+        "warnings": [
+          "WARN_TIME",
+          "WARN_RECOVERY"
+        ],
+        "ex": [
+          [
+            "bench_press",
+            "moderate",
+            2,
+            8,
+            60,
+            null,
+            false,
+            "GOAL_PRIORITY_ORDER,INITIAL_HEURISTIC,PRIORITY_LIFT_OVERDUE_14D,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            1,
+            8,
+            47.5,
+            null,
+            false,
+            "GOAL_PRIORITY_ORDER,INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A,TIME_SETS_REDUCED"
+          ],
+          [
+            "squat",
+            "moderate",
+            1,
+            8,
+            70,
+            null,
+            false,
+            "GOAL_PRIORITY_ORDER,INITIAL_HEURISTIC,NOVICE_MAX_SETS,RECOVERY_MATCHED_WORK,RECOVERY_MODE_REDUCED,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A,TIME_SETS_REDUCED"
+          ]
+        ]
+      }
+    },
+    {
+      "freq": 1,
+      "exp": "novice",
+      "rot": 0,
+      "min": 20,
+      "variant": 2,
+      "before": {
+        "status": "time_reduced",
+        "est": 20.5,
+        "removed": [],
+        "warnings": [
+          "WARN_TIME",
+          "WARN_CAL"
+        ],
+        "ex": [
+          [
+            "squat",
+            "heavy",
+            2,
+            8,
+            77.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,NOVICE_MAX_SETS,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            1,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A,TIME_SETS_REDUCED"
+          ],
+          [
+            "assisted_pullup",
+            "moderate",
+            1,
+            8,
+            null,
+            null,
+            true,
+            "CALIBRATION_REQUIRED,TEMPLATE_single_A,TIME_SETS_REDUCED,USER_CHOSEN_VARIANT"
+          ]
+        ]
+      },
+      "after": {
+        "status": "time_reduced",
+        "est": 21,
+        "removed": [],
+        "warnings": [
+          "WARN_TIME",
+          "WARN_CAL",
+          "WARN_RECOVERY"
+        ],
+        "ex": [
+          [
+            "squat",
+            "heavy",
+            2,
+            8,
+            77.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,NOVICE_MAX_SETS,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A,TRANSIENT_SYMPTOM_HOLD"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            1,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A,TIME_SETS_REDUCED"
+          ],
+          [
+            "assisted_pullup",
+            "moderate",
+            1,
+            8,
+            null,
+            null,
+            true,
+            "CALIBRATION_REQUIRED,TEMPLATE_single_A,TIME_SETS_REDUCED,USER_CHOSEN_VARIANT"
+          ]
+        ]
+      }
+    },
+    {
+      "freq": 1,
+      "exp": "novice",
+      "rot": 0,
+      "min": 20,
+      "variant": 3,
+      "before": {
+        "status": "time_reduced",
+        "est": 20.5,
+        "removed": [
+          {
+            "exerciseId": "biceps_curl",
+            "reason": "TIME_PRUNED_ACCESSORY"
+          },
+          {
+            "exerciseId": "cable_lateral_raise",
+            "reason": "TIME_PRUNED_ACCESSORY"
+          }
+        ],
+        "warnings": [
+          "WARN_TIME"
+        ],
+        "ex": [
+          [
+            "squat",
+            "heavy",
+            2,
+            8,
+            77.5,
+            null,
+            false,
+            "EXTRA_SESSION,INITIAL_HEURISTIC,LEAST_RECENT_PATTERN,ROUNDED_DOWN_TO_EQUIPMENT"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            1,
+            8,
+            60,
+            null,
+            false,
+            "EXTRA_SESSION,INITIAL_HEURISTIC,LEAST_RECENT_PATTERN,ROUNDED_DOWN_TO_EQUIPMENT,TIME_SETS_REDUCED"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            1,
+            8,
+            47.5,
+            null,
+            false,
+            "EXTRA_SESSION,INITIAL_HEURISTIC,LEAST_RECENT_PATTERN,ROUNDED_DOWN_TO_EQUIPMENT,TIME_SETS_REDUCED"
+          ]
+        ]
+      },
+      "after": {
+        "status": "time_reduced",
+        "est": 21,
+        "removed": [
+          {
+            "exerciseId": "biceps_curl",
+            "reason": "TIME_PRUNED_ACCESSORY"
+          },
+          {
+            "exerciseId": "cable_lateral_raise",
+            "reason": "TIME_PRUNED_ACCESSORY"
+          }
+        ],
+        "warnings": [
+          "WARN_TIME"
+        ],
+        "ex": [
+          [
+            "squat",
+            "heavy",
+            2,
+            8,
+            77.5,
+            null,
+            false,
+            "EXTRA_SESSION,INITIAL_HEURISTIC,LEAST_RECENT_PATTERN,ROUNDED_DOWN_TO_EQUIPMENT"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            1,
+            8,
+            60,
+            null,
+            false,
+            "EXTRA_SESSION,INITIAL_HEURISTIC,LEAST_RECENT_PATTERN,ROUNDED_DOWN_TO_EQUIPMENT,TIME_SETS_REDUCED"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            1,
+            8,
+            47.5,
+            null,
+            false,
+            "EXTRA_SESSION,INITIAL_HEURISTIC,LEAST_RECENT_PATTERN,ROUNDED_DOWN_TO_EQUIPMENT,TIME_SETS_REDUCED"
+          ]
+        ]
+      }
+    },
+    {
+      "freq": 1,
+      "exp": "novice",
+      "rot": 0,
+      "min": 30,
+      "variant": 0,
+      "before": {
+        "status": "ok",
+        "est": 25,
+        "removed": [],
+        "warnings": [],
+        "ex": [
+          [
+            "squat",
+            "heavy",
+            2,
+            8,
+            77.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,NOVICE_MAX_SETS,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            2,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            2,
+            8,
+            47.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ]
+        ]
+      },
+      "after": {
+        "status": "ok",
+        "est": 26.5,
+        "removed": [],
+        "warnings": [],
+        "ex": [
+          [
+            "squat",
+            "heavy",
+            2,
+            8,
+            77.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,NOVICE_MAX_SETS,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "bench_press",
+            "moderate",
+            2,
+            8,
+            60,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ],
+          [
+            "lat_pulldown",
+            "moderate",
+            2,
+            8,
+            47.5,
+            null,
+            false,
+            "INITIAL_HEURISTIC,ROUNDED_DOWN_TO_EQUIPMENT,TEMPLATE_single_A"
+          ]
+        ]
+      }
+    }
+  ]
+}

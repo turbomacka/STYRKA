@@ -1,8 +1,9 @@
 import {useState} from 'react';
 import type {LocalSessionExercise,LocalSet} from '../../storage/db';
 import {editSet,recordPerformance} from '../../application/training';
-import {refreshFuturePlan} from '../../application/trainingPlan';
+import {refreshFuturePlan,type FuturePlanningResult} from '../../application/trainingPlan';
 import {savedWorkoutFeedback} from '../../application/workoutFeedback';
+import {compareSessionRecommendations} from '../../application/replanningFeedback';
 import {defaultConfiguration,SIDE_LABELS,type SetPerformance} from '../../domain/trainingFlow';
 import {parseKg,parseIntInRange,formatKg} from '../../domain/units';
 import {Sheet} from './common';
@@ -33,7 +34,10 @@ function CorrectionForm({set,instance,performance:p}:{set:LocalSet;instance:Loca
   const load= !['duration_sec','reps_only'].includes(instance.snapshot.loadKind);
   const duration=instance.snapshot.loadKind==='duration_sec';
   async function replan(){
-    await refreshFuturePlan(ctx);await savedWorkoutFeedback(ctx,set.sessionId);setUpdated(true);
+    let result:FuturePlanningResult|undefined;
+    await refreshFuturePlan(ctx,{onPlanningResult:value=>{result=value;}});
+    const comparison=await compareSessionRecommendations(ctx,set.sessionId,result);
+    await savedWorkoutFeedback(ctx,set.sessionId,comparison);setUpdated(true);
   }
   async function save(){
     if(busy)return;setBusy(true);setError('');

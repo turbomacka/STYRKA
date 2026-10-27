@@ -16,7 +16,7 @@ const admin = createClient(url, keys.find((k) => k.type === 'secret')!.api_key, 
 for (const scenario of [
   { feeling: 'Lätt', effort: 'easy', mode: 'Tung' },
   { feeling: 'Lagom', effort: 'ok', mode: 'Medel' },
-  { feeling: 'Maxansträngning', effort: 'maximal', mode: 'Lätt' },
+  { feeling: 'Maxansträngning', effort: 'maximal', mode: 'Medel' },
 ]) {
   test(`published recovery: ${scenario.feeling} gives ${scenario.mode}, including offline reload`, async ({ page, context }, info) => {
     const email = `staging-recovery-${randomUUID()}@example.com`, password = `Stg-${randomUUID()}`;
@@ -53,7 +53,7 @@ for (const scenario of [
       await expect(first).toContainText(`Känsla: ${scenario.feeling}`);
       await page.getByRole('button', { name: 'Avsluta', exact: true }).click();
       await page.getByRole('button', { name: 'Avsluta och spara', exact: true }).click();
-      await expect(page.getByRole('heading', { name: 'Så påverkas nästa pass' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Så påverkas kommande träning' })).toBeVisible();
       await page.getByRole('button', { name: 'Till planen', exact: true }).click();
       await expect(page.getByRole('heading', { name: 'Min träningsplan' })).toBeVisible();
       await expect.poll(async () => {
@@ -76,6 +76,9 @@ for (const scenario of [
       mkdirSync(dir, { recursive: true });
       await page.screenshot({ path: `${dir}/${scenario.effort}.png`, fullPage: true });
       await page.getByRole('button', { name: 'Starta passet', exact: true }).click();
+      await page.getByRole('button', { name: 'Hela passet', exact: true }).click();
+      await bench.locator('.workout-title').click();
+      await bench.getByRole('button', { name: 'Till övningen', exact: true }).click();
       await expect(page.locator('.train-head h1')).toHaveText('Bänkpress');
       await first.getByRole('button', { name: 'Registrera set 1', exact: true }).click();
       await expect(page.getByRole('button', { name: 'Set 1 utfört. Ändra eller ångra', exact: true })).toBeVisible();

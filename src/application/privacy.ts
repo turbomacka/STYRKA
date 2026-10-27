@@ -6,6 +6,7 @@ import { destroyUserDb } from '../storage/db';
 import { CATALOG_VERSION } from '../domain/catalog';
 import { AppError, outbox, type AppContext } from './context';
 import { HEALTH_CONSENT_VERSION, PRIVACY_NOTICE_VERSION } from './profile';
+import { invalidateFeedback } from './feedbackCache';
 
 export type ExportBundle = {
   format: 'styrka-export';
@@ -118,7 +119,7 @@ export async function exportCsv(ctx: AppContext): Promise<string> {
 /** Radera hälsorelaterade uppgifter (symtom, begränsningar, samtycke) lokalt + på servern atomiskt. */
 export async function eraseHealthData(ctx: AppContext): Promise<void> {
   const { db } = ctx;
-  await db.transaction('rw', [db.symptoms, db.restrictions, db.consents, db.outbox, db.notes, db.conflicts, db.skipEvents], async () => {
+  await db.transaction('rw', [db.symptoms, db.restrictions, db.consents, db.outbox, db.notes, db.conflicts, db.skipEvents, db.meta], async () => {
     // Köade men osända hälsoposter ska aldrig nå servern efter radering. Anteckningar (fri text) räknas hit (ÄA-PLAN-001 PL27).
     const noteIds = await db.notes.toCollection().primaryKeys();
     const ids = new Set([...(await db.symptoms.toCollection().primaryKeys()), ...(await db.restrictions.toCollection().primaryKeys()), ...noteIds, `consent:${ctx.userId}`]);
@@ -129,6 +130,7 @@ export async function eraseHealthData(ctx: AppContext): Promise<void> {
     for (const e of await db.outbox.toArray()) if (ids.has(e.recordId)) await db.outbox.delete(e.seq!);
     await db.symptoms.clear();
     await db.restrictions.clear();
+    await invalidateFeedback(db, { all: true });
     const c = await db.consents.get(ctx.userId);
     if (c) await db.consents.put({ ...c, withdrawnAt: ctx.clock.now(), syncState: 'queued' });
     await db.outbox.add(outbox(ctx, `erase:${ctx.userId}`, { type: 'rpc', name: 'erase_health_data' }));

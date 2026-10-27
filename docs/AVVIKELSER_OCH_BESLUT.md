@@ -2,6 +2,10 @@
 
 Alla tolkningar följer normhierarkin i paketets README. Nya produktheuristiker är märkta **H (ny)** och har acceptanstest. Nedan dokumenteras tidigare beslut med respektive versionsnummer.
 
+## Tillägg 2026-10-23/24: adaptiv motor och regelversion 2.0.0
+
+På produktägarens implementeringsanmodan ersätts procenttak för progression, den tidigare separata progressionslogiken per lasttyp och fasta korttidsfönster med en gemensam modell för bekräftad nivå, försök, vald dos och gradvis återhämtningsbelastning. **H (ny):** beslutströsklar, undantag, alternativ, forskningsanknytning och testresultat finns samlade i [ADAPTIVE-ENGINE-2026-10-23.md](ADAPTIVE-ENGINE-2026-10-23.md). Äldre beslut nedan som beskriver dessa ersatta regler är historik, inte den aktuella policyn. Specifikationens referensmotor bevaras som fryst jämförelsebas; produktmotorn är nu 2.0.0. Användarspärrar och medicinska översynsspärrar behåller högsta prioritet. Ingen produktionspublicering ingår.
+
 ## Tillägg 2026-10-16: återhämtning, regelversion 1.3.0
 
 På produktägarens begäran ersätts den generella tidsregeln för nyligt arbete och H-N4 av en gemensam bedömning av faktiskt utförda arbetsset, ansträngning, sidprestationer och rörelseöverlapp. **H (ny):** vanliga direkta exponeringar begränsar till medelnivå under 24 timmar; krävande/större direkt arbete till lätt nivå under 48 timmar; krävande överlapp till medelnivå under 24 timmar. Gränserna är produktheuristiker, inte uppmätt individuell återhämtning. Uppvärmning undantas. Automatisk progression hålls tillbaka även för maskinnivåer och oberoende staplar. Referensmotorn, symtomreglerna och historiska registreringar bevaras.
@@ -183,3 +187,8 @@ Den samlade UX-anmodan ersätter tidigare krav på separata Idag-/förhandsvisni
 Vila versionshöjs separat till REST/1.1.0 för sent frivilligt ansträngningssvar. Referensmotorns numerik och kontrollsummor ändras inte. Originalrekommendation, aktuell plan och prestation bevaras som skilda uppgifter. Servermigrationerna är additiva och lokal lagring uppgraderas till Dexie v6. En eventuell klientrollback måste behålla v6-stödet så att uppgraderad lokal data fortfarande kan öppnas.
 
 Implementationen är lokal; produktionspublicering och fysisk enhetsverifiering ingår inte i genomförda kodtester.
+
+
+## 7. Adaptiv modell 2.1, 27 oktober 2026
+
+Den godkända implementeringsplanen ersätter äldre procenttak och schabloner där de motsäger den nya gemensamma beslutsmodellen. Manuella dosval, representativ Lätt, separata försöksankare, dimensionvis omprövning, individuell återhämtningsförsiktighet och gemensam konkret framtidsåterkoppling beskrivs i [implementeringsrapporten](ADAPTATION-IMPLEMENTATION-2026-10-27.md). Sidoberoende begränsningar hanteras nu för ensidigt utförande. Inga nya obligatoriska UI-val eller persondata införs. Publicering avser befintlig staging; fysisk enhetsgranskning och separat produktionsmiljö omfattas inte av automatiserade tester.
