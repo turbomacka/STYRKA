@@ -5,6 +5,19 @@ import { onboard, PASSWORD, shooter, signIn, signUp, uniqueEmail } from './helpe
 test.use({ serviceWorkers: 'block' });
 test.afterAll(closeSql);
 
+test('a briefly future-issued token is retried once before profile hydration', async ({ page }) => {
+  let reads = 0;
+  await page.route('**/rest/v1/profiles?*', async route => {
+    if (route.request().method() === 'GET' && ++reads === 1) {
+      await route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST303', message: 'JWT issued at future' }) });
+    } else await route.continue();
+  });
+  await signUp(page, uniqueEmail('clock-skew'));
+  expect(reads).toBeGreaterThanOrEqual(2);
+  await expect(page.getByText('Intro 1/4')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Logga in igen för att synka' })).toHaveCount(0);
+});
+
 test('login and account creation are visible on the first small-mobile screen', async ({ page }, info) => {
   for (const viewport of [{ width: 320, height: 568 }, { width: 375, height: 667 }]) {
     await page.setViewportSize(viewport);

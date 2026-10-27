@@ -23,6 +23,13 @@ async function guard<T>(p: PromiseLike<{ data: T; error: PgError; status: number
   let r: { data: T; error: PgError; status: number };
   try {
     r = await p;
+    // PostgREST can briefly reject a newly issued token when server clocks differ.
+    // Retry this exact pre-execution rejection once; never accept data without a
+    // successful server response or retry expired/invalid tokens generically.
+    if (r.status === 401 && r.error?.code === 'PGRST303' && r.error.message === 'JWT issued at future') {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      r = await p; // PostgREST builders are lazy thenables: this sends the same request.
+    }
   } catch {
     throw new TransportError('OFFLINE', 'nätverk');
   }
