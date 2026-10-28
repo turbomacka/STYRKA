@@ -35,6 +35,18 @@ describe('integrated training model and atomic storage', () => {
     const series = await strengthSeries(h.ctx,'squat');
     expect(series.points.filter((p) => p.sessionId === h.session.id).every((p) => p.source === 'performance')).toBe(true);
   });
+  it.each(['bench_press', 'deadlift'] as const)('includes %s performed with default equipment in a flow-labeled session', async (id) => {
+    const h = await setup(id);
+    const key = comparisonKey(id, defaultConfiguration(id));
+    await h.db.sessionExercises.update(h.se.id, { variantKey: `flow:${key}` });
+    await recordPerformance(h.ctx, h.sets[0].id, 'both', { actualGrams: 70000, actualReps: 8, rir: 2, technique: 'controlled' });
+    const options = await trainingSeriesOptions(h.ctx, id);
+    expect(options.map((o) => o.value)).toEqual(['default']);
+    const series = await strengthSeries(h.ctx, id);
+    expect(series.points.filter((p) => p.source === 'performance')).toEqual([
+      expect.objectContaining({ sessionId: h.session.id, kg: 70 }),
+    ]);
+  });
   it('warmup suggestions preserve two independent stack settings and remain excluded from work', async () => {
     const h = await setup('lat_pulldown');
     const c = structuredClone(h.se.configuration!);
