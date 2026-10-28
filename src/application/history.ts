@@ -100,7 +100,13 @@ export async function strengthSeries(ctx: AppContext, exerciseId: ExerciseId, si
   // Uppskattningar i inställningar gäller standardvarianten; andra maskinprofiler visas som egna serier (§2.3).
   const settings = variantKey === 'default' ? await ctx.db.exerciseSettings.where('exerciseId').equals(exerciseId).first() : undefined;
   const ofVariant = new Set((await ctx.db.sessionExercises.where('exerciseId').equals(exerciseId).toArray()).filter((e) => e.variantKey === variantKey).map((e) => e.id));
-  const sets = (await ctx.db.sets.where('exerciseId').equals(exerciseId).toArray()).filter((s) => ofVariant.has(s.sessionExerciseId) && (!s.detail || s.detail.performances.every((p) => performanceSeriesKey(exerciseId,p) === variantKey)) && !s.deleted && s.kind === 'work' && s.status === 'done' && s.occurredAt);
+  const sets = (await ctx.db.sets.where('exerciseId').equals(exerciseId).toArray()).filter((s) => {
+    if (s.deleted || s.kind !== 'work' || s.status !== 'done' || !s.occurredAt) return false;
+    // Older registrations only have the session variant. Detailed performances carry
+    // the authoritative comparison key, even if the session was planned as "flow:".
+    if (!s.detail) return ofVariant.has(s.sessionExerciseId);
+    return s.detail.performances.length > 0 && s.detail.performances.every((p) => p.status === 'done' && performanceSeriesKey(exerciseId, p) === variantKey);
+  });
   if (lk !== 'external_kg') {
     const bySession = new Map<string, (typeof sets)[number]>();
     for (const s of sets.filter((s) => !sinceUtc || s.occurredAt! >= sinceUtc)) {
