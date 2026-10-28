@@ -1,9 +1,10 @@
 import { hashOf } from '../domain/hash';
 import type { AppContext } from './context';
 import { feedbackCategory, selectFeedback, WORKOUT_FEEDBACK_VERSION, type FeedbackChoice } from '../domain/workoutFeedback';
+import { workoutPerformanceInsight, type PerformanceInsight } from '../domain/workoutPerformanceInsight';
 import type { ReplanningFeedback } from './replanningFeedback';
 
-export type SavedWorkoutFeedback={text:string;sessionId:string;category:string;createdAt:string;inputsHash?:string;observationsHash?:string;sourceSessionIds?:string[];sourceSetIds?:string[];messages?:string[];decisionHash?:string;planRevisionId?:string|null};
+export type SavedWorkoutFeedback={text:string;sessionId:string;category:string;createdAt:string;insight?:PerformanceInsight;inputsHash?:string;observationsHash?:string;sourceSessionIds?:string[];sourceSetIds?:string[];messages?:string[];decisionHash?:string;planRevisionId?:string|null};
 /** Saved prose is derived from observations and, when available, the applied planning result. */
 export async function savedWorkoutFeedback(ctx:AppContext,id:string,comparison?:ReplanningFeedback):Promise<SavedWorkoutFeedback> {
   return ctx.db.transaction('rw',[ctx.db.meta,ctx.db.sessions,ctx.db.sets,ctx.db.sessionExercises,ctx.db.symptoms],async()=>{
@@ -18,12 +19,15 @@ export async function savedWorkoutFeedback(ctx:AppContext,id:string,comparison?:
     const currentKeys=new Set(perf.map(p=>p.comparisonKey));
     const comparable=all.filter(s=>s.sessionId!==id&&(s.detail?.performances.some(p=>p.status==='done'&&currentKeys.has(p.comparisonKey))||sets.some(o=>o.exerciseId===s.exerciseId&&!o.detail&&!s.detail)));
     const history=sessions.filter(s=>s.id!==id&&all.some(x=>x.sessionId===s.id&&(x.status==='done'||x.detail?.performances.some(p=>p.status==='done'))));
+    const recentHistory=history.filter(s=>Date.parse(at)-Date.parse(s.finishedAt??'')<=14*86400000);
+    const recentIds=new Set(recentHistory.map(s=>s.id));
     const symptoms=(await ctx.db.symptoms.toArray()).filter(s=>s.sessionId===id).sort((a,b)=>a.id.localeCompare(b.id));
     const dependencies=[...sets,...comparable];
     const observationsHash=hashOf({version:WORKOUT_FEEDBACK_VERSION,status:session.status,startedAt:session.startedAt,at,
       sets:dependencies.map(s=>({id:s.id,session:s.sessionId,status:s.status,grams:s.actualGrams,reps:s.actualReps,seconds:s.actualSeconds,targetGrams:s.targetGrams,targetReps:s.targetReps,effort:s.perceivedEffort,rir:s.rir,technique:s.technique,performances:s.detail?.performances})),
       exercises:exs.map(e=>({id:e.id,replacedById:e.replacedById,snapshot:e.snapshot})),symptoms,
-      previous:history[0]?{id:history[0].id,at:history[0].finishedAt}:null});
+      previous:history[0]?{id:history[0].id,at:history[0].finishedAt}:null,
+      recentHistory:recentHistory.map(s=>({id:s.id,at:s.finishedAt,status:s.status}))});
     const previousFactsUnchanged=existing?.observationsHash===observationsHash;
     const decisionHash=comparison?.inputsHash??(previousFactsUnchanged?existing?.decisionHash:undefined);
     const inputsHash=hashOf({observationsHash,decisionHash});
@@ -42,9 +46,12 @@ export async function savedWorkoutFeedback(ctx:AppContext,id:string,comparison?:
     const prior=(await ctx.db.meta.get(choiceKey))?.value as FeedbackChoice|undefined;
     const recent=(await ctx.db.meta.where('key').startsWith('feedback-choice:').toArray()).map(r=>r.value as FeedbackChoice).filter(r=>r.sessionId!==id&&(r.at<at||r.at===at&&r.sessionId<id)).sort((a,b)=>b.at.localeCompare(a.at)||b.sessionId.localeCompare(a.sessionId));
     const selected=selectFeedback({sessionId:id,at,category,existing:prior,recent,seed:parseInt(hashOf({id,category,version:WORKOUT_FEEDBACK_VERSION}).slice(0,8),16),allowHumor:!symptoms.length&&session.status==='completed'&&!decisions.some(d=>['constraint','trial_return'].includes(d.kind))});
-    const sourceSessionIds=[...new Set([id,...dependencies.map(s=>s.sessionId),...(history[0]?[history[0].id]:[]),...(comparison?.sourceSessionIds??[])])].sort();
+    const insight= !symptoms.length && session.status==='completed' && !['protected','trial_return','empty'].includes(category)
+      ?workoutPerformanceInsight({sessionId:id,at,currentSets:sets,historySets:[...comparable,...all.filter(s=>recentIds.has(s.sessionId)&&!comparable.includes(s))],sessions:[session,...history],seed:parseInt(hashOf({id,version:WORKOUT_FEEDBACK_VERSION,kind:'insight'}).slice(0,8),16)})
+      :null;
+    const sourceSessionIds=[...new Set([id,...dependencies.map(s=>s.sessionId),...recentHistory.map(s=>s.id),...(history[0]?[history[0].id]:[]),...(comparison?.sourceSessionIds??[])])].sort();
     const sourceSetIds=[...new Set([...dependencies.map(s=>s.id),...(comparison?.sourceSetIds??[])])].sort();
-    const value:SavedWorkoutFeedback={inputsHash,observationsHash,text:selected.text,category,sessionId:id,createdAt:existing?.createdAt??ctx.clock.now(),sourceSessionIds,sourceSetIds,
+    const value:SavedWorkoutFeedback={inputsHash,observationsHash,text:selected.text+(insight?' '+insight.text:''),...(insight?{insight}:{}),category,sessionId:id,createdAt:existing?.createdAt??ctx.clock.now(),sourceSessionIds,sourceSetIds,
       ...(decisionHash?{decisionHash}:{}),messages:comparison?.messages??(previousFactsUnchanged?existing?.messages:undefined),planRevisionId:comparison?.revisionId??(previousFactsUnchanged?existing?.planRevisionId:undefined)};
     await ctx.db.meta.put({key,value});await ctx.db.meta.put({key:choiceKey,value:selected.choice});await ctx.db.meta.delete('recent-workout-feedback');
     return value;
