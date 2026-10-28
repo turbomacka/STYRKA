@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, cleanup } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { harness, onboard, type Harness } from '../unit/appHarness';
-import { configureExercise, previewNext, recordPerformance, startSession } from '../../src/application/training';
+import { configureExercise, finishSession, previewNext, recordPerformance, startSession } from '../../src/application/training';
 import { Finish } from '../../src/ui/screens/Finish';
 
 const mocked=vi.hoisted(()=>({services:{} as unknown,refresh:vi.fn()}));
@@ -10,6 +10,16 @@ vi.mock('../../src/ui/services',()=>({useServices:()=>mocked.services}));
 vi.mock('../../src/application/trainingPlan',async(importOriginal)=>({...await importOriginal<object>(),refreshFuturePlan:mocked.refresh}));
 let h:Harness;
 afterEach(async()=>{cleanup();vi.clearAllMocks();h?.sync.dispose();await h?.db.delete();});
+
+it('reopening a completed session replaces stale cached praise with current versioned feedback',async()=>{
+  h=harness();await onboard(h);mocked.services={ctx:h.ctx,online:true};
+  const session=await startSession(h.ctx,await previewNext(h.ctx));await finishSession(h.ctx,session.id);
+  await h.db.meta.put({key:'workout-feedback:'+session.id,value:{sessionId:session.id,text:'Felaktigt gammalt rekord!',category:'progress',createdAt:h.clock.now()}});
+  render(<MemoryRouter initialEntries={[`/pass/${session.id}/avsluta`]}><Routes><Route path="/pass/:id/avsluta" element={<Finish/>}/></Routes></MemoryRouter>);
+  await screen.findByRole('heading',{name:'Passet är sparat'});
+  expect(screen.queryByText('Felaktigt gammalt rekord!')).toBeNull();
+  expect(document.querySelector('.finish-feedback')?.textContent).toMatch(/utan.*arbetsset|Inga.*arbetsset/);
+});
 
 it.each(['bilateral', 'sequential'] as const)('H: planning failure after %s training preserves committed performances and retries only planning',async(executionMode)=>{
   h=harness();await onboard(h);
