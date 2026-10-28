@@ -76,7 +76,7 @@ Alternativkurvan ger ett initialt fall där användarens avsikt ännu inte kan u
 
 2 100 planer jämförs med den frysta historiska källversionen: 2 015 avsiktligt ändrade, 85 identiska. Äldre referenser behålls; gemensamma övningars dos i färska, tidsmässigt obegränsade planer kontrolleras separat. Nya funktions-, säkerhets- och acceptanstester krävs utöver kontrollsumman.
 
-600 enhets-, UI- och riktiga databastester passerade på samlad implementation. Sista körningar efter beroende- och integritetskontroller finns i `all-tests.json` och `final-data-check.json`. Full webbläsarkörning, CI och publicerad verifiering redovisas separat i samma evidenskatalog. Testresultat från äldre versioner används inte som publiceringsbevis för denna version.
+606 enhets-, UI- och riktiga databastester passerade på samlad implementation, inklusive den sista autentiseringskorrigeringen. Sista körningar efter beroende- och integritetskontroller finns i `all-tests.json` och `final-data-check.json`. Full webbläsarkörning, CI och publicerad verifiering redovisas separat i samma evidenskatalog. Testresultat från äldre versioner används inte som publiceringsbevis för denna version.
 
 ## Data, kompatibilitet och utvärdering
 

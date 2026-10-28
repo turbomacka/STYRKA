@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-10-27T20:40:32.769Z",
+  "deployment": "6bc1f655-843c-4f91-be6b-d64439a15d01",
+  "publishedAt": "2026-10-22T18:26:18.986949Z",
+  "versions": [
+    {
+      "version_id": "4cf1d489-3204-4203-b7d7-eeae2c031544",
+      "percentage": 100
+    }
+  ]
+}

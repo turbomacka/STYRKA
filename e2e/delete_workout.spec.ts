@@ -12,7 +12,11 @@ test('radera registrerat pass: avbryt, bekräfta offline, historik och omladdnin
   await page.getByRole('button', { name: 'Avsluta och spara' }).click(); await expect(page.getByRole('heading',{name:'Så påverkas kommande träning'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
   await page.getByRole('link', { name: 'Plan', exact: true }).click();
+  // Removing the completion query also removes its feedback card. Wait for that
+  // navigation before clicking a radio that moves when the card disappears.
+  await expect(page).toHaveURL(new URL('/', page.url()).href);
   await page.getByRole('radio', { name: 'Genomförda' }).click();
+  await expect(page.getByRole('radio', { name: 'Genomförda' })).toHaveAttribute('aria-checked', 'true');
   await page.getByRole('button', { name: /^Pass 1 · / }).click();
   await page.getByRole('button', { name: 'Ta bort pass', exact: true }).click();
   await expect(page.getByRole('group', { name: 'Ta bort det här passet?' })).toBeVisible();

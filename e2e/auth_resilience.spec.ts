@@ -89,6 +89,10 @@ test('401 during sync offers reauthentication and preserves a logged set through
   await expect(page.getByText('0 ändring(ar) väntar på att synkas.')).toBeVisible();
   await page.goto(sessionUrl);
   await expect(page.getByRole('button', { name: 'Set 1 utfört. Ändra eller ångra' })).toBeVisible();
-  const rows = await sql<{ n: number }>('select count(*)::int n from public.training_sets t join auth.users u on u.id=t.user_id where u.email=$1 and t.status=$2', [email, 'done']);
-  expect(rows[0].n).toBe(1);
+  // Local hydration can briefly show an empty outbox before the queued mutation
+  // is restored. Verify actual server persistence, allowing sync to complete.
+  await expect.poll(async () => {
+    const rows = await sql<{ n: number }>('select count(*)::int n from public.training_sets t join auth.users u on u.id=t.user_id where u.email=$1 and t.status=$2', [email, 'done']);
+    return rows[0].n;
+  }, { timeout: 20_000 }).toBe(1);
 });
