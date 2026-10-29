@@ -1,0 +1,16 @@
+{
+  "baselineCommit": "305aa36f4f028f5645a32f98698c26d1ea9a374c",
+  "previous": {
+    "plans": 2100,
+    "exercises": 7194,
+    "sha256": "2ad12897f1bd618f86c49d0024049ed4449cc10dc6ab8caf34a840276e163a31"
+  },
+  "current": {
+    "plans": 2100,
+    "exercises": 7194,
+    "sha256": "2ad12897f1bd618f86c49d0024049ed4449cc10dc6ab8caf34a840276e163a31"
+  },
+  "changed": 0,
+  "unchanged": 2100,
+  "changes": []
+}

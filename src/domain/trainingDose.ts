@@ -38,12 +38,12 @@ export function successfulDoseExposure(h: PerformedExercise): boolean {
         const expectedSeconds=target?.seconds??s.plannedSeconds;
         const plannedLoad=p.equipment.unit==='level'?(s.detail?.targetLoadValue??h.plan.targetLoadValue):(target?.grams!=null?target.grams/1000:s.plannedKg);
         const loadOk=plannedLoad==null || (p.loadValue!=null && (h.plan.loadKind==='assistance_kg'?p.loadValue<=plannedLoad:p.loadValue>=plannedLoad));
-        return p.technique==='controlled' && (p.rir==null||p.rir>=2) && !['hard','maximal','too_heavy'].includes(p.effort??'') && loadOk &&
+        return p.technique==='controlled' && (p.rir==null||p.rir>=2) && !['maximal','too_heavy'].includes(p.effort??'') && loadOk &&
           (expectedSeconds!=null ? (p.seconds??0)>=expectedSeconds : expected!=null&&(p.repetitions??0)>=expected);
       });
     }
     const loadOk=s.plannedKg==null || (s.actualKg!=null && (h.plan.loadKind==='assistance_kg'?s.actualKg<=s.plannedKg:s.actualKg>=s.plannedKg));
-    return s.technique==='controlled' && (s.rir==null||s.rir>=2) && !['hard','maximal','too_heavy'].includes(s.perceivedEffort??'') && loadOk &&
+    return s.technique==='controlled' && (s.rir==null||s.rir>=2) && !['maximal','too_heavy'].includes(s.perceivedEffort??'') && loadOk &&
       (s.plannedSeconds!=null ? (s.actualSeconds??0)>=s.plannedSeconds : s.plannedReps!=null&&(s.actualReps??0)>=s.plannedReps);
   });
 }

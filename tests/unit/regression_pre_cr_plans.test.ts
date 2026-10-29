@@ -27,7 +27,7 @@ it('2 100 planer följer verifierad adaptiv referens; ursprunglig referens bevar
   const json = JSON.stringify(out);
   const original = JSON.parse(readFileSync('tests/unit/golden/plans_pre_cr_3ec01ef.json', 'utf8')) as { sha256: string };
   expect(original.sha256).toBe('b04aa62d7c78a105e4d49c34a8b31953ef173e20d2fe68394217f9c5aa09e3e8');
-  const golden = JSON.parse(readFileSync('tests/unit/golden/plans_adaptive_v2_1.json', 'utf8')) as { ruleSetVersion: string; plans: number; exercises: number; sha256: string };
+  const golden = JSON.parse(readFileSync('tests/unit/golden/plans_adaptive_v2_2.json', 'utf8')) as { ruleSetVersion: string; plans: number; exercises: number; sha256: string };
   expect(golden.ruleSetVersion).toBe(RULESET_VERSION);
   expect({ plans: out.length, exercises: out.reduce((n: number, p: ReturnType<typeof strip>) => n + p.ex.length, 0), sha256: createHash('sha256').update(json).digest('hex') }).toEqual({ plans: golden.plans, exercises: golden.exercises, sha256: golden.sha256 });
 });

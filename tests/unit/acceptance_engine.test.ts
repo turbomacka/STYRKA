@@ -134,7 +134,7 @@ describe('04 §2.1 acceptanstest – motor och planerare', () => {
     const r = next([exp({}, 0)]);
     expect(r.kg).toBe(77.5);
     expect(r.reps).toBe(5);
-    expect(r.reasons).toContain('LOW_RIR_HOLD');
+    expect(r.reasons).toContain('NUMERIC_RESERVE_HOLD');
   });
 
   it('13: RIR saknas ⇒ kräver två kompletta, kontrollerade tillfällen på samma målnivå', () => {

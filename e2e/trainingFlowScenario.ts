@@ -86,14 +86,16 @@ export async function runTrainingFlow(page: Page, context: BrowserContext, dir: 
   await page.getByRole('combobox',{ name:'Övning', exact:true }).selectOption('lat_pulldown');
   await expect(page.getByLabel('Jämförelseserie')).toBeVisible();
   await expect(page.getByLabel('Jämförelseserie')).toContainText('Höger'); await expect(page.getByLabel('Jämförelseserie')).toContainText('Vänster');
-  await page.getByLabel('Välj datapunkt').selectOption('0');
-  await expect(page.locator('.chart-tooltip')).toContainText('Höger · 10 reps');
+  await page.getByLabel('Välj datapunkt').first().selectOption('0');
+  await expect(page.locator('.chart-tooltip').first()).toContainText('Höger');
+  await expect(page.locator('.chart-tooltip').first()).toContainText('10 reps');
   const left=await page.getByLabel('Jämförelseserie').locator('option').filter({hasText:/Vänster/}).first().getAttribute('value');await page.getByLabel('Jämförelseserie').selectOption(left!);
   // Wait for the new asynchronous series to replace the selected right-side point.
-  await expect(page.locator('.chart-tooltip')).toContainText('Tryck på en punkt');
-  await page.getByLabel('Välj datapunkt').selectOption('0');
-  await expect(page.locator('.chart-tooltip')).toContainText('Vänster · 8 reps');
-  await expect(page.locator('.chart-tooltip')).toContainText('30 kg');
+  await expect(page.locator('.chart-tooltip').first()).toContainText('Tryck på en punkt');
+  await page.getByLabel('Välj datapunkt').first().selectOption('0');
+  await expect(page.locator('.chart-tooltip').first()).toContainText('Vänster');
+  await expect(page.locator('.chart-tooltip').first()).toContainText('8 reps');
+  await expect(page.locator('.chart-tooltip').first()).toContainText('30 kg');
   await page.evaluate(() => window.scrollTo(0,0));
   await page.screenshot({ path:`${dir}/history.png`, fullPage:true });
 }

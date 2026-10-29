@@ -29,13 +29,31 @@ export async function listSessions(ctx: AppContext, opts: { limit?: number; befo
 }
 
 /** `sessionId` finns för punkter som härletts ur ett träningspass (inte ur en angiven uppskattning). */
-export type StrengthPoint = { at: string; kg: number; source: 'measured' | 'estimated' | 'performance'; origin?: 'input'; detail: string; sessionId?: string };
+export type PerformanceObservation = { load: number | null; reps: number | null; seconds: number | null };
+export type StrengthPoint = { at: string; kg: number; source: 'measured' | 'estimated' | 'performance'; origin?: 'input'; detail: string; sessionId?: string; work?: PerformanceObservation[] };
 export type StrengthSeries = { exerciseId: ExerciseId; comparable: boolean; points: StrengthPoint[]; latestMax?: StrengthPoint; note: string | null; unit?: string };
 function latestMax(points: StrengthPoint[]): StrengthPoint | undefined {
   // Settings.updatedAt can advance on sync. An input is a reference, never a newer workout.
   const workoutMaxima = points.filter((p) => p.source !== 'performance' && p.origin !== 'input');
   const candidates = workoutMaxima.length ? workoutMaxima : points.filter((p) => p.origin === 'input');
   return candidates.sort((a,b) => a.at.localeCompare(b.at)).at(-1);
+}
+
+function describeWork(work: PerformanceObservation[], unit: string): string {
+  const quantity=unit==='s'?'s':'reps';
+  const sameLoad=work.every(w=>w.load===work[0].load);
+  const values=work.map(w=>unit==='s'?w.seconds:w.reps).join('/');
+  return `${work.length} arbetsset · ${sameLoad && !['s','reps'].includes(unit)?`${work[0].load} ${unit} · `:''}${sameLoad || ['s','reps'].includes(unit)?`${values} ${quantity}`:work.map(w=>`${w.load} ${unit} × ${w.reps}`).join(', ')}`;
+}
+
+/** A factual repetition comparison requires equal set count and identical loads per set. */
+export function repetitionProgress(points: StrengthPoint[]): string | null {
+  const recent=points.filter(p=>p.source==='performance'&&p.work?.length).slice(-2);
+  if(recent.length!==2)return null;
+  const [a,b]=recent.map(p=>p.work!);
+  if(a.length!==b.length||a.some((w,i)=>w.load!==b[i].load||w.reps===null||b[i].reps===null))return null;
+  const delta=b.reduce((n,w)=>n+w.reps!,0)-a.reduce((n,w)=>n+w.reps!,0);
+  return delta>0?`${delta} fler repetitioner vid samma belastning och ${b.length} arbetsset jämfört med föregående pass.`:null;
 }
 
 export function performanceSeriesKey(id: ExerciseId, p: SetPerformance): string {
@@ -63,7 +81,7 @@ export async function trainingSeriesOptions(ctx: AppContext, id: ExerciseId): Pr
 async function detailedStrengthSeries(ctx: AppContext, exerciseId: ExerciseId, key: string, since?: string): Promise<StrengthSeries> {
   const sets = (await ctx.db.sets.where('exerciseId').equals(exerciseId).toArray()).filter((s) => !s.deleted && s.kind === 'work');
   const second = key.endsWith(':second'); const baseKey = second ? key.slice(0,-7) : key;
-  const entries = sets.flatMap((s) => (s.detail?.performances ?? []).filter((p) => p.status === 'done' && performanceSeriesKey(exerciseId,p) === baseKey && p.completedAt).map((p) => ({ s,p })));
+  const entries = sets.sort((a,b)=>a.ordinal-b.ordinal).flatMap((s) => (s.detail?.performances ?? []).filter((p) => p.status === 'done' && performanceSeriesKey(exerciseId,p) === baseKey && p.completedAt).map((p) => ({ s,p })));
   const points: StrengthPoint[] = [];
   const sample = entries[0]?.p;
   const e = sample?.equipment;
@@ -84,7 +102,11 @@ async function detailedStrengthSeries(ctx: AppContext, exerciseId: ExerciseId, k
       if (max !== undefined && max > (maximum.get(s.sessionId)?.kg ?? 0)) maximum.set(s.sessionId,{ ...point, kg: max, source: measured ? 'measured' : 'estimated', detail: `${SIDE_LABELS[p.side]} · ${measured ? '1 rep, 0 kvar' : p.effort === 'maximal' ? 'uppskattat från maxansträngning' : 'uppskattat från reps och reps kvar'}` });
     }
   }
-  points.push(...performance.values(),...maximum.values()); points.sort((a,b) => a.at.localeCompare(b.at) || a.source.localeCompare(b.source));
+  for(const [sessionId,point] of performance) {
+    const work=entries.filter(x=>x.s.sessionId===sessionId).map(({p})=>({load:second?p.secondLoadValue:p.loadValue,reps:p.repetitions,seconds:p.seconds}));
+    points.push({...point,work,detail:`${SIDE_LABELS[sample!.side]} · ${describeWork(work,unit)}`});
+  }
+  points.push(...maximum.values()); points.sort((a,b) => a.at.localeCompare(b.at) || a.source.localeCompare(b.source));
   return { exerciseId, comparable: !!e && canEstimateMax(e), points: points.filter((p) => !since || p.at >= since), latestMax: latestMax(points), unit, note: 'Separat serie för samma utförande, sida och utrustningskonfiguration. Angiven maskinbelastning är en prestationsindikator för just denna utrustning. Sidoskillnader är observationer, inte en bedömning av skaderisk.' };
 }
 
@@ -115,9 +137,12 @@ export async function strengthSeries(ctx: AppContext, exerciseId: ExerciseId, si
       if (better) bySession.set(s.sessionId, s);
     }
     const points = [...bySession.values()]
-      .map((s) => ({ at: s.occurredAt!, kg: lk === 'duration_sec' ? (s.actualSeconds ?? 0) : gramsToKg(s.actualGrams ?? 0), source: 'performance' as const, detail: lk === 'duration_sec' ? `${s.actualSeconds} s` : `${s.actualReps} reps` }))
+      .map((s) => {
+        const work=sets.filter(x=>x.sessionId===s.sessionId).sort((a,b)=>a.ordinal-b.ordinal).map(x=>({load:x.actualGrams===null?null:gramsToKg(x.actualGrams),reps:x.actualReps,seconds:x.actualSeconds}));
+        return { at:s.occurredAt!,kg:lk==='duration_sec'?(s.actualSeconds??0):lk==='reps_only'?(s.actualReps??0):gramsToKg(s.actualGrams??0),source:'performance' as const,sessionId:s.sessionId,work,detail:describeWork(work,lk==='duration_sec'?'s':lk==='reps_only'?'reps':'kg') };
+      })
       .sort((a, b) => a.at.localeCompare(b.at));
-    return { exerciseId, comparable: false, points, note: lk === 'assistance_kg' ? 'Assistans: lägre värde = mer egen styrka. Inte jämförbart med skivstångsvikter.' : lk === 'duration_sec' ? 'Tid i sekunder.' : 'Repetitioner/extra vikt. Ingen beräknad maxstyrka.' };
+    return { exerciseId, comparable: false, points, unit:lk==='duration_sec'?'s':lk==='reps_only'?'reps':'kg',note: lk === 'assistance_kg' ? 'Assistans: lägre värde = mindre hjälp. Jämför även repetitioner och antal set på samma maskin.' : lk === 'duration_sec' ? 'Tid i sekunder.' : 'Repetitioner/extra vikt. Ingen beräknad maxstyrka.' };
   }
   const points: StrengthPoint[] = [];
   if (settings?.estimateKind && settings.estimateGrams !== null) {
@@ -130,7 +155,7 @@ export async function strengthSeries(ctx: AppContext, exerciseId: ExerciseId, si
     const kgv = gramsToKg(s.actualGrams);
     const cur = perSession.get(s.sessionId) ?? { at: s.occurredAt!, best: 0, maximum: null, sessionId: s.sessionId };
     cur.best = Math.max(cur.best, kgv);
-    const reliableTechnique = !s.detail || s.technique === 'controlled';
+    const reliableTechnique = s.technique === 'controlled';
     const rir = effectiveRir(s.rir,s.perceivedEffort);
     if (reliableTechnique && rir !== null) {
       const measured = s.actualReps === 1 && rir === 0;
@@ -144,7 +169,8 @@ export async function strengthSeries(ctx: AppContext, exerciseId: ExerciseId, si
     perSession.set(s.sessionId, cur);
   }
   for (const v of perSession.values()) {
-    points.push({ at: v.at, kg: v.best, source: 'performance', detail: 'bästa arbetsset', sessionId: v.sessionId });
+    const work=sets.filter(s=>s.sessionId===v.sessionId&&s.actualGrams!==null&&s.actualReps!==null&&s.actualReps>0).sort((a,b)=>a.ordinal-b.ordinal).map(s=>({load:gramsToKg(s.actualGrams!),reps:s.actualReps,seconds:s.actualSeconds}));
+    points.push({ at: v.at, kg: v.best, source: 'performance', work, detail: describeWork(work,'kg'), sessionId: v.sessionId });
     if (v.maximum) points.push(v.maximum);
   }
   points.sort((a, b) => a.at.localeCompare(b.at) || a.source.localeCompare(b.source));

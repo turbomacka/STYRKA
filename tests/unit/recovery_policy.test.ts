@@ -12,7 +12,7 @@ import { finishSession, previewNext, rateSet, recordPerformance, startSession } 
 import { buildHistory } from '../../src/application/plannerInput';
 
 function work(id: ExerciseId, n: number, hours: number, feeling?: PerceivedEffort) {
-  return performed(id, hoursBefore(NOW, hours), {}, sets(n, { kg: 70, reps: 8, perceivedEffort: feeling }));
+  return performed(id, hoursBefore(NOW, hours), {maxEvidence:{source:'input',confidence:'medium'}}, sets(n, { kg: 70, reps: 8, perceivedEffort: feeling }));
 }
 
 describe('recovery policy: dose, effort and movement overlap', () => {

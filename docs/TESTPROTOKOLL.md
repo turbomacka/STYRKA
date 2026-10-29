@@ -1,5 +1,9 @@
 # Testprotokoll STYRKA (uppdaterat 2026-10-11, inkl. STYRKA-CR-2026-10-10-01)
 
+## Tillägg 2026-10-29: ansträngningsskalan
+
+Aktuell verifiering använder Node 24.19.0. [Genomföranderapporten](EFFORT-SCALE-2026-10-29.md) beskriver F1–F8, nya regressionstester och 279 × 36 simuleringar. Jämförelsen mot huvudgrenen ger 2 100 oförändrade referensplaner. Stagingens releasebevis sparas under `docs/evidence/effort-scale-2026-10-29`; fysiska telefoner och VoiceOver kvarstår som manuella kontrollpunkter. Äldre miljö- och testuppgifter nedan gäller sina angivna versioner.
+
 Miljö: Windows 10, Node 22.13, lokal Supabase (Postgres 17.11, GoTrue 2.197, PostgREST 16.4) i Docker, Playwright 1.64 (Chromium, WebKit 27.2). Alla data syntetiska.
 
 Senare rättning ovanpå `97ee461`, publicerad på staging 2026-10-11: se [Rättningar efter granskningen](RATTNINGAR_2026-10-11.md) för F1–F6, förenklad mobilinloggning och aktuell verifiering. Stagingresultaten i tabellen nedan gäller den tidigare versionen.

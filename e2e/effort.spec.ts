@@ -59,7 +59,9 @@ test('optional set feelings survive edits and offline reload; initial strength i
   await page.getByRole('button',{name:'Avsluta och spara',exact:true}).click(); await expect(page.getByRole('heading',{name:'Så påverkas kommande träning'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
   await page.getByRole('link',{name:'Utveckling',exact:true}).click();
-  await expect(page.locator('.latest-strength')).toContainText('Senaste maxskattning: 96 kg');
+  await expect(page.getByText('Repetitioner per arbetsset (medelvärde) · reps',{exact:true})).toBeVisible();
+    await page.getByText('Maxstyrka och hur den uppskattas',{exact:true}).click();
+    await expect(page.locator('.latest-strength')).toContainText('Senaste maxskattning: 96 kg');
   await expect(page.locator('.latest-strength')).toContainText('Från registrerat set');
   await expect(page.getByText('Angiven styrkeuppgift · separat referens',{exact:true})).toBeVisible();
   await expect(page.locator('.chart path[stroke-dasharray]')).toHaveCount(0);

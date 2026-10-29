@@ -44,7 +44,7 @@ it('C/G: late effort changes rest while keeping epoch, manual adjustments, and r
   await adjustRest(h.ctx,id,rest.id,30);h.clock.t+=45000;
   await rateSet(h.ctx,id,'hard');const next=(await h.db.sets.get(id))!.detail!.rests[0];
   expect(next.startedAt).toBe(rest.startedAt);expect(next.recommendedSeconds).toBe(rest.recommendedSeconds+30);
-  expect(next.userAdjustmentSeconds).toBe(30);expect(next.policyVersion).toBe('REST/1.2.0');
+  expect(next.userAdjustmentSeconds).toBe(30);expect(next.policyVersion).toBe('REST/1.3.0');
   expect(remainingRest(next,h.clock.now())).toBe(next.recommendedSeconds+30-45);
   expect((await h.db.sets.get(id))!.detail!.performances[0].rir).toBeNull();
   await adjustRest(h.ctx,id,rest.id,'dismiss');const closed=(await h.db.sets.get(id))!.detail!.rests;

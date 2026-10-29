@@ -10,6 +10,7 @@ import { comparisonKey } from '../domain/trainingFlow';
  * Ren funktion: ingen Date.now, ingen slump, ingen I/O. Samma input + version ⇒ samma output.
  */
 import { ENGINE_VERSION, estimateMinutes, isHeavy, type Experience, type Mode } from '../domain/decision_engine';
+import { reliableOneRM } from '../domain/maxEvidence';
 import { heavyPairAllowed } from '../domain/heavyPair';
 import type { ExerciseId } from '../domain/catalog';
 import { CATALOG, CATALOG_VERSION, RETIRED_SLUGS, V1_SLUGS, exercise, impactsAreas, isAvailable, type Area, type EquipmentSlug } from '../domain/catalog';
@@ -264,7 +265,7 @@ function applyPairRulesByMode(ctx: Ctx, items: Item[]): void {
 }
 
 function toSessionExercise(p: PlannedExercise) {
-  return { exerciseId: p.exerciseId, mode: p.mode, sets: p.sets, plannedKg: p.kg, estimatedOneRM: p.estimatedOneRM, isMarkedHeavy: p.mode === 'heavy' };
+  return { exerciseId: p.exerciseId, mode: p.mode, sets: p.sets, plannedKg: p.kg, estimatedOneRM: p.maxEvidence ? p.estimatedOneRM : null, isMarkedHeavy: p.mode === 'heavy' };
 }
 
 /**
@@ -380,7 +381,7 @@ function minutesFor(exs: PlannedExercise[], ctx?: Ctx): number {
       // H: ensidiga övningar i katalog 2.0.0 räknas för båda sidor (tidsfaktor 2); version 1 har faktor 1.
       const c=p.configuration;
       const sideMultiplier=c ? (c.executionMode==='sequential'||c.executionMode==='alternating'?2:1) : exercise(p.exerciseId).timeMultiplier;
-      const restSeconds=recommendRest({category:kind,mode:p.mode,strengthFocus:true,experience:ctx?.input.profile.experience??'intermediate',adaptive:ctx?.input.profile.trainingPreferences?.adaptiveRestEnabled??true,kind:'work',nextKind:'work',overrideSeconds:c?.restSeconds??ctx?.input.profile.trainingPreferences?.preferredRestOverrides[p.exerciseId],relativeIntensity:p.kg!==null&&p.estimatedOneRM?p.kg/p.estimatedOneRM:null}).seconds;
+      const restSeconds=recommendRest({category:kind,mode:p.mode,strengthFocus:true,experience:ctx?.input.profile.experience??'intermediate',adaptive:ctx?.input.profile.trainingPreferences?.adaptiveRestEnabled??true,kind:'work',nextKind:'work',overrideSeconds:c?.restSeconds??ctx?.input.profile.trainingPreferences?.preferredRestOverrides[p.exerciseId],relativeIntensity:p.kg!==null&&reliableOneRM(p)?p.kg/reliableOneRM(p)!:null}).seconds;
       return { mode:p.mode,sets:p.sets,kind,firstBarbell,restSeconds,reps:p.reps,seconds:p.targetSeconds??undefined,sideMultiplier,betweenSidesSeconds:sideMultiplier>1?c?.betweenSidesSeconds:0 };
     }),
   );

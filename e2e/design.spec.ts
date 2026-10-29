@@ -111,7 +111,7 @@ for (const theme of ['light', 'dark'] as const) test(`DES mobile states and 200%
   expect(await page.locator('.expandable').first().evaluate((el) => getComputedStyle(el).transitionDuration)).toBe('0s');
   await head.click(); await expect(head).toHaveAttribute('aria-expanded', 'false'); await head.click(); await expect(note).toBeVisible();
   await page.getByRole('link', { name: 'Utveckling', exact: true }).click();
-  const select = page.getByLabel('Välj datapunkt'); await select.selectOption('0'); await expect(page.locator('.chart-tooltip')).not.toContainText('Tryck på en punkt');
+  const select = page.getByLabel('Välj datapunkt').first(); await select.selectOption('0'); await expect(page.locator('.chart-tooltip').first()).not.toContainText('Tryck på en punkt');
   await page.locator('.chart-point').first().click(); await targets(page); await accessible(page);
   await page.locator('.balance-head').click(); await accessible(page);
   await page.evaluate(() => document.documentElement.style.fontSize = '200%'); await fits(page);

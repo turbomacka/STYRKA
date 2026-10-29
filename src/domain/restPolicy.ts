@@ -3,7 +3,7 @@ import type { TimeKind } from './catalog';
 import type { PerceivedEffort, SetKind } from './model';
 import type { RestRecord } from './trainingFlow';
 
-export const REST_POLICY = { version: 'REST/1.2.0', heavy: 180, compound: 120, isolation: 90, technique: 60, min: 30, max: 300, effortAddition: 30, highIntensityAddition: 60, repDrop: .2, warmup: 60, beforeHeavy: 150 } as const;
+export const REST_POLICY = { version: 'REST/1.3.0', heavy: 180, compound: 120, isolation: 90, technique: 60, min: 30, max: 300, effortAddition: 30, highIntensityAddition: 60, repDrop: .2, warmup: 60, beforeHeavy: 150 } as const;
 export type RestPerformance = { comparisonKey: string; side: string; load: number | null; secondLoad?: number | null; reps: number | null; targetReps: number | null; rir: number | null; effort?: PerceivedEffort | null; kind: SetKind; technique: string | null };
 export type RestInput = { effort?: PerceivedEffort | null; category: TimeKind; mode: Mode; strengthFocus: boolean; experience: Experience; adaptive: boolean; kind: SetKind; nextKind: SetKind | null; secondSidePending?: boolean; betweenSidesSeconds?: number; overrideSeconds?: number | null; relativeIntensity?: number | null; effortRir?: number | null; current?: RestPerformance; previous?: RestPerformance };
 export function recommendRest(i: RestInput): { seconds: number; reasons: string[]; version: string } {
@@ -38,7 +38,7 @@ export function recommendRest(i: RestInput): { seconds: number; reasons: string[
 export const REST_REASONS: Record<string, string> = {
   REPETITIONS_DECREASED_UNCERTAIN: 'Färre repetitioner vid samma belastning. Lite mer vila kan vara värt att prova; ansträngningen är osäker.',
   REPORTED_EFFORT: 'Du beskrev setet som ansträngande.', BETWEEN_SIDES: 'Din valda vila mellan sidorna.', NO_FOLLOWING_SET: 'Inga fler set återstår.', WARMUP: 'Kort vila mellan uppvärmningsset.', BEFORE_WORK: 'Vila inför första arbetssetet.',
-  TECHNIQUE: 'Lättare teknikarbete.', HEAVY_STRENGTH: 'Tung flerledsövning med styrkefokus.', ISOLATION: 'Grundvila för isolationsövning.', COMPOUND: 'Grundvila för flerledsövning.', HIGH_INTENSITY: 'Hög belastning i förhållande till ett jämförbart maxvärde.', HIGH_EFFORT: 'Du angav få repetitioner kvar.', REPETITIONS_DECREASED: 'Färre repetitioner än i ett jämförbart set. Längre vila kan vara värd att prova; tappet kan ha andra orsaker.', PERSONAL_PREFERENCE: 'Din valda standardvila.',
+  TECHNIQUE: 'Lättare teknikarbete.', HEAVY_STRENGTH: 'Tung flerledsövning med styrkefokus.', ISOLATION: 'Grundvila för isolationsövning.', COMPOUND: 'Grundvila för flerledsövning.', HIGH_INTENSITY: 'Hög belastning i förhållande till ett jämförbart maxvärde.', HIGH_EFFORT: 'Registrerad repetitionsreserv eller maxansträngning talar för lite mer vila.', REPETITIONS_DECREASED: 'Färre repetitioner än i ett jämförbart set. Längre vila kan vara värd att prova; tappet kan ha andra orsaker.', PERSONAL_PREFERENCE: 'Din valda standardvila.',
 };
 export function remainingRest(r: RestRecord, now: string): number {
   const elapsed = (Date.parse(now) - Date.parse(r.startedAt)) / 1000;

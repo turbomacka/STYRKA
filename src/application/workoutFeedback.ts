@@ -57,7 +57,7 @@ export async function savedWorkoutFeedback(ctx:AppContext,id:string,comparison?:
     const choiceKey=`feedback-choice:${id}`;
     const prior=(await ctx.db.meta.get(choiceKey))?.value as FeedbackChoice|undefined;
     const recent=(await ctx.db.meta.where('key').startsWith('feedback-choice:').toArray()).map(r=>r.value as FeedbackChoice).filter(r=>r.sessionId!==id&&(r.at<at||r.at===at&&r.sessionId<id)).sort((a,b)=>b.at.localeCompare(a.at)||b.sessionId.localeCompare(a.sessionId));
-    const insight= !reduced && !symptoms.length && session.status==='completed' && !['protected','trial_return','empty','returning','demanding','recovery'].includes(category)
+    const insight= !reduced && !symptoms.length && session.status==='completed' && !['protected','trial_return','empty','returning','recovery'].includes(category)
       ?workoutPerformanceInsight(insightInput)
       :null;
     const selected=selectFeedback({sessionId:id,at,category,existing:prior,recent,seed:parseInt(hashOf({id,category,version:WORKOUT_FEEDBACK_VERSION}).slice(0,8),16),allowHumor:!insight&&!symptoms.length&&session.status==='completed'&&!decisions.some(d=>['constraint','trial_return','recovery'].includes(d.kind))});
