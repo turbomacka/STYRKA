@@ -269,7 +269,7 @@ describe('offline local-first', () => {
     expect(j.profile).toMatchObject({ userId: h.userId, plannedSessionsPerWeek: 2 });
     expect(j.sessions).toHaveLength(1);
     const sess = j.sessions[0] as { snapshot: { engineVersion: string; templateVersion: string; inputsHash: string }; exercises: Array<{ snapshot: { reasons: string[] }; sets: unknown[] }> };
-    expect(sess.snapshot).toMatchObject({ engineVersion: '2.1.0', templateVersion: '2.1.0' });
+    expect(sess.snapshot).toMatchObject({ engineVersion: '2.2.0', templateVersion: '2.1.0' });
     expect(sess.exercises[0].snapshot.reasons.length).toBeGreaterThan(0);
     expect(sess.exercises.flatMap((e) => e.sets).length).toBeGreaterThan(0);
     expect(j.recommendationAudits).toHaveLength(1);

@@ -4,7 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import type { ExerciseId } from '../../domain/catalog';
 import { CATALOG, exercise } from '../../domain/catalog';
 import { formatKg } from '../../domain/units';
-import { listSessions, trainingSeriesOptions, strengthSeries } from '../../application/history';
+import { listSessions, trainingSeriesOptions, strengthSeries, repetitionProgress } from '../../application/history';
 import { DeleteWorkout } from '../components/DeleteWorkout';
 import { Segmented } from '../components/common';
 import { ProgressChart } from '../components/ProgressChart';
@@ -43,6 +43,8 @@ export function Progress() {
   const lk = exercise(ex).loadKind;
   const perHand = exercise(ex).loadDisplayBasis === 'per_hand_kg';
   const unit = series?.unit ?? (lk === 'duration_sec' ? 's' : perHand ? 'kg/hantel' : 'kg');
+  const improvement=repetitionProgress(perf);
+  const repPoints=perf.filter(p=>p.work?.length&&p.work.every(w=>w.reps!==null)).map(p=>({...p,kg:p.work!.reduce((n,w)=>n+w.reps!,0)/p.work!.length}));
   return (
     <div className="page stack">
       <h1>{T.TITLE_PR}</h1>
@@ -68,17 +70,24 @@ export function Progress() {
           <Segmented label="Period" value={range} onChange={setRange} options={[{ value: '4v', label: '4 veckor' }, { value: '12v', label: '12 veckor' }, { value: 'alla', label: 'Allt' }]} />
           <div className="card stack">
             <h2>{exercise(ex).nameSv}</h2>
+            {series && <ProgressChart points={perf} unit={unit} title={`Belastning och prestation · ${exercise(ex).nameSv}`} />}
+            {perf.at(-1) && <p>Senaste pass: {perf.at(-1)!.detail}.</p>}
+            {improvement && <p>{improvement}</p>}
+            {repPoints.length>0 && !['s','reps'].includes(unit) && <ProgressChart points={repPoints} unit="reps" title="Repetitioner per arbetsset (medelvärde)" />}
+            <p className="small muted">Jämför belastning, repetitioner och antal set tillsammans. Fler set är mer arbete, men visar inte i sig ökad styrka. Vid olika belastningar visas varje set i detaljerna.</p>
+            {series?.note && <p className="small muted">{series.note}</p>}
+            {series?.comparable && <details><summary>Maxstyrka och hur den uppskattas</summary>
             {series?.latestMax && <div className="stack latest-strength" aria-label="Senaste maxvärde">
               <p><span className="label">{series.latestMax.source === 'measured' ? 'Senaste rapporterade max' : 'Senaste maxskattning'}:</span> <strong className="num">{formatKg(Math.round(series.latestMax.kg * 1000))} {unit}</strong></p>
               <p className="small muted">{series.latestMax.origin === 'input' ? 'Från din angivna styrkeuppgift' : 'Från registrerat set'} · {new Date(series.latestMax.at).toLocaleDateString('sv-SE')}. Värdet ligger kvar tills det finns nytt underlag.</p>
             </div>}
-            {series && <ProgressChart points={series.points} unit={unit} title={`Utveckling ${exercise(ex).nameSv}`} />}
-            {series?.note && <p className="small muted">{series.note}</p>}
+            {series && <ProgressChart points={series.points.filter(p=>p.source!=='performance')} unit={unit} title={`Maxstyrka · ${exercise(ex).nameSv}`} />}
             {series?.comparable && <p className="small muted">{T.INFO_1RM} är en uppskattning, inte ett testat maxvärde. {T.INFO_ESTIMATE}</p>}
-            {series?.comparable && <p className="small muted">Ny maxskattning kräver ett kontrollerat arbetsset med 1–8 repetitioner och angiven repetitionsreserv eller maxansträngning. Övriga set visas som faktisk prestation. Ett enskilt lägre värde visar inte i sig att du blivit svagare.</p>}
+            <p className="small muted">Ny maxskattning kräver ett kontrollerat arbetsset med 1–8 repetitioner och angiven repetitionsreserv 0–3 eller maxansträngning. Övriga set visas som faktisk prestation. Ett enskilt lägre värde visar inte i sig att du blivit svagare.</p>
+            </details>}
             {best !== null && lk !== 'assistance_kg' && (
               <p>
-                <span className="label">Bästa {lk === 'duration_sec' ? 'tid' : 'arbetsset'} i perioden:</span> <span className="num">{lk === 'duration_sec' ? `${best} s` : `${formatKg(Math.round(best * 1000))} ${unit}`}</span>
+                <span className="label">Högsta {lk === 'duration_sec' ? 'tid' : unit==='reps'?'repetitionsantal':'belastning'} i perioden:</span> <span className="num">{lk === 'duration_sec' ? `${best} s` : `${formatKg(Math.round(best * 1000))} ${unit}`}</span>
               </p>
             )}
           </div>

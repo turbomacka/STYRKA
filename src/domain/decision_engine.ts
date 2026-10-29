@@ -6,7 +6,7 @@ import { recommendRest } from './restPolicy';
  * Product heuristics are NOT clinical rules. All percentages and intervals are
  * configurable and subject to validation. Never interpret as injury probabilities.
  */
-export const ENGINE_VERSION = '2.1.0' as const;
+export const ENGINE_VERSION = '2.2.0' as const;
 export type Experience = 'novice'|'intermediate'|'experienced';
 export type Mode = 'heavy'|'moderate'|'light';
 export type Evidence = 'E1'|'E2'|'H'|'U';

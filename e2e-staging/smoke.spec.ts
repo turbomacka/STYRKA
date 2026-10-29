@@ -100,8 +100,8 @@ test('staging: inloggning, intro, pass med synk till staging-databasen, utan CSP
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(page.getByRole('radio', { name: 'Mörkt', exact: true })).toHaveAttribute('aria-checked', 'true');
     await page.getByRole('link', { name: 'Utveckling', exact: true }).click();
-    await page.getByLabel('Välj datapunkt').selectOption('0');
-    await expect(page.locator('.chart-tooltip')).not.toContainText('Tryck på en punkt');
+    await page.getByLabel('Välj datapunkt').first().selectOption('0');
+    await expect(page.locator('.chart-tooltip').first()).not.toContainText('Tryck på en punkt');
     await page.screenshot({ path: `${dir}/S12-utveckling-morkt.png`, fullPage: true });
     await page.getByRole('button', { name: 'Ta bort pass', exact: true }).click();
     await page.getByRole('button', { name: 'Ja, ta bort passet' }).click();

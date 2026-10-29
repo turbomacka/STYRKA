@@ -3,8 +3,8 @@ import type { ExerciseId } from './catalog';
 import type { Area, EquipmentSlug, LoadDisplayBasis, LoadKind } from './catalog';
 
 /** Versionsnummer som sparas i varje plansnapshot (04 §4). */
-export const RULESET_VERSION = 'STYRKA-RULES/2.1.0' as const;
-export const PLANNER_VERSION = 'STYRKA-PLANNER/2.1.0' as const;
+export const RULESET_VERSION = 'STYRKA-RULES/2.2.0' as const;
+export const PLANNER_VERSION = 'STYRKA-PLANNER/2.2.0' as const;
 
 export type Readiness = 'good' | 'normal' | 'tired' | 'pain';
 export type SessionKind = 'planned' | 'extra' | 'calibration';
@@ -111,6 +111,7 @@ export type PlannedExercise = {
   calibration: boolean;
   incrementKg: number;
   estimatedOneRM: number | null;
+  maxEvidence?: import('./maxEvidence').MaxEvidence;
   substitutionFrom: ExerciseId | null;
   substitutionReason: string | null;
   acceptedByUserAt: string | null;

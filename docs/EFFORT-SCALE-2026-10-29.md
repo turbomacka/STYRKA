@@ -1,0 +1,28 @@
+# Ansträngningsskalan – genomförda ändringar
+
+Utgångspunkt: huvudgrenen `305aa36f4f028f5645a32f98698c26d1ea9a374c` och granskningsrapportens F1–F8. Genomförandet är beställt av produktägaren, inklusive publicering till befintlig staging. Databasschema och lagrade träningsobservationer ändras inte.
+
+## Policy och konsekvenser
+
+1. **F1, Tungt:** tre på varandra följande, jämförbara och fullföljda pass på samma dos med kontrollerad teknik kan stödja ett litet ökningsförsök. Miss, ändrad dos, okänd teknik, maxansträngning eller låg numerisk reserv bryter denna bekräftelse. Tre pass är en produktheuristik, inte en vetenskapligt fastställd tröskel. Ordinarie bekräftelse, utrustningssteg, manuellt vald dos, besvärsbegränsning och återgång till försökets basnivå kvarstår.
+2. **F2, förklaringar:** separata skäl för numerisk reserv, maxansträngning, äldre ”för tungt”, motstridiga svar och avvaktan efter ”Tungt”. Den äldre koden LOW_RIR_HOLD får neutral text eftersom historiska snapshots kan innehålla den även efter kvalitativa svar. En kvalitativ skattning blir inte ett exakt RIR-värde, med undantag för den redan definierade maxansträngningen.
+3. **F3, kalibrering:** repetitionsmålet efter kalibrering och för orörda kommande set begränsas till demonstrerade repetitioner. Det gäller även assistans och extra kroppsvikt. ”Tungt” sänker inte i sig vikten; äldre too_heavy behåller sin riktiga lastriktning. Kalibrerad kvalitet kräver fullföljda mål, kontrollerad teknik och tillräcklig registrerad marginal på samtliga sidor, utan relevanta besvär. Utebliven skattning tillåts, men maximal eller uttryckligt låg reserv ger inte sådan kvalitet. Användarredigerade mål bevaras.
+4. **F4, dostolerans:** fullföljda, kontrollerade pass kan bidra även om de skattas Tungt. Den akuta ansträngningsfaktorn 1,3 och gränserna för tolerans behålls. Maxansträngning, låg numerisk reserv och missade mål ger fortfarande inte lyckad dostolerans.
+5. **F5, maxstyrka:** `estimateCapacity()` behålls som separat prestationsindikator. Den skriver inte över angiven maxstyrka och blir inte automatiskt intensitetsnämnare. Maxunderlag kräver angiven styrkeuppgift eller kontrollerade set med känd reserv, 1–8 reps och RIR 0–3. Källa, tid när tillgänglig och säkerhet sparas separat i `maxEvidence`. Ett daterat nyare kvalificerande set kan ersätta en daterad profiluppgift; en odaterad profiluppgift behålls som referens. Setbaserad skattning är låg säkerhet och används inte som säker nämnare för vila/återhämtning/uppvärmning. Parbegränsning får försiktigt flagga belastning även från ett identifierat maxunderlag med låg säkerhet. Äldre snapshots utan källmetadata betraktas som okända, och tungt träningsläge behåller parskyddet.
+6. **F6, grafer:** belastning visas tillsammans med repetitioner per arbetsset, setantal och varje sets belastning. 3 × 6 → 3 × 8 på samma vikt visas som sex fler repetitioner. Jämförelsen kräver samma setantal och belastningar; extra set räknas inte automatiskt som styrkeökning. Utrustning, variant, sida, ordinarie maskinnivåer och assistans hålls åtskilda. Maxserien och villkoren ligger i utfällbar information. Saknad/okontrollerad teknik skapar inte en ny maxpunkt.
+7. **F7, vila:** även Lätt/För lätt följer med genom applikationsadaptern och efterhandsändring. Ett repetitionsfall med ett lättare skattat set ger inte den osäkra viloförlängningen. Timerns starttid och manuella justeringar bevaras.
+8. **F8, återkoppling:** ett tungt pass får samtidigt innehålla en saklig jämförelse av fler repetitioner eller högre belastning. Detta lovar inte en höjning i nästa plan. Skydd vid besvär, återhämtning och misslyckade försök kvarstår.
+
+## Verifiering och reproduktion
+
+- `npx vitest run --project unit --project ui`: den fullständiga sviten omfattar regressionstester för F1–F8, synk, korrigering/radering, manuella dosval, återhämtning och användargränssnitt.
+- `tests/unit/effort_transition_simulation.test.ts`: 279 deterministiska körningar × 36 pass/exponeringar = 10 044. Tre erfarenhetsnivåer; kvalitativa och uteblivna svar samt äldre RIR; förbättring, stagnation, tillfällig försämring, misslyckade försök, manuellt lägre dos, uppehåll, begränsningar och sidoskillnader. 246 körningar återkopplar motor/planner; 33 återspelar tolerans/sidhistorik. Simuleringarna är programkontroller, inte fysiologiska prognoser.
+- `node scripts/verify-effort-regression.mjs`: 2 100 planer jämförs mot exakt huvudgrensversion. **2 100 oförändrade**, inklusive befintliga begränsningsfall. Ny versionsmärkt golden behåller samma beteendekontrollsumma; tidigare golden-filer bevaras.
+- Fullständiga syntetiska spår skrivs vid test till `test-results/effort-simulation.json`; sammanfattning i `docs/evidence/effort-scale-2026-10-29/simulation.json`.
+- Vid publicering krävs CI för samma commit, publicerade filers kontrollsummor/headers, stagingtester, isolerad historikåterspelning med blockerade skrivningar, datakontrollsummor och PWA-uppdatering/offlinekontroll. Slutliga release-ID:n redovisas separat efter publicering.
+
+I förbättringsscenariot med genomgående Tungt går alla tre erfarenhetsnivåer från 60 kg × 6 till 62,5 kg × 10 efter 36 pass. Försöksmissar återgår till basdosen. Detta illustrerar beslutsskillnaden; det förutsäger inte en verklig användares utveckling.
+
+## Kvarvarande avgränsningar
+
+Ingen vetenskaplig validering av trepassregeln eller individuell återhämtningsmodell har skapats genom dessa tester. Fysisk installerad iPhone/Android och VoiceOver är separata manuella kontrollpunkter. Framtida individanpassning, forskningsutvärdering och nya sammansatta styrkeindex ingår inte. Versionssteg: ENGINE/RULES/PLANNER/ADAPTIVE 2.2.0, RECOVERY 3.2.0, REST 1.3.0, WORKOUT-FEEDBACK 3.2.0, EVIDENS 2.5.0.

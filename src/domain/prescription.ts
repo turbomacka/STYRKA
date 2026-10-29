@@ -2,7 +2,9 @@
  * duration share confirmation and trial handling; only load semantics differ.
  * All numerical policy thresholds are product heuristics, not clinical thresholds.
  */
-import { adaptiveNext, estimateCapacity } from './adaptiveProgression';
+import { adaptiveNext } from './adaptiveProgression';
+import { effectiveRir } from './effort';
+import type { MaxEvidence } from './maxEvidence';
 import { hasShortObservedRest } from './restPolicy';
 import { ENGINE_VERSION, estimatedOneRepMax, initialPrescription, recommendNext, prescriptionGate, roundDownKg, type Experience, type Exposure, type LiftEstimate, type Mode, type Recommendation, type SetResult, type SymptomState } from './decision_engine';
 import type { ExerciseId, RefExerciseId } from './catalog';
@@ -250,9 +252,19 @@ function prescribeExternal(args: PrescribeArgs): PlannedExercise {
   const { latest, sameMode } = latestFor(args.history, args.mode);
   const gate = prescriptionGate(args.gate.hoursSinceRelevant, args.gate.relevantSymptoms, args.gate.impactedRegion, args.gate.recovery);
   const supplied = toEngineEstimate(args.settings?.estimate ?? null);
-  const observed=estimateCapacity([...args.history].sort((a,b)=>a.whenUtc.localeCompare(b.whenUtc)).map(toExposure));
-  const est:LiftEstimate|null=observed.estimatedMax!==null?{kind:'1rm',kg:observed.estimatedMax,measured:false}:supplied.est;
-  const confidence=observed.estimatedMax!==null?observed.confidence:supplied.confidence;
+  // A robust performance indicator without known reserve cannot replace a max input.
+  const observed=[...args.history].filter(h=>h.sessionStatus!=='preview').sort((a,b)=>a.whenUtc.localeCompare(b.whenUtc)).flatMap(h=>{
+    const values=workDone(h.sets).filter(s=>s.technique==='controlled'&&s.provenance?.role!=='extra').flatMap(s=>{
+      const rir=effectiveRir(s.rir,s.perceivedEffort);
+      const max=s.actualKg!==null&&s.actualReps!==null&&rir!==null?submaxE1rm(s.actualKg,s.actualReps,rir):null;
+      return max?[s.actualReps===1&&rir===0?s.actualKg!:max.kg]:[];
+    });
+    return values.length?[{kg:Math.max(...values),at:h.whenUtc}]:[];
+  }).at(-1);
+  const useObserved=observed && (!supplied.est || !!args.settings?.estimate?.testedAt && observed.at>args.settings.estimate.testedAt+'T23:59:59.999Z');
+  const est:LiftEstimate|null=useObserved?{kind:'1rm',kg:observed.kg,measured:false}:supplied.est;
+  const confidence=useObserved?'low':supplied.confidence;
+  const maxEvidence:MaxEvidence|undefined=est?{source:useObserved?'reported_set':'input',confidence,at:useObserved?observed.at:args.settings?.estimate?.testedAt}:undefined;
   const e1rm = est ? estimatedOneRepMax(est) : null;
 
   if (!latest) {
@@ -271,10 +283,10 @@ function prescribeExternal(args: PrescribeArgs): PlannedExercise {
     rec = { ...rec, state: gate.state, sets: applySets(args.sets, restart) };
     if (gate.state === 'caution') rec.reasons = [...rec.reasons, gate.reason];
     if (args.settings?.estimate?.inputReason) rec.reasons = [...rec.reasons, args.settings.estimate.inputReason];
-    return base(args, rec, { estimatedOneRM: e1rm, calibration: rec.kg === null });
+    return base(args, rec, { estimatedOneRM: e1rm, maxEvidence, calibration: rec.kg === null });
   }
 
-  if (latest.plan.kg === null || (latest.plan.calibration && latest.plan.recommendation)) return fromCalibration(args, latest, inc, e1rm);
+  if (latest.plan.kg === null || latest.plan.calibration) return {...fromCalibration(args, latest, inc, e1rm),maxEvidence};
 
   const exposures = sameMode.map(toExposure);
   const next = recommendNext({
@@ -297,7 +309,7 @@ function prescribeExternal(args: PrescribeArgs): PlannedExercise {
     reasons.push('USER_MAX_LOAD_CAP');
   }
   const rec: Recommendation = { ...next, kg, reasons, sets: Math.min(applySets(args.sets, gate.state === 'restart'), next.sets) };
-  return base(args, rec, { estimatedOneRM: next.adaptive?.capacity.estimatedMax ?? e1rm ?? latest.plan.estimatedOneRM, calibration: kg === null, confidence: latest.plan.confidence === 'unknown' ? 'low' : latest.plan.confidence });
+  return base(args, rec, { estimatedOneRM: e1rm, maxEvidence, calibration: kg === null, confidence: latest.plan.confidence === 'unknown' ? 'low' : latest.plan.confidence });
 }
 
 function deriveFromOtherMode(args: PrescribeArgs, inc: number): { kg: number } | null {
@@ -338,9 +350,9 @@ function fromCalibration(args: PrescribeArgs, latest: PerformedExercise, inc: nu
     kg = roundDownKg(maxLoad, inc);
     reasons.push('USER_MAX_LOAD_CAP');
   }
-  const submax = done.map((s) => (s.actualReps !== null && s.rir !== null ? submaxE1rm(s.actualKg as number, s.actualReps, s.rir) : null)).filter((x) => x !== null);
-  const derivedE1rm = estimateCapacity(args.history.map(toExposure)).estimatedMax ?? (submax.length ? Math.min(...submax.map((x) => x!.kg)) : null);
-  return base(args, { ...init, kg, reps: init.bandMin, state: gate.state, reasons, sets: applySets(args.sets, gate.state === 'restart'), confidence: 'low' }, { calibration: false, estimatedOneRM: e1rm ?? derivedE1rm });
+  const reps=Math.max(1,Math.min(init.bandMin,...done.map(s=>s.actualReps??1)));
+  if(reps<init.bandMin)reasons.push('CALIBRATION_REPS_OBSERVED');
+  return base(args, { ...init, kg, reps, state: gate.state, reasons, sets: applySets(args.sets, gate.state === 'restart'), confidence: 'low' }, { calibration: false, estimatedOneRM: e1rm });
 }
 
 export type Decision =
@@ -385,7 +397,7 @@ function prescribeRepsOrAssisted(args: PrescribeArgs): PlannedExercise {
   if (!latest) {
     return base(args, { ...init, kg: null, state: gate.state, sets, reasons: ['CALIBRATION_REQUIRED'], confidence: 'unknown' }, { calibration: true });
   }
-  if (latest.plan.kg === null && ex.loadKind!=='reps_only') {
+  if ((latest.plan.kg === null || latest.plan.calibration) && ex.loadKind!=='reps_only') {
     const done = workDone(latest.sets).filter((s) => s.actualKg !== null);
     if (!done.length) return base(args, { ...init, kg: null, state: gate.state, sets, reasons: ['CALIBRATION_REQUIRED'], confidence: 'unknown' }, { calibration: true });
     // Assistans: mest hjälp som användaren valt (försiktigast); extra vikt: minst tillagd vikt.
@@ -401,7 +413,9 @@ function prescribeRepsOrAssisted(args: PrescribeArgs): PlannedExercise {
       kg = assistance ? Math.min(maxKg, r3(kg + inc)) : roundDownKg(kg * gate.factor, inc);
       reasons.push(gate.reason);
     }
-    return base(args, { ...init, kg, reps: init.bandMin, state: gate.state, sets, reasons, confidence: 'low' }, { calibration: false });
+    const reps=Math.max(1,Math.min(init.bandMin,...done.map(s=>s.actualReps??1)));
+    if(reps<init.bandMin)reasons.push('CALIBRATION_REPS_OBSERVED');
+    return base(args, { ...init, kg, reps, state: gate.state, sets, reasons, confidence: 'low' }, { calibration: false });
   }
 
   const next = recommendNext({previous:{...toRecommendation(latest.plan),kg:ex.loadKind==='reps_only'?0:latest.plan.kg},history:sameMode.map(toExposure),experience:args.experience,increment:inc,

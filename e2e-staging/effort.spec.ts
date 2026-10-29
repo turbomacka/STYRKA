@@ -83,6 +83,8 @@ test('published effort: independent sides, offline save, removal, server validat
     }),{userId,setId:max.id});
     const remoteMax=(await rows()).find(s=>s.id===max.id)!;
     expect(localMax).toMatchObject({serverRevision:remoteMax.revision,perceivedEffort:'maximal',detail:{performances:[{effort:'maximal'}]}});
+    await expect(page.getByText('Repetitioner per arbetsset (medelvärde) · reps',{exact:true})).toBeVisible();
+    await page.getByText('Maxstyrka och hur den uppskattas',{exact:true}).click();
     await expect(page.locator('.latest-strength')).toContainText('Senaste maxskattning: 96 kg');
     await expect(page.getByText('Angiven styrkeuppgift · separat referens',{exact:true})).toBeVisible();
     await expect(page.locator('.chart path[stroke-dasharray]')).toHaveCount(0);

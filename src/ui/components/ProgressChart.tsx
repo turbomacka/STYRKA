@@ -61,7 +61,7 @@ export function ProgressChart({ points, unit = 'kg', title }: { points: Strength
       </div>
       <figcaption className="legend" style={{ marginTop: 8 }}>
         {inputs.length > 0 && <span><svg width="14" height="14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" fill="var(--surface)" stroke="var(--text-2)" strokeWidth="2" /></svg> Angiven styrkeuppgift · separat referens</span>}
-        <span><svg width="22" height="10" aria-hidden="true"><line x1="0" y1="5" x2="22" y2="5" stroke="var(--accent)" strokeWidth="2.5" /><circle cx="11" cy="5" r="3.5" fill="var(--accent)" /></svg> Faktisk prestation</span>
+        {perf.length>0 && <span><svg width="22" height="10" aria-hidden="true"><line x1="0" y1="5" x2="22" y2="5" stroke="var(--accent)" strokeWidth="2.5" /><circle cx="11" cy="5" r="3.5" fill="var(--accent)" /></svg> Faktisk prestation</span>}
         {est.length > 0 && <span><svg width="22" height="10" aria-hidden="true"><line x1="0" y1="5" x2="22" y2="5" stroke="var(--text-2)" strokeWidth="2" strokeDasharray="4 3" /><circle cx="11" cy="5" r="3.5" fill="var(--surface)" stroke="var(--text-2)" strokeWidth="2" /></svg> Uppskattad maxstyrka (osäker)</span>}
         {meas.length > 0 && <span><svg width="14" height="14" aria-hidden="true"><path d="M7,1 L13,7 L7,13 L1,7 Z" fill="var(--ok)" /></svg> Uppmätt</span>}
       </figcaption>

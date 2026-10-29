@@ -38,9 +38,9 @@ for (const theme of ['light', 'dark'] as const) test(`design evidence ${theme}`,
   await expect(page.locator('.plan-row-head').first()).toBeVisible(); await page.locator('.plan-row-head').first().click();
   await expect(page.getByLabel('Egen anteckning (privat)').first()).toBeVisible(); await shot('07-plan');
   await page.getByRole('link', { name: 'Utveckling', exact: true }).click();
-  await expect(page.locator('.chart')).toBeVisible();
+  await expect(page.locator('.chart').first()).toBeVisible();
   await expect(page.locator('.balance-head')).not.toContainText('Hämtar');
-  if (phase === 'after') await page.getByLabel('Välj datapunkt').selectOption('0');
+  if (phase === 'after') await page.getByLabel('Välj datapunkt').first().selectOption('0');
   await shot('08-progress');
   await page.locator('.balance-head').click();
   await expect(page.locator('.balance-bar').first()).toBeVisible(); await shot('08b-balance');

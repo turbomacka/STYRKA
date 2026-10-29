@@ -1,7 +1,7 @@
 import type { Experience, Exposure, Recommendation, SetResult } from './decision_engine';
 
 /** Product heuristics, not physiological measurements. See the adaptation implementation plan. */
-export const ADAPTIVE_POLICY = { version: 'ADAPTIVE/2.1.0', confirmation: 2, extraReps: 2, doseRepRatio: .8, retryWins: 2 } as const;
+export const ADAPTIVE_POLICY = { version: 'ADAPTIVE/2.2.0', confirmation: 2, hardConfirmation: 3, extraReps: 2, doseRepRatio: .8, retryWins: 2 } as const;
 export type TrainingLevel = { kg: number; reps: number; sets: number };
 export type AdaptiveEvidence = {
   version: string;
@@ -29,8 +29,15 @@ const goodRir = (w: SetResult[]) => w.length > 0 && w.every(s => s.rir !== null 
 const positiveFeeling = (s:SetResult) => ['too_easy','easy','ok'].includes(s.effort??'');
 const easyFeeling = (s:SetResult) => s.effort==='easy'||s.effort==='too_easy';
 const conflict = (s:SetResult) => s.technique==='poor' || (easyFeeling(s) && s.rir!==null && s.rir<=1);
-/** One final hard set is different from a predominantly maximal exercise. */
-const highEffort = (w:SetResult[]) => w.some(conflict) || w.some(s=>s.effort==='too_heavy') || w.filter(s=>s.rir===0||s.effort==='maximal').length>=Math.ceil(w.length/2) || w.filter(s=>(s.rir!==null&&s.rir<=1)||s.effort==='hard').length>w.length/2;
+/** Qualitative difficulty is not an exact reserve. Keep the provenance of each hold. */
+const effortHold = (w:SetResult[]): string | null => {
+  if(w.some(conflict))return 'EFFORT_CONFLICT_HOLD';
+  if(w.some(s=>s.effort==='too_heavy'))return 'LEGACY_TOO_HEAVY_HOLD';
+  if(w.filter(s=>s.effort==='maximal'||s.rir===0).length>=Math.ceil(w.length/2))return w.some(s=>s.effort==='maximal')?'MAXIMAL_EFFORT_HOLD':'NUMERIC_RESERVE_HOLD';
+  return w.filter(s=>s.rir!==null&&s.rir<=1).length>w.length/2?'NUMERIC_RESERVE_HOLD':null;
+};
+const highEffort = (w:SetResult[]) => effortHold(w)!==null;
+const predominantlyHard = (w:SetResult[]) => w.filter(s=>s.effort==='hard').length>w.length/2;
 const median = (v: number[]) => [...v].sort((a,b) => a-b)[Math.floor((v.length-1)/2)];
 const uniform = (w:SetResult[]) => w.length>0 && w.every(s=>s.technique!=='poor') && Math.max(...w.map(s=>s.actualKg))-Math.min(...w.map(s=>s.actualKg))<.001 && Math.max(...w.map(s=>s.actualReps))-Math.min(...w.map(s=>s.actualReps))<=1;
 
@@ -149,8 +156,17 @@ export function adaptiveNext(a: ProgressionOptions): Recommendation {
   if(!consistent)return finish('MIXED_WORK_DOSE_HOLD');
   if(chosenReason!=='problem')r={...r,...actual};
   if(releasedAt===history.length-1)return finish('DOSE_REESTABLISHED');
-  if(highEffort(work))return finish('LOW_RIR_HOLD');
+  const effortReason=effortHold(work);
+  if(effortReason)return finish(effortReason);
   if(a.hold)return finish(chosenReason==='problem'?'USER_DOSE_ADAPTED':'RECOVERY_HOLD');
+  if(predominantlyHard(work)) {
+    // Three consecutive comparable successes at this dose support a small trial.
+    // Unknown/poor technique, maximal work, a miss or a new dose resets this evidence.
+    const recent=history.slice(-ADAPTIVE_POLICY.hardConfirmation);
+    if(recent.length<ADAPTIVE_POLICY.hardConfirmation || !recent.every(e=>{
+      const w=ordinary(e);return fulfilled(e,w)&&uniform(w)&&same(level(w),actual)&&w.every(s=>s.technique==='controlled'&&s.effort!=='maximal'&&(s.rir===null||s.rir>=2))&&!highEffort(w);
+    }))return finish('HARD_EFFORT_CONFIRMATION');
+  }
   const enoughEasy=work.filter(easyFeeling).length>=Math.max(work.length===1?1:2,Math.ceil(work.length*2/3))&&!work.some(s=>['hard','maximal','too_heavy'].includes(s.effort??'')||(s.rir!==null&&s.rir<=1));
   const priorSimilar=history.slice(0,-1).some(h=>{const old=ordinary(h);return old.length>0&&same(level(old),actual)&&fulfilled(h,old);});
   const quickTrial=chosenReason==='manual'&&manualAt===history.length-1&&chosen!==null&&enoughEasy&&(work.length>1||priorSimilar);

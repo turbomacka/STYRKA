@@ -2,11 +2,12 @@ import { exercise, type ExerciseId } from './catalog';
 import type { Mode } from './decision_engine';
 import type { HistorySet, PerceivedEffort, PerformedExercise } from './model';
 import { comparisonKey, type ExerciseConfiguration } from './trainingFlow';
+import { reliableOneRM } from './maxEvidence';
 import { successfulDoseExposure } from './trainingDose';
 
 /** Product heuristics, not measured recovery or clinical thresholds. No kg comparison across equipment. */
 export const RECOVERY_POLICY = {
-  version: 'RECOVERY/3.1.0',
+  version: 'RECOVERY/3.2.0',
   halfLifeHours: 24,
   /** Product safeguards, sensitivity-tested rather than physiological constants. */
   moderateThreshold: .7,
@@ -88,7 +89,7 @@ export function assessRecovery(id: ExerciseId, history: PerformedExercise[], now
       if (!Number.isFinite(age) || age < 0 || age > 90*24) return;
       for (const s of side === 'both' ? ['left', 'right'] as const : [side]) {
         if (configuration?.executionMode === 'single_side' && configuration.startingSide !== s) continue;
-        const relative=h.plan.estimatedOneRM&&load!==null&&h.plan.loadKind==='external_kg' ? load/h.plan.estimatedOneRM : null;
+        const relative=reliableOneRM(h.plan)&&load!==null&&h.plan.loadKind==='external_kg' ? load/reliableOneRM(h.plan)! : null;
         work.push({ side:s,age,when:now-age*3_600_000,sessionId:h.sessionId,exerciseId:h.exerciseId,effort:effortOf(rir,feeling),direct,reps:reps??0,dose:recoveryDose(reps??Math.max(1,(seconds??0)/3),rir,feeling,relative)*(direct?1:overlap) });
       }
     };

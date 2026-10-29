@@ -20,7 +20,8 @@ import { activeHealthConsent, buildPlannerInput } from './plannerInput';
 import { comparisonKey, defaultConfiguration, detailStatus, executionDefinition, nextSide, requiredSides, supportedMeasurements, trainingPreferences, validateConfiguration, type ExerciseConfiguration, type PerformanceSide, type SetDetail, type SetPerformance } from '../domain/trainingFlow';
 import { observedRestSeconds, recommendRest, type RestPerformance, type RestInput } from '../domain/restPolicy';
 import { warmupSuggestions } from '../domain/warmupPolicy';
-import { effectiveRir, validEffort } from '../domain/effort';
+import { combinedEffort, effectiveRir, validEffort } from '../domain/effort';
+import { reliableOneRM } from '../domain/maxEvidence';
 import { invalidateFeedback } from './feedbackCache';
 
 const ALLOWED: Record<SessionStatus, SessionStatus[]> = {
@@ -786,8 +787,10 @@ async function continueCalibration(ctx: AppContext, se: LocalSessionExercise, sa
   if (saved.perceivedEffort === 'too_heavy') target = assistance ? Math.min(MAX_GRAMS, target + step) : Math.max(0, target - step);
   if(maximum!=null) target=Math.min(target,Math.floor(maximum/step)*step);
   for (const s of mine) {
-    if (s.status !== 'planned' || s.detail?.plannedSides || s.detail?.performances.length || s.ordinal < saved.ordinal || s.targetGrams === target) continue;
-    await mutateSet(ctx,s.id,(x)=>({...x,targetGrams:target,detail:x.detail ? {...x.detail,targetLoadValue:target/1000} : undefined}));
+    if (s.status !== 'planned' || s.detail?.plannedSides || s.detail?.prescriptionOrigin?.userEditedSides.length || s.detail?.performances.length || s.ordinal < saved.ordinal) continue;
+    const reps=saved.actualReps!=null?Math.max(1,Math.min(s.targetReps??saved.actualReps,saved.actualReps)):s.targetReps;
+    if(s.targetGrams===target&&s.targetReps===reps)continue;
+    await mutateSet(ctx,s.id,(x)=>({...x,targetGrams:target,targetReps:reps,detail:x.detail ? {...x.detail,targetLoadValue:target/1000} : undefined}));
   }
 }
 
@@ -824,7 +827,20 @@ async function updateCalibrationsTx(ctx: AppContext, sessionId: string): Promise
       const session = await db.sessions.get(x.sessionId);
       if (!session || !['completed', 'partial'].includes(session.status)) continue;
       const sets = (await db.sets.where('sessionExerciseId').equals(x.id).toArray()).filter((s) => s.kind === 'work' && s.status === 'done' && !s.deleted && (detailed ? s.detail?.performances.every((p) => p.comparisonKey === comparison && p.equipment.unit === 'kg') : !s.detail));
-      if (!sets.length || sets.some((s) => (s.technique ?? 'controlled') !== 'controlled' || s.perceivedEffort === 'too_heavy')) continue;
+      if (sets.length<x.snapshot.sets || sets.some(s=>{
+        if(s.detail) {
+          const ps=s.detail.performances.filter(p=>p.status==='done');
+          return !requiredSides(s.detail.configuration).every(side=>ps.some(p=>p.side===side)) || ps.some(p=>{
+            const target=s.detail?.plannedSides?.[p.side];
+            const reps=target?.reps??s.targetReps??x.snapshot.reps;
+            const load=target?.grams??s.targetGrams;
+            const reserve=effectiveRir(p.rir,p.effort);
+            return p.technique!=='controlled'||['maximal','too_heavy'].includes(p.effort??'')||reserve!==null&&reserve<2||(p.repetitions??0)<reps||load!==null&&(p.loadValue===null||(x.snapshot.loadKind==='assistance_kg'?p.loadValue>load/1000:p.loadValue<load/1000));
+          });
+        }
+        const reserve=effectiveRir(s.rir,s.perceivedEffort);
+        return s.technique!=='controlled'||['maximal','too_heavy'].includes(s.perceivedEffort??'')||reserve!==null&&reserve<2||(s.actualReps??0)<(s.targetReps??x.snapshot.reps)||s.targetGrams!==null&&(s.actualGrams===null||(x.snapshot.loadKind==='assistance_kg'?s.actualGrams>s.targetGrams:s.actualGrams<s.targetGrams));
+      })) continue;
       const areas = exercise(x.exerciseId).areas;
       if (symptoms.some((s) => s.sessionId === x.sessionId && areas.includes(s.area) && s.reaction !== 'baseline')) continue;
       exposures.set(x.sessionId, [...(exposures.get(x.sessionId) ?? []), ...sets.map((s) => s.id)]);
@@ -916,7 +932,7 @@ async function requireActive(ctx: AppContext, s: LocalSet): Promise<void> {
 }
 
 function restPerformance(s: LocalSet, p: SetPerformance): RestPerformance {
-  return { comparisonKey: p.comparisonKey, side: p.side, load: p.loadValue, secondLoad: p.secondLoadValue, reps: p.repetitions, targetReps: s.detail?.plannedSides?.[p.side]?.reps ?? s.targetReps, rir: effectiveRir(p.rir, p.effort), kind: s.kind, technique: p.technique };
+  return { comparisonKey: p.comparisonKey, side: p.side, load: p.loadValue, secondLoad: p.secondLoadValue, reps: p.repetitions, targetReps: s.detail?.plannedSides?.[p.side]?.reps ?? s.targetReps, rir: effectiveRir(p.rir, p.effort), effort:p.effort, kind: s.kind, technique: p.technique };
 }
 
 /** Close previously active timers atomically with the next observed training action. */
@@ -979,8 +995,8 @@ export async function recordPerformance(ctx: AppContext, setId: string, side: Pe
         .sort((a, b) => (a.kind === 'warmup' ? 0 : 1) - (b.kind === 'warmup' ? 0 : 1) || a.ordinal - b.ordinal)[0];
       const previous = all.filter((s) => s.id !== setId && s.kind === existing.kind).flatMap((s) => (s.detail?.performances ?? []).filter((x) => x.side === side && x.status === 'done').map((x) => ({ s, p: x }))).sort((a, b) => (b.p.completedAt ?? '').localeCompare(a.p.completedAt ?? ''))[0];
       const knownRir = updated.performances.filter((x) => x.status === 'done').flatMap((x) => effectiveRir(x.rir,x.effort) === null ? [] : [effectiveRir(x.rir,x.effort)!]);
-      const reliableMax = se.snapshot.estimatedOneRM && comparisonKey(se.exerciseId, se.snapshot.configuration ?? defaultConfiguration(se.exerciseId)) === p.comparisonKey && ['high','medium'].includes(se.snapshot.confidence) ? se.snapshot.estimatedOneRM : null;
-      const restInput: RestInput = { effort: updated.performances.some((x) => x.effort === 'maximal') ? 'maximal' : updated.performances.some((x) => x.effort === 'hard' || x.effort === 'too_heavy') ? 'hard' : null, category: exercise(se.exerciseId).timeKind, mode: se.mode, strengthFocus: se.mode === 'heavy', experience: (await ctx.db.profile.get(ctx.userId))?.experience ?? 'novice', adaptive: prefs.adaptiveRestEnabled,
+      const reliableMax = comparisonKey(se.exerciseId, se.snapshot.configuration ?? defaultConfiguration(se.exerciseId)) === p.comparisonKey ? reliableOneRM(se.snapshot) : null;
+      const restInput: RestInput = { effort: combinedEffort(updated.performances.filter(x=>x.status==='done').map(x=>x.effort)), category: exercise(se.exerciseId).timeKind, mode: se.mode, strengthFocus: se.mode === 'heavy', experience: (await ctx.db.profile.get(ctx.userId))?.experience ?? 'novice', adaptive: prefs.adaptiveRestEnabled,
         kind: existing.kind, nextKind: following?.kind ?? null, secondSidePending, betweenSidesSeconds: d.configuration.betweenSidesSeconds, relativeIntensity: reliableMax && p.loadValue !== null ? p.loadValue / reliableMax : null,
         overrideSeconds: se.configuration?.restSeconds ?? prefs.preferredRestOverrides[se.exerciseId], current: restPerformance(existing, p), effortRir: knownRir.length ? Math.min(...knownRir) : null, previous: previous && restPerformance(previous.s, previous.p) };
       const recommendation = recommendRest(restInput);
@@ -1092,7 +1108,7 @@ export async function ensureWarmups(ctx: AppContext, exerciseInstanceId: string)
     if (!work || sets.some((s) => !s.deleted && s.kind === 'work' && (s.status === 'done' || s.status === 'partial'))) return;
     const configuration = se.configuration ?? defaultConfiguration(se.exerciseId);
     const earlier = (await ctx.db.sets.where('sessionId').equals(se.sessionId).toArray()).filter((s) => !s.deleted && s.kind === 'work' && s.status === 'done' && s.sessionExerciseId !== se.id && exercise(s.exerciseId).pattern === exercise(se.exerciseId).pattern).length;
-    const input = { targetReps: work.targetReps ?? 0, mode: se.mode, category: exercise(se.exerciseId).timeKind, equipment: configuration.equipment, experience: profile?.experience ?? 'novice', samePatternWorkDone: earlier, reliableMax: ['high','medium'].includes(se.snapshot.confidence) && comparisonKey(se.exerciseId,se.snapshot.configuration??defaultConfiguration(se.exerciseId))===comparisonKey(se.exerciseId,configuration) ? se.snapshot.estimatedOneRM : null };
+    const input = { targetReps: work.targetReps ?? 0, mode: se.mode, category: exercise(se.exerciseId).timeKind, equipment: configuration.equipment, experience: profile?.experience ?? 'novice', samePatternWorkDone: earlier, reliableMax: comparisonKey(se.exerciseId,se.snapshot.configuration??defaultConfiguration(se.exerciseId))===comparisonKey(se.exerciseId,configuration) ? reliableOneRM(se.snapshot) : null };
     const sharedLoad = work.detail?.targetLoadValue ?? (work.targetGrams === null ? null : work.targetGrams / 1000);
     const sideLoads=requiredSides(configuration).map(side=>work.detail?.plannedSides?.[side] ? (work.detail.plannedSides[side]!.grams===null?null:work.detail.plannedSides[side]!.grams!/1000):sharedLoad);
     const workingLoad=sideLoads.some(x=>x===null)?null:Math.min(...sideLoads as number[]);
@@ -1148,7 +1164,7 @@ async function refreshActiveRest(ctx:AppContext,saved:LocalSet) {
   await mutateSet(ctx,saved.id,(s)=>{
     const d=structuredClone(s.detail!);
     const performed=d.performances.filter((p)=>p.status==='done');
-    const effort: PerceivedEffort | null=performed.some((p)=>p.effort==='maximal') ? 'maximal' : performed.some((p)=>p.effort==='hard'||p.effort==='too_heavy') ? 'hard' : null;
+    const effort: PerceivedEffort | null=combinedEffort(performed.map(p=>p.effort));
     const known=performed.flatMap((p)=>effectiveRir(p.rir,p.effort)===null?[]:[effectiveRir(p.rir,p.effort)!]);
     d.rests=d.rests.map((r)=>{
       if(r.outcome!=='active' || !r.recommendationInput) return r;

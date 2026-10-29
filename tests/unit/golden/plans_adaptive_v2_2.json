@@ -1,0 +1,9 @@
+{
+  "ruleSetVersion": "STYRKA-RULES/2.2.0",
+  "plans": 2100,
+  "exercises": 7194,
+  "sha256": "2ad12897f1bd618f86c49d0024049ed4449cc10dc6ab8caf34a840276e163a31",
+  "baselineCommit": "305aa36f4f028f5645a32f98698c26d1ea9a374c",
+  "previousPolicy": "plans_adaptive_v2_1.json",
+  "intentionalChange": "Known-source max evidence replaces unqualified capacity in relative intensity; unchanged initial plans; history cases inspected in differential.json."
+}

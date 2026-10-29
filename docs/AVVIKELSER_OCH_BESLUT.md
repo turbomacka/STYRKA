@@ -1,5 +1,9 @@
 # Avvikelser, tolkningar och alla H-värden
 
+## Tillägg 2026-10-29: ansträngningsskalan, regelversion 2.2.0
+
+På produktägarens begäran genomförs granskningsrapportens F1–F8. Tungt kan efter tre kontrollerade jämförbara pass stödja ett litet försök; maxansträngning och numerisk reserv har egna skäl. Kalibrering, maxunderlag, dostolerans, grafer, vila och prestationsåterkoppling följer [genomförandebeslutet](EFFORT-SCALE-2026-10-29.md). Trepassregeln och toleransmodellen är **H**, inte fysiologiskt validerade gränser. Historiska rådata och referensmotorn bevaras.
+
 Alla tolkningar följer normhierarkin i paketets README. Nya produktheuristiker är märkta **H (ny)** och har acceptanstest. Nedan dokumenteras tidigare beslut med respektive versionsnummer.
 
 ## Tillägg 2026-10-23/24: adaptiv motor och regelversion 2.0.0
