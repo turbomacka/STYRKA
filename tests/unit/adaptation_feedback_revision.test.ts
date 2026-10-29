@@ -22,6 +22,7 @@ it('M12: refresh receipt and stored slots use identical complete prescriptions a
 it('M16: qualitative easy input is described without inventing RIR',async()=>{const h=await setup();for(const s of h.sets)await rateSet(h.ctx,s.id,'easy','both');const {input}=await planInputs(h.ctx);const observed=observedDose(input.history.find(x=>x.sessionId===h.session.id)!);expect(observed).toContain('markerade seten som lätta');expect(observed).not.toMatch(/RIR|repetitioner kvar/);});
 it('one answer cannot become a claim that all sets were easy',async()=>{const h=await setup();await rateSet(h.ctx,h.sets[0].id,'easy','both');const {input}=await planInputs(h.ctx);expect(observedDose(input.history.find(x=>x.sessionId===h.session.id)!)).not.toContain('seten som lätta');});
 it('M16: saved text uses stable choices and ignores later unrelated training',async()=>{const h=await setup();const first=await savedWorkoutFeedback(h.ctx,h.session.id);h.clock.advanceHours(72);const plan=await previewNext(h.ctx);plan.exercises=[{...plan.exercises.find(e=>e.exerciseId==='bench_press')!,sets:1}];const next=await startSession(h.ctx,plan);const set=(await h.db.sets.where('sessionId').equals(next.id).toArray())[0];await recordPerformance(h.ctx,set.id,'both',{});await finishSession(h.ctx,next.id);await savedWorkoutFeedback(h.ctx,next.id);expect(await savedWorkoutFeedback(h.ctx,h.session.id)).toEqual(first);expect((await h.db.meta.get('feedback-choice:'+h.session.id))?.value).toMatchObject({version:WORKOUT_FEEDBACK_VERSION,sessionId:h.session.id});expect(await h.db.meta.get('recent-workout-feedback')).toBeUndefined();});
+it('finish feedback identifies verified rep improvement and keeps saved wording',async()=>{const h=await setup();h.clock.advanceHours(72);const plan=await previewNext(h.ctx);plan.exercises=[{...h.exercise,kg:60,reps:6,sets:3}];const next=await startSession(h.ctx,plan);const nextSets=(await h.db.sets.where('sessionId').equals(next.id).toArray()).sort((a,b)=>a.ordinal-b.ordinal);for(const s of nextSets)await recordPerformance(h.ctx,s.id,'both',{actualGrams:60000,actualReps:8});await finishSession(h.ctx,next.id);const first=await savedWorkoutFeedback(h.ctx,next.id);expect(first.insight).toMatchObject({kind:'reps',difference:6,exerciseId:'squat'});expect(first.text).toMatch(/6 (fler|extra) repetitioner|med 6 på samma belastning|6 fler utan/);expect(await savedWorkoutFeedback(h.ctx,next.id)).toEqual(first);});
 it('M14: undo invalidates dependent descriptions and deletion clears own template choice',async()=>{const h=await setup();await savedWorkoutFeedback(h.ctx,h.session.id);const comparison=await compareSessionRecommendations(h.ctx,h.session.id);expect(comparison.sourceSetIds).toContain(h.sets[0].id);await undoPerformance(h.ctx,h.sets[0].id,'both');expect((await h.db.meta.where('key').startsWith('replanning:'+h.session.id+':').toArray())).toHaveLength(0);expect(await h.db.meta.get('workout-feedback:'+h.session.id)).toBeUndefined();expect(await h.db.meta.get('feedback-choice:'+h.session.id)).toBeDefined();await deleteWorkout(h.ctx,h.session.id);expect(await h.db.meta.get('feedback-choice:'+h.session.id)).toBeUndefined();});
 it('M15: a binding constraint dominates a positive trial and suppresses humor',async()=>{const h=await setup(),{input}=await planInputs(h.ctx);const plans=futurePlanningHorizon(input,4);plans[0].exercises=[{...h.exercise,reasons:['USER_MAX_LOAD_CAP','EASY_SELECTED_DOSE_TRIAL']}];const comparison=await compareSessionRecommendations(h.ctx,h.session.id,{input,plans,revisionId:'cap'});expect(comparison.decisions[0].kind).toBe('constraint');const feedback=await savedWorkoutFeedback(h.ctx,h.session.id,comparison);expect(feedback.category).toBe('protected');expect(feedback.messages).toEqual(comparison.messages);expect((await h.db.meta.get('feedback-choice:'+h.session.id))?.value).not.toHaveProperty('humorId');});
 it('M15: selected easy trial explains the actual trial rather than falsely promising to hold',async()=>{const h=await setup(),{input}=await planInputs(h.ctx);const plans=futurePlanningHorizon(input,4);plans[0].exercises=[{...h.exercise,kg:62.5,reasons:['MANUAL_WORKING_DOSE','EASY_SELECTED_DOSE_TRIAL']}];const comparison=await compareSessionRecommendations(h.ctx,h.session.id,{input,plans,revisionId:'trial'});expect(comparison.decisions[0].kind).toBe('trial');expect(comparison.messages[0]).toContain('62,5 kg');expect(comparison.messages[0]).toContain('prova ett litet steg');});
@@ -30,3 +31,86 @@ it('humor has a cooldown, can be disabled, and stable templates survive factual 
 
 it('a blocked omitted exercise remains a visible constraint and never receives progression encouragement',async()=>{const h=await setup(),{input}=await planInputs(h.ctx),plans=futurePlanningHorizon(input,4);for(const p of plans){p.exercises=p.exercises.filter(e=>e.exerciseId!=='squat');p.removed.push({exerciseId:'squat',reason:'SYMPTOM_REVIEW_REQUIRED'});}const result=await compareSessionRecommendations(h.ctx,h.session.id,{input,plans,revisionId:'blocked'});const squat=result.decisions.find(d=>d.exerciseId==='squat')!;expect(squat.kind).toBe('constraint');expect(squat.message).toContain('inte föreslås');expect((await savedWorkoutFeedback(h.ctx,h.session.id,result)).category).toBe('protected');});
 it('a recovery hold does not advertise a pending trial as the next step',async()=>{const h=await setup(),{input}=await planInputs(h.ctx),plans=futurePlanningHorizon(input,4);const e={...h.exercise,reasons:['RECOVERY_HOLD'],adaptive:{version:ADAPTIVE_POLICY.version,confirmed:{kg:60,reps:6,sets:3},attempted:{kg:62.5,reps:5,sets:3},chosenDose:null,capacity:{estimatedMax:null,observations:2,confidence:'low' as const},completedReps:18,decision:'RECOVERY_HOLD'}};plans[0].exercises=[e];const result=await compareSessionRecommendations(h.ctx,h.session.id,{input,plans,revisionId:'recovery'});expect(result.decisions[0].kind).toBe('recovery');expect(result.messages[0]).not.toContain('prova ett litet steg');});
+
+async function repeat(h:Awaited<ReturnType<typeof setup>>,reps=8,hours=72){
+  h.clock.advanceHours(hours);
+  const plan=await previewNext(h.ctx);plan.exercises=[{...h.exercise,kg:60,reps:6,sets:3}];
+  const session=await startSession(h.ctx,plan);
+  const sets=(await h.db.sets.where('sessionId').equals(session.id).toArray()).sort((a,b)=>a.ordinal-b.ordinal);
+  for(const s of sets)await recordPerformance(h.ctx,s.id,'both',{actualGrams:60000,actualReps:reps});
+  const finished=await finishSession(h.ctx,session.id);
+  return {session:finished,sets};
+}
+it('retains factual progress alongside the real applied planning receipt',async()=>{
+  const h=await setup(),next=await repeat(h);
+  const comparison=await compareSessionRecommendations(h.ctx,next.session.id);
+  const result=await savedWorkoutFeedback(h.ctx,next.session.id,comparison);
+  expect(result.insight).toMatchObject({kind:'reps',difference:6});
+  expect(result.messages).toEqual(comparison.messages);
+});
+it.each(['transient','persistent'] as const)('suppresses performance praise for %s symptoms, also without a planning receipt',async(reaction)=>{
+  const h=await setup(),next=await repeat(h);
+  await h.db.symptoms.add({id:'symptom',sessionId:next.session.id,area:'knee',side:'both',reaction,pain:null,reportedAt:h.clock.now(),resolvedAt:null,syncState:'local'});
+  const result=await savedWorkoutFeedback(h.ctx,next.session.id);
+  expect(result.category).toBe('protected');expect(result.insight).toBeUndefined();
+  expect((await h.db.meta.get('feedback-choice:'+next.session.id))?.value).not.toHaveProperty('humorId');
+});
+it('keeps earlier unresolved symptoms protective and ignores later reports',async()=>{
+  const h=await setup();
+  await h.db.symptoms.add({id:'symptom',sessionId:h.session.id,area:'knee',side:'both',reaction:'persistent',pain:null,reportedAt:h.clock.now(),resolvedAt:null,syncState:'local'});
+  const next=await repeat(h);
+  expect((await savedWorkoutFeedback(h.ctx,next.session.id)).category).toBe('protected');
+  h.clock.advanceHours(72);await h.db.symptoms.update('symptom',{reportedAt:h.clock.now(),sessionId:null});
+  expect((await savedWorkoutFeedback(h.ctx,next.session.id)).category).not.toBe('protected');
+});
+it.each(['pain','tired'] as const)('honors recorded %s readiness in summary and cached inputs',async(readiness)=>{
+  const h=await setup(),next=await repeat(h);
+  expect((await savedWorkoutFeedback(h.ctx,next.session.id)).insight?.kind).toBe('reps');
+  await h.db.sessions.update(next.session.id,{readiness});
+  const result=await savedWorkoutFeedback(h.ctx,next.session.id);
+  expect(result.category).toBe(readiness==='pain'?'protected':'recovery');expect(result.insight).toBeUndefined();
+});
+it('prioritizes return after a break, partial completion and recovery over achievements',async()=>{
+  const h=await setup(),next=await repeat(h,8,24*22);
+  expect(await savedWorkoutFeedback(h.ctx,next.session.id)).toMatchObject({category:'returning'});
+  expect((await savedWorkoutFeedback(h.ctx,next.session.id)).insight).toBeUndefined();
+  await h.db.sessions.update(next.session.id,{status:'partial'});
+  expect((await savedWorkoutFeedback(h.ctx,next.session.id)).category).toBe('partial');
+});
+it('suppresses insight on a recovery decision even when a trial is also present',async()=>{
+  const h=await setup(),next=await repeat(h),{input}=await planInputs(h.ctx),plans=futurePlanningHorizon(input,4);
+  plans[0].exercises=[{...h.exercise,reasons:['RECOVERY_HOLD']}];
+  const comparison=await compareSessionRecommendations(h.ctx,next.session.id,{input,plans,revisionId:'recovery'});
+  comparison.decisions.push({...comparison.decisions[0],kind:'trial'});
+  expect(await savedWorkoutFeedback(h.ctx,next.session.id,comparison)).toMatchObject({category:'recovery'});
+  expect((await savedWorkoutFeedback(h.ctx,next.session.id,comparison)).insight).toBeUndefined();
+});
+it('does not call an entire dose maintained because a single set matched',async()=>{
+  const h=await setup(),next=await repeat(h,5);
+  await recordPerformance(h.ctx,next.sets[0].id,'both',{actualReps:6},{edit:true});
+  for(const s of next.sets)await h.db.sets.update(s.id,{targetReps:4});
+  expect((await savedWorkoutFeedback(h.ctx,next.session.id)).category).not.toBe('maintained');
+});
+it('revalidates old comparison dates and target-side changes in the cache',async()=>{
+  const h=await setup(),next=await repeat(h,8,24*18),later=await repeat(h,10,24*18);
+  const first=await savedWorkoutFeedback(h.ctx,later.session.id);
+  expect(first.insight).toMatchObject({kind:'reps',difference:6,previousSessionId:next.session.id});
+  await h.db.sessions.update(h.session.id,{finishedAt:new Date(Date.parse(next.session.finishedAt!)+86400000).toISOString()});
+  const reordered=await savedWorkoutFeedback(h.ctx,later.session.id);
+  expect(reordered.inputsHash).not.toBe(first.inputsHash);
+  expect(reordered.insight).toMatchObject({kind:'reps',difference:12,previousSessionId:h.session.id});
+  const oldTarget=await savedWorkoutFeedback(h.ctx,h.session.id);
+  for(const s of h.sets){const detail=structuredClone((await h.db.sets.get(s.id))!.detail!);detail.plannedSides={both:{grams:60000,reps:4,seconds:null,secondLoad:null}};await h.db.sets.update(s.id,{detail});}
+  const newTarget=await savedWorkoutFeedback(h.ctx,h.session.id);
+  expect(newTarget.inputsHash).not.toBe(oldTarget.inputsHash);
+  expect(newTarget.insight).toMatchObject({kind:'target',difference:6});
+});
+it('removes dependent praise after correction or deletion of historical performances',async()=>{
+  const h=await setup(),next=await repeat(h);
+  expect((await savedWorkoutFeedback(h.ctx,next.session.id)).insight?.kind).toBe('reps');
+  for(const s of h.sets)await recordPerformance(h.ctx,s.id,'both',{actualReps:10},{edit:true});
+  expect(await h.db.meta.get('workout-feedback:'+next.session.id)).toBeUndefined();
+  expect((await savedWorkoutFeedback(h.ctx,next.session.id)).insight?.kind).not.toBe('reps');
+  await deleteWorkout(h.ctx,h.session.id);
+  expect((await savedWorkoutFeedback(h.ctx,next.session.id)).sourceSessionIds).not.toContain(h.session.id);
+});

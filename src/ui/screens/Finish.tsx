@@ -5,7 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { ALL_AREAS, AREA_LABEL_SV, exercise, type Area } from '../../domain/catalog';
 import { SkipExercise } from '../components/SkipExercise';
 import { refreshFuturePlan, type FuturePlanningResult } from '../../application/trainingPlan';
-import { savedWorkoutFeedback, type SavedWorkoutFeedback } from '../../application/workoutFeedback';
+import { savedWorkoutFeedback } from '../../application/workoutFeedback';
 import type { Side, SymptomReaction } from '../../domain/model';
 import { canOfferCountAsPlanned, countExtraAsPlanned, finishSession, reportSymptom } from '../../application/training';
 import { Banner, PageHeader } from '../components/common';
@@ -42,10 +42,10 @@ export function Finish() {
     if (!session || !['completed','partial','abandoned'].includes(session.status) || done || saving.current) return;
     let cancelled=false;
     void (async()=>{
-      const cached=(await ctx.db.meta.get(`workout-feedback:${session.id}`))?.value as SavedWorkoutFeedback|undefined;
-      const calculation=cached?.decisionHash ? (await ctx.db.meta.get(`replanning:${session.id}:${cached.decisionHash}`))?.value as ReplanningFeedback|undefined : undefined;
+      const feedback=await savedWorkoutFeedback(ctx,session.id);
+      const calculation=feedback.decisionHash ? (await ctx.db.meta.get(`replanning:${session.id}:${feedback.decisionHash}`))?.value as ReplanningFeedback|undefined : undefined;
       if(cancelled)return;
-      setDone({status:session.status,offer:session.kind==='extra'&&!session.countsAsPlannedAt,text:cached?.text??'Dina registrerade set är sparade.'});
+      setDone({status:session.status,offer:session.kind==='extra'&&!session.countsAsPlannedAt,text:feedback.text});
       if(calculation){setComparison(calculation);setSteps(4);}
       else if(session.kind!=='extra'||session.countsAsPlannedAt)setErr('Passet finns sparat. Beräkna kommande rekommendationer från dina lokala data.');
     })().catch(()=>{if(!cancelled){setDone({status:session.status,offer:false,text:'Dina registrerade set är sparade.'});setErr('Träningen är sparad. Återkopplingen kunde inte läsas. Försök beräkna igen.');}});
