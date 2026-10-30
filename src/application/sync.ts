@@ -423,7 +423,8 @@ export class SyncEngine {
     const { db, transport, userId } = this.ctx;
     // Bara poster som var synkade före hämtningen får avstämmas som raderade.
     // En lokal ändring/ny synk under nätanropet får inte försvinna på grund av en äldre serverbild.
-    const [beforeRestrictions, beforeSymptoms, beforeQueue, beforeNotes, beforeSkipEvents] = await Promise.all([db.restrictions.toArray(), db.symptoms.toArray(), db.outbox.toArray(), db.notes.toArray(), db.skipEvents.toArray()]);
+    const [beforeRestrictions, beforeSymptoms, beforeQueue, beforeNotes, beforeSkipEvents, beforeSessions] = await Promise.all([db.restrictions.toArray(), db.symptoms.toArray(), db.outbox.toArray(), db.notes.toArray(), db.skipEvents.toArray(), db.sessions.toArray()]);
+    const sessionsAtStart = new Map(beforeSessions.map(s => [s.id, s]));
     const beforePending = new Set(beforeQueue.map((e) => e.recordId));
     // Äldre versioner tog bort kvitterade köposter men lämnade raderna märkta 'queued'.
     const wasSynced = (r: { id: string; syncState: SyncState }) => r.syncState === 'synced' || (r.syncState === 'queued' && !beforePending.has(r.id));
@@ -496,7 +497,10 @@ export class SyncEngine {
       }
       for (const r of snap.programs) if (!keep(await db.programs.get(r.id as string))) await db.programs.put(programFromRow(r));
       for (const r of snap.sessions) {
-        if (keep(await db.sessions.get(r.id as string))) continue;
+        const local = await db.sessions.get(r.id as string);
+        // Finishing can be acknowledged while this older snapshot is in flight.
+        // An empty outbox then says nothing about the freshness of the response.
+        if (keep(local) || !sameValue(sessionsAtStart.get(r.id as string), local)) continue;
         const audit = auditsBySession.get(r.id as string);
         const snapshot = (audit?.plan_snapshot ?? { exercises: [], budgetMinutes: r.planned_minutes, kind: r.kind === 'extra' ? 'extra' : 'planned' }) as PlanSnapshot;
         await db.sessions.put(sessionFromRow(r, snapshot));

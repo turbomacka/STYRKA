@@ -68,7 +68,8 @@ test('S01–S12: konto, intro, starta pass (≤2 tryck), logga set (1 tryck), å
 
   await page.getByRole('link', { name: 'Utveckling' }).click();
   await expect(page.getByRole('heading', { name: 'Utveckling' })).toBeVisible();
-  await expect(page.getByText('Faktisk prestation', { exact: true })).toBeVisible();
+  await expect(page.getByRole('img', { name: /^Belastning och prestation/ })).toBeVisible();
+  await expect(page.getByRole('img', { name: /^Repetitioner per arbetsset/ })).toBeVisible();
   await shot('S12-utveckling');
 
   await page.getByRole('link', { name: 'Profil' }).click();

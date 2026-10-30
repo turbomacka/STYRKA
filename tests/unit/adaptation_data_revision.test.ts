@@ -7,6 +7,7 @@ import { deleteWorkout } from '../../src/application/deleteWorkout';
 import { SyncEngine } from '../../src/application/sync';
 import { defaultConfiguration } from '../../src/domain/trainingFlow';
 import { eraseHealthData } from '../../src/application/privacy';
+import { listSessions } from '../../src/application/history';
 
 const instances: Harness[] = [];
 afterEach(async () => {
@@ -29,6 +30,43 @@ async function cache(h: Harness, own: string, depends: string, setId: string) {
 }
 
 describe('adaptive input provenance and derived feedback lifecycle', () => {
+  it('a pull begun before finishing cannot hide an acknowledged workout from history', async () => {
+    const { h, session, sets } = await setup();
+    await recordPerformance(h.ctx, sets[0].id, 'both', { actualGrams: 80_000, actualReps: 7 });
+    await h.sync.syncNow();
+    const originalPull = h.server.pullAll.bind(h.server);
+    let release!: () => void;
+    let started!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const captured = new Promise<void>(resolve => { started = resolve; });
+    h.server.pullAll = async userId => {
+      const snapshot = structuredClone(await originalPull(userId));
+      started();
+      await gate;
+      return snapshot;
+    };
+    const pendingPull = h.sync.pull();
+    await captured;
+    try {
+      await finishSession(h.ctx, session.id);
+      await h.sync.syncNow();
+      expect(await h.db.outbox.count()).toBe(0);
+      expect((await h.db.sessions.get(session.id))?.status).toBe('partial');
+    } finally {
+      release();
+      await pendingPull;
+      h.server.pullAll = originalPull;
+    }
+    expect((await h.db.sessions.get(session.id))?.status).toBe('partial');
+    expect((await listSessions(h.ctx)).map(s => s.session.id)).toContain(session.id);
+    // Fresh remote reads must still be accepted after the overlapping pull.
+    const fresh = structuredClone(await originalPull(h.userId));
+    fresh.sessions.find(s => s.id === session.id)!.status = 'completed';
+    h.server.pullAll = async () => fresh;
+    await h.sync.pull();
+    expect((await h.db.sessions.get(session.id))?.status).toBe('completed');
+  });
+
   it('erasing health data removes derived prose and template choices without deleting performed sets', async () => {
     const { h, session, sets } = await setup();
     await logSet(h.ctx, sets[0].id, { actualGrams: 75_000 });

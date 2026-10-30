@@ -23,6 +23,10 @@ Utgångspunkt: huvudgrenen `305aa36f4f028f5645a32f98698c26d1ea9a374c` och gransk
 
 I förbättringsscenariot med genomgående Tungt går alla tre erfarenhetsnivåer från 60 kg × 6 till 62,5 kg × 10 efter 36 pass. Försöksmissar återgår till basdosen. Detta illustrerar beslutsskillnaden; det förutsäger inte en verklig användares utveckling.
 
+## Kompletterande rättning efter CI, 2026-10-30
+
+Den första huvudgrenskörningen (40939682787) gav 135 godkända, fyra underkända och elva avsiktligt överhoppade webbläsartester. Tre fel berodde på att två prestationsgrafer nu har samma legend; testet kontrollerar i stället båda namngivna graferna. Det fjärde felet avslöjade en synkkapplöpning: en hämtning kunde läsa ett pågående pass, passet avslutas och kvitteras under hämtningen, varefter den äldre serverbilden dolde passet i historiken. Ett deterministiskt regressionstest återger felet före rättning. `SyncEngine.pullSnapshot()` bevarar nu pass som ändrats under hämtningen, även när skrivkön redan tömts. Nästa färska serverbild kan fortfarande läsas in. Rättningen kräver ingen migrering och skriver inte om lagrade träningsobservationer.
+
 ## Kvarvarande avgränsningar
 
 Ingen vetenskaplig validering av trepassregeln eller individuell återhämtningsmodell har skapats genom dessa tester. Fysisk installerad iPhone/Android och VoiceOver är separata manuella kontrollpunkter. Framtida individanpassning, forskningsutvärdering och nya sammansatta styrkeindex ingår inte. Versionssteg: ENGINE/RULES/PLANNER/ADAPTIVE 2.2.0, RECOVERY 3.2.0, REST 1.3.0, WORKOUT-FEEDBACK 3.2.0, EVIDENS 2.5.0.
