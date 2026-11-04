@@ -36,12 +36,12 @@ describe('explicit performed-set source', () => {
     expect(result.kg).toBe(60); expect(result.estimatedOneRM).toBeNull();
     expect(h).toEqual(before);
   });
-  it('derives a lighter-mode weight from performed calibration load, never from old planned load', () => {
+  it('retains performed calibration load across modes without a recovery gate, never old planned load', () => {
     const args = { performedSetsOnly: true, exerciseId: 'squat' as const, mode: 'light' as const, sets: 3, role: 'main' as const, experience: 'intermediate' as const, settings: null, bodyweightKg: null, gate: { hoursSinceRelevant: 100, impactedRegion: false, relevantSymptoms: 'none' as const } };
     const h = performed('squat', hoursBefore(NOW, 100), { kg: null }, sets(3, { kg: 60, reps: 5 }));
-    expect(prescribe({ ...args, history: [h] }).kg).toBe(45);
+    expect(prescribe({ ...args, history: [h] }).kg).toBe(60);
     h.plan.kg = 250;
-    expect(prescribe({ ...args, history: [h] }).kg).toBe(45);
+    expect(prescribe({ ...args, history: [h] }).kg).toBe(60);
     h.sets.forEach((s) => s.kind = 'warmup');
     expect(prescribe({ ...args, history: [h] }).kg).toBeNull();
   });
