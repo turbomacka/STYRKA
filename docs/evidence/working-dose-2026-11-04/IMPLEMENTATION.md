@@ -1,6 +1,6 @@
 # Arbetsdos och aktuella passförslag – 2026-11-04
 
-ENGINE/2.3.0 utgår från genomförd jämförbar arbetsdos även när programmets belastningskategori ändras. Ett äldre maxvärdes startprocent får inte skriva över den nivån. Senaste lyckade arbetsdos kan behållas innan den är bekräftad som underlag för ytterligare progression.
+ENGINE/2.3.0 utgår från genomförd jämförbar arbetsdos även när programmets belastningskategori ändras. Ett äldre maxvärdes startprocent får inte skriva över den nivån. Senaste lyckade arbetsdos kan behållas innan den är bekräftad som underlag för ytterligare progression. Byte av belastningskategori stoppar inte i sig ett välunderbyggt ökningsförsök.
 
 Lätt/För lätt i minst två tredjedelar av seten (minst två set, alternativt ett set med tidigare jämförbar prestation) kan stödja ett litet försök redan efter ett fullföljt pass. Vikt eller repetitioner höjs, inte båda. Lagom följer ordinarie bekräftelseregler. Begränsningar, motstridiga signaler och väntetid efter misslyckade försök har företräde.
 
@@ -14,6 +14,7 @@ Ostartade ordinarie passförslag uppdateras vid öppning och före start när mo
 - Lätt kan ge 75 kg × 7; två jämförbara Lagom-pass kan också ge 75 kg × 7. Ingen numerisk RIR skapas.
 - Gammalt förslag på 52,5 kg uppdateras; egen ändring till 77,5 kg × 5 bevaras. Verifierat genom synkning, återöppning och start. Avslutade resultat är oförändrade.
 - Planerarjämförelsen omfattar 2 100 syntetiska planer: 245 ändras, samtliga med nylig träningshistorik. 1 855 är identiska. Antalet övningar är oförändrat. Differentialen visar de avsiktliga ändringarna från historisk startprocent till faktisk arbetsdos och tydliga återhämtningsskäl.
-- Riktade domän- och applikationstester, typkontroll, lint samt mobilflödet för egen arbetsdos. Full CI körs inför publicering; ingen upprepad full lokal svit.
+- Två 30-passförlopp med växlande kategorier och enbart Lätt respektive Lagom fortsätter öka. Det befintliga databastestet med två konton × 36 pass passerar: bänkpress 67,5 → 70 → 72,5 kg; assistans 40 → 35 → 30 kg. Detta test fångade ett följdfel där kategoribyte höll tillbaka progression, vilket rättades före publicering.
+- Riktade domän- och applikationstester, typkontroll, lint samt mobilflödet för egen arbetsdos. CI kompletterar inför publicering; ingen upprepad full lokal svit.
 
 Kvarvarande avgränsning: timvis uppdatering är en cachepolicy, inte en garanti om omedelbar omberäkning efter varje profiländring. Befintlig kontroll av begränsningar före passstart gäller fortfarande. Fysiska installerade telefoner ingår inte i den automatiska verifieringen.

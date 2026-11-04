@@ -2,7 +2,7 @@
   "ruleSetVersion": "STYRKA-RULES/2.3.0",
   "plans": 2100,
   "exercises": 7194,
-  "sha256": "211498eed9d6a445963c10aa30c2051c997f0245e34c2984b2a5fa51f38d5fab",
+  "sha256": "3602fba793d1e092897d9c9e19080a2d6a3f55dea412ecd1f05d40981b7ec967",
   "baselineCommit": "d0765557efe6a271cfddd7d470ade49af89b1c4e",
   "previousPolicy": "plans_adaptive_v2_2.json",
   "intentionalChange": "Completed working dose is the baseline across modes; temporary recovery scales that dose; initial plans unchanged."

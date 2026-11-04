@@ -26,10 +26,10 @@ export async function runManualDoseScenario(page:Page,dir:string):Promise<void> 
   const comparison=page.locator('section').filter({has:page.getByRole('heading',{name:'Så påverkas kommande träning',exact:true})});
   await expect(comparison).toBeVisible();
   await expect(comparison).toContainText('Du markerade seten som lätta.');
-  // The next squat occurrence is C's light day. Preserve the actual selected dose
-  // there; A's next heavy occurrence can offer the supported trial from that dose.
-  await expect(comparison).toContainText(/Nästa förslag för knäböj: 2 × 10 reps · 50 kg/);
-  await expect(comparison).toContainText('Förslaget utgår från den dos du genomfört');
+  // A category change alone must not suppress a supported trial from the chosen dose.
+  // C's light day adds one repetition; A's heavy day can use the supported weight step.
+  await expect(comparison).toContainText(/Nästa förslag för knäböj: 2 × 11 reps · 50 kg/);
+  await expect(comparison).toContainText('Dina registrerade pass ger stöd för att prova ett litet steg');
   await expect(comparison).toContainText('Förslagen är preliminära');
   const before=await comparison.innerText();
   await page.reload();await expect.poll(()=>comparison.innerText()).toBe(before);

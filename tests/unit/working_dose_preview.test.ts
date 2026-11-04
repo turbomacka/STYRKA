@@ -17,7 +17,8 @@ const history=()=>[1,2].map(day=>performed('bench_press',`2026-11-0${day}T16:00:
 it('75 x 6 stays the working dose across modes; recovery is temporary and does not become 52.5',()=>{
   const h=history();
   const args={exerciseId:'bench_press' as const,mode:'light' as const,sets:2,role:'main' as const,experience:'intermediate' as const,settings:est('bench_press',87.5),history:h,gate:{hoursSinceRelevant:72,relevantSymptoms:'none' as const,impactedRegion:false},bodyweightKg:null};
-  expect(prescribe(args)).toMatchObject({kg:75,reps:6});
+  expect(prescribe({...args,history:h.slice(0,1)})).toMatchObject({kg:75,reps:6});
+  expect(prescribe(args)).toMatchObject({kg:75,reps:7});
   const improved=performed('bench_press','2026-11-03T16:00:00.000Z',{...h[1].plan,kg:77.5},sets(2,{kg:77.5,reps:6,rir:null,perceivedEffort:'ok'}));
   expect(prescribe({...args,history:[...h,improved]}).kg).toBe(77.5);
   const recovery={version:'RECOVERY/3.2.0' as const,modeCap:'light' as const,activeHours:17,reason:'RECOVERY_MATCHED_WORK' as const,residualDose:5,workReps:12};
@@ -39,6 +40,16 @@ it('easy completed work supports an immediate small repetition trial without inv
   expect(next).toMatchObject({kg:75,reps:7});
   const ok=history();
   expect(prescribe({exerciseId:'bench_press',mode:'moderate',sets:2,role:'main',experience:'experienced',settings:est('bench_press',87.5),history:ok,gate:{hoursSinceRelevant:72,relevantSymptoms:'none',impactedRegion:false},bodyweightKg:null})).toMatchObject({kg:75,reps:7});
+});
+
+it.each(['easy','ok'] as const)('alternating modes keep progressing through 30 successful qualitative sessions: %s',rating=>{
+  const h=history().slice(0,1);
+  for(let i=0;i<30;i++){
+    const p=prescribe({exerciseId:'bench_press',mode:i%2?'moderate':'light',sets:2,role:'main',experience:'experienced',settings:est('bench_press',87.5),history:h,gate:{hoursSinceRelevant:72,relevantSymptoms:'none',impactedRegion:false},bodyweightKg:null});
+    expect(p.kg).toBeGreaterThanOrEqual(h.at(-1)!.plan.kg!);
+    h.push(performed('bench_press',new Date(Date.UTC(2026,10,4+i*3)).toISOString(),p,sets(2,{kg:p.kg,reps:p.reps,plannedReps:p.reps,rir:null,perceivedEffort:rating})));
+  }
+  expect(h.at(-1)!.plan.kg).toBeGreaterThan(75);
 });
 
 it.each([false,true])('old preview refresh preserves results, manual targets (%s), sync and stable reopening',async manual=>{
