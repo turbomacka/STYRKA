@@ -6,11 +6,11 @@
     "reviewed_at": "2026-10-10",
     "warning_sv": "Evidensregistret är beskrivande: det validerar inte STYRKA:s rekommendationsmotor eller medicinsk säkerhet."
   },
-  "methodVersion": "STYRKA-METOD/2.2.0",
-  "ruleSetVersion": "STYRKA-RULES/2.2.0",
-  "engineVersion": "2.2.0",
+  "methodVersion": "STYRKA-METOD/2.3.0",
+  "ruleSetVersion": "STYRKA-RULES/2.3.0",
+  "engineVersion": "2.3.0",
   "substitutionCatalogVersion": "SUBST/1.2.0",
-  "lastSubstantiveUpdate": "2026-10-29",
+  "lastSubstantiveUpdate": "2026-11-04",
   "verificationNote": "Källor och påståenden kommer från produktägarens evidensregister (schema 1.0.0, granskat 2026-10-10). DOI och länkar kontrollerade mot Crossref, PMC och utgivarnas sidor 2026-10-11. Innehållet är en sammanfattning för allmänheten, inte en fullständig granskning av varje studie. Förnyad granskning 2026-10-22: tillgängliga abstracts och öppna förlagstexter. Numeriska ramper och överföringsandelar är dokumenterade produktheuristiker. Förstaförfattaren för DOI 10.1007/s42978-025-00361-9 är Neves enligt förlaget. Riktad granskning 2026-10-23 av progression, dos, RIR och kliniska begränsningar. Exakta försöks-, bekräftelse- och återhämtningsregler är produktantaganden, inte kliniskt validerade mått.",
   "sources": [
     {
@@ -784,11 +784,12 @@
       "rule_id": "aterhamtning",
       "group": "B",
       "title_sv": "Träningsmängd, ansträngning och återhämtning",
-      "method_sv": "Arbetsset, faktiska repetitioner, ansträngning, relativ intensitet när den är jämförbar samt överlappande rörelser bidrar till en gradvis avklingande planeringssignal. Minst tre jämförbara lyckade efterföljande pass kan mildra en lättare generell begränsning, men inte spärren vid hög beräknad dos. Veckodos begränsas inte enbart för att ett fast setantal passerats. Set räknas per sida; uppvärmning och preliminära framtidspass räknas inte som genomförd träning. Signalen anger inte fysiologisk återhämtning. Även kontrollerade, fullföljda pass som skattats Tungt kan bidra till individuell dostolerans. Den akuta ansträngningsfaktorn och begränsningen av maximal tolerans kvarstår.",
+      "method_sv": "Arbetsset, faktiska repetitioner, ansträngning, relativ intensitet när den är jämförbar samt överlappande rörelser bidrar till en gradvis avklingande planeringssignal. Minst tre jämförbara lyckade efterföljande pass kan mildra en lättare generell begränsning, men inte spärren vid hög beräknad dos. Veckodos begränsas inte enbart för att ett fast setantal passerats. Set räknas per sida; uppvärmning och preliminära framtidspass räknas inte som genomförd träning. Signalen anger inte fysiologisk återhämtning. Även kontrollerade, fullföljda pass som skattats Tungt kan bidra till individuell dostolerans. Den akuta ansträngningsfaktorn och begränsningen av maximal tolerans kvarstår. För känd arbetsdos i extern vikt innebär en tillfällig återhämtningsbegränsning 95 procent vid medel eller 90 procent vid lätt, avrundat nedåt till utrustningssteget. Ordinarie arbetsnivå sparas separat; ett fullföljt lättare pass utan egna ändringar eller negativa signaler sänker inte den nivån. Dessa procenttal är produktantaganden.",
       "value_sv": "Avklingning med 24 timmars halveringstid; graderade nivåval. Alla koefficienter är prövbara produktantaganden.",
       "rationale_sv": "Konservativ och spårbar produktpolicy. Forskningen stöder de generella principerna men validerar inte dessa trösklar.",
       "heuristic": true,
       "reason_codes": [
+        "TEMPORARY_LOAD_REDUCED",
         "RECOVERY_UNDER_24H",
         "RECOVERY_24_TO_48H",
         "RECOVERY_HOLD",

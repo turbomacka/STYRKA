@@ -331,7 +331,7 @@ function prescribeItem(ctx: Ctx, it: Item, variantKey = activeVariant(ctx.input.
     if(Object.keys(sideTargets).length) adapted={...adapted,sideTargets};
   }
   const temporaryReasons=[...new Set([...(adapted.doseContext?.temporaryReasons??[]),...it.reasons.filter(r=>['WEEKLY_FREQUENCY_DISTRIBUTION','ROLLING_WEEK_DOSE_HOLD','RECOVERY_MODE_REDUCED','PLANNED_OVERLAP_DISTRIBUTION','TIME_MAIN_LIFT_SHORT_ALTERNATIVE'].includes(r))])];
-  return { ...adapted, ...withVariant, doseContext:{version:'DOSE/2.1.0',ordinarySets:it.ordinarySets??it.sets,temporaryReasons}, reasons: [...it.reasons, ...adapted.reasons], substitutionFrom: it.substitutionFrom, substitutionReason: it.substitutionReason, acceptedByUserAt: it.acceptedByUserAt };
+  return { ...adapted, ...withVariant, doseContext:{...adapted.doseContext,version:'DOSE/2.1.0',ordinarySets:it.ordinarySets??it.sets,temporaryReasons:[...new Set([...temporaryReasons,...(adapted.doseContext?.temporaryReasons??[])])]}, reasons: [...it.reasons, ...adapted.reasons], substitutionFrom: it.substitutionFrom, substitutionReason: it.substitutionReason, acceptedByUserAt: it.acceptedByUserAt };
 }
 
 /** 08 §2 steg 6–7: efter viktberäkning kan relativ last ≥75 % e1RM göra en övning tung (02 §2). */

@@ -229,7 +229,7 @@ export function sessionExerciseFromRow(r: Record<string, unknown>, replacedById:
     targetSets: r.target_sets as number,
     snapshot: r.recommendation_snapshot as PlannedExercise,
     replacedById,
-    replacesId: (r.recommendation_snapshot as PlannedExercise)?.substitution?.replacesSessionExerciseId ?? null,
+    replacesId: (r.recommendation_snapshot as PlannedExercise)?.refreshOfSessionExerciseId ?? (r.recommendation_snapshot as PlannedExercise)?.substitution?.replacesSessionExerciseId ?? null,
     createdAt: r.created_at as string,
     syncState: 'synced',
   };

@@ -21,7 +21,7 @@ import { savedWorkoutFeedback } from '../../src/application/workoutFeedback';
 import type { PerformedExercise, PerceivedEffort } from '../../src/domain/model';
 
 vi.setConfig({testTimeout:120000});
-const output:any={baselineCommit:'305aa36f4f028f5645a32f98698c26d1ea9a374c',policy:'ADAPTIVE/2.2.0',sessionsPerRun:36, assumptions:'Deterministic synthetic counterfactuals; independent capacity trajectory, no causal or physiological forecast. Effort deliberately varied independently from performance to isolate decision sensitivity. Full traces retained.'};
+const output:any={baselineCommit:'305aa36f4f028f5645a32f98698c26d1ea9a374c',policy:'ADAPTIVE/2.3.0',sessionsPerRun:36, assumptions:'Deterministic synthetic counterfactuals; independent capacity trajectory, no causal or physiological forecast. Effort deliberately varied independently from performance to isolate decision sensitivity. Full traces retained.'};
 afterAll(()=>{
  mkdirSync('test-results',{recursive:true});mkdirSync('docs/evidence/effort-scale-2026-10-29',{recursive:true});
  writeFileSync('test-results/effort-simulation.json',JSON.stringify(output,null,2));

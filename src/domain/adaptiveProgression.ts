@@ -1,7 +1,7 @@
 import type { Experience, Exposure, Recommendation, SetResult } from './decision_engine';
 
 /** Product heuristics, not physiological measurements. See the adaptation implementation plan. */
-export const ADAPTIVE_POLICY = { version: 'ADAPTIVE/2.2.0', confirmation: 2, hardConfirmation: 3, extraReps: 2, doseRepRatio: .8, retryWins: 2 } as const;
+export const ADAPTIVE_POLICY = { version: 'ADAPTIVE/2.3.0', confirmation: 2, hardConfirmation: 3, extraReps: 2, doseRepRatio: .8, retryWins: 2 } as const;
 export type TrainingLevel = { kg: number; reps: number; sets: number };
 export type AdaptiveEvidence = {
   version: string;
@@ -169,7 +169,7 @@ export function adaptiveNext(a: ProgressionOptions): Recommendation {
   }
   const enoughEasy=work.filter(easyFeeling).length>=Math.max(work.length===1?1:2,Math.ceil(work.length*2/3))&&!work.some(s=>['hard','maximal','too_heavy'].includes(s.effort??'')||(s.rir!==null&&s.rir<=1));
   const priorSimilar=history.slice(0,-1).some(h=>{const old=ordinary(h);return old.length>0&&same(level(old),actual)&&fulfilled(h,old);});
-  const quickTrial=chosenReason==='manual'&&manualAt===history.length-1&&chosen!==null&&enoughEasy&&(work.length>1||priorSimilar);
+  const quickTrial=chosenReason!=='problem'&&enoughEasy&&(work.length>1||priorSimilar)&&(chosenReason!=='manual'||manualAt===history.length-1);
   let reviewTrial=false;
   if(chosenReason==='problem'&&chosen) {
     const stable=history.slice(chosenAt+1).filter((e,i)=>successes.has(chosenAt+1+i)&&!highEffort(ordinary(e))&&uniform(ordinary(e))&&same(level(ordinary(e)),chosen!));

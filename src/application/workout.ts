@@ -20,6 +20,7 @@ import {
   trainingTransaction,
 } from './training';
 import { requiredSides, type PerformanceSide } from '../domain/trainingFlow';
+import { refreshPreparedSession } from './refreshPreview';
 
 export async function editableSession(ctx: AppContext) {
   return (
@@ -31,6 +32,7 @@ export async function editableSession(ctx: AppContext) {
 }
 
 export async function beginPreparedSession(ctx: AppContext, id: string) {
+  await refreshPreparedSession(ctx,id);
   const pending = await ctx.db.sessions.get(id);
   if (pending?.status === 'preview') {
     const input = await buildPlannerInput(ctx.db, ctx.userId, ctx.clock.now());

@@ -195,6 +195,15 @@ function latestFor(history: PerformedExercise[], mode: Mode): { latest: Performe
  * nedgraderat tung övning vid caution <48 h (08 §2 steg 4–5).
  */
 export function prescribe(args: PrescribeArgs): PlannedExercise {
+  // A completed automatic recovery dose is work for recovery, not a new ordinary baseline.
+  // Explicitly changed targets/results remain observations of the user's chosen dose.
+  args={...args,history:args.history.filter(h=>{
+    if(!h.plan.doseContext?.workingLevel || !h.plan.doseContext.temporaryReasons.includes('TEMPORARY_LOAD_REDUCED'))return true;
+    const work=workDone(h.sets);
+    return h.sessionStatus!=='completed' || work.length<h.plan.sets || work.some(s=>
+      s.actualKg!==h.plan.kg || s.actualReps!==h.plan.reps || s.detail?.prescriptionOrigin?.userEditedSides.length ||
+      s.technique==='poor' || ['maximal','too_heavy'].includes(s.perceivedEffort??'') || (s.rir!==null&&s.rir<=1));
+  })};
   if(args.gate.impactedRegion && ['persistent','limping','swelling'].includes(args.gate.relevantSymptoms)) return base(args,{...initialPrescription({exerciseId:args.exerciseId as RefExerciseId,estimate:null,experience:args.experience,mode:args.mode,increment:prescriptionIncrement(args)}),state:'review_required',reasons:['SYMPTOM_REVIEW_REQUIRED']},{calibration:false});
   // Extra work contributes to dose, not automatically to the next ordinary set target.
   if (args.performedSetsOnly) {
@@ -213,9 +222,17 @@ export function prescribe(args: PrescribeArgs): PlannedExercise {
   if(last && !['blocked','review_required'].includes(result.state) && ['external_kg','assistance_kg','bodyweight_plus_kg'].includes(exercise(args.exerciseId).loadKind)) {
     const assistance=exercise(args.exerciseId).loadKind==='assistance_kg';
     const all=adaptiveNext({previous:{...toRecommendation(last.plan),bandMin:result.bandMin,bandMax:result.bandMax},history:args.history.map(toExposure),experience:args.experience,increment:prescriptionIncrement(args),impactedRegion:args.gate.impactedRegion,hold:last.plan.mode!==args.mode||result.state!=='normal'||args.gate.recovery?.modeCap!=null,maxLoadKg:args.settings?.maxLoadKg??undefined,availableLoads:args.availableLoads,bodyweightKg:args.bodyweightKg,loadModel:assistance?'assistance':exercise(args.exerciseId).loadKind==='bodyweight_plus_kg'?'added':'mass'});
-    const observed=all.adaptive?.chosenDose;
-    if(observed && last.plan.mode!==args.mode) result={...result,kg:result.kg===null?observed.kg:assistance?Math.max(result.kg,observed.kg):Math.min(result.kg,observed.kg),reps:Math.min(result.reps,observed.reps),sets:Math.min(result.sets,observed.sets),adaptive:all.adaptive,reasons:[...new Set([all.adaptive?.chosenReason==='problem'?'USER_DOSE_ADAPTED':'MANUAL_WORKING_DOSE',...result.reasons])],calibration:false};
+    const observed=all.adaptive?.chosenDose??all.adaptive?.workingDose??all.adaptive?.confirmed;
+    if(observed && last.plan.mode!==args.mode && result.state!=='restart') result={...result,kg:observed.kg,reps:observed.reps,sets:Math.min(result.sets,observed.sets),adaptive:all.adaptive,reasons:[...new Set([all.adaptive?.chosenReason==='problem'?'USER_DOSE_ADAPTED':'MANUAL_WORKING_DOSE',...all.reasons.filter(r=>r!=='RECOVERY_HOLD'),...result.reasons.filter(r=>!['INITIAL_HEURISTIC','DERIVED_FROM_OTHER_MODE'].includes(r))])],calibration:false};
     else if(observed && result.state!=='restart') result={...result,kg:all.kg,reps:all.reps,sets:Math.min(args.sets,all.sets),adaptive:all.adaptive,reasons:[...new Set([...all.reasons,...result.reasons.filter(r=>!['DOUBLE_PROGRESS_REPS','DOUBLE_PROGRESS_WEIGHT','USER_DOSE_ADAPTED','WAIT_FOR_SECOND_CONFIRMED_PASS'].includes(r))])],calibration:false};
+    // Explicit, bounded day adjustment from demonstrated work, never an old max estimate.
+    // 5/10 percent are product heuristics. The ordinary level remains separately recorded.
+    if(observed && exercise(args.exerciseId).loadKind==='external_kg' && args.gate.recovery?.modeCap && result.state!=='restart') {
+      const factor=args.gate.recovery.modeCap==='light'?.9:.95;
+      result={...result,kg:roundDownKg(observed.kg*factor,prescriptionIncrement(args)),reps:observed.reps,
+        reasons:['TEMPORARY_LOAD_REDUCED',...result.reasons.filter(r=>r!=='RECOVERY_HOLD')],
+        doseContext:{version:'DOSE/2.1.0',ordinarySets:args.ordinarySets??args.sets,temporaryReasons:[...new Set([...(args.temporaryReasons??[]),'TEMPORARY_LOAD_REDUCED'])],workingLevel:observed}};
+    }
   }
   result=restoreTemporarySets(result,args,last??null);
   const maximum=args.settings?.maxLoadKg;

@@ -115,6 +115,7 @@ export const REASONS: Record<string, { text: string; ev: Ev }> = {
   TECHNIQUE_NOT_CONTROLLED: { text: 'Tekniken markerades som dålig. Ingen ökning.', ev: 'U' },
   STEP_EXCEEDS_PROGRESS_CAP: { text: 'Minsta viktsteg är för stort för en försiktig ökning. Mindre viktsteg behövs – du kan ändra själv.', ev: 'H' },
   RECOVERY_HOLD: { text: 'Vi behåller nivån för återhämtning den här gången.', ev: 'H' },
+  TEMPORARY_LOAD_REDUCED: { text: 'Tillfälligt lättare belastning för återhämtning, räknad från din genomförda arbetsdos. Din ordinarie nivå ligger kvar.', ev: 'H' },
   RECOVERY_MATCHED_WORK: { text: 'Träningsmängd och ansträngning talar för ett lugnare förslag.', ev: 'H' },
   RECOVERY_OVERLAPPING_WORK: { text: 'Vi tar hänsyn till överlappande träning.', ev: 'H' },
   RECOVERY_MODE_REDUCED: { text: 'Lugnare nivå för återhämtning.', ev: 'H' },

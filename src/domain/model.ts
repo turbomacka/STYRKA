@@ -3,8 +3,8 @@ import type { ExerciseId } from './catalog';
 import type { Area, EquipmentSlug, LoadDisplayBasis, LoadKind } from './catalog';
 
 /** Versionsnummer som sparas i varje plansnapshot (04 §4). */
-export const RULESET_VERSION = 'STYRKA-RULES/2.2.0' as const;
-export const PLANNER_VERSION = 'STYRKA-PLANNER/2.2.0' as const;
+export const RULESET_VERSION = 'STYRKA-RULES/2.3.0' as const;
+export const PLANNER_VERSION = 'STYRKA-PLANNER/2.3.0' as const;
 
 export type Readiness = 'good' | 'normal' | 'tired' | 'pain';
 export type SessionKind = 'planned' | 'extra' | 'calibration';
@@ -84,7 +84,9 @@ export type PlannerProfile = {
 /** Föreskrift för en övning i ett plansnapshot. Immutabel efter skapande. */
 export type PlannedExercise = {
   /** Ordinary dose survives temporary time/recovery reductions; never a debt to repay. */
-  doseContext?: { version: 'DOSE/2.1.0'; ordinarySets: number; temporaryReasons: string[] };
+  doseContext?: { version: 'DOSE/2.1.0'; ordinarySets: number; temporaryReasons: string[]; workingLevel?: import('./adaptiveProgression').TrainingLevel };
+  /** New immutable recommendation in an unstarted workout; not an exercise substitution. */
+  refreshOfSessionExerciseId?: string;
   sideTargets?: Partial<Record<'left'|'right', {kg:number|null;reps:number}>>;
   adaptive?: import('./adaptiveProgression').AdaptiveEvidence;
   recommendation?: { version: string; source: import('./startingLoad').RecommendationSource; confidence: Confidence; sourceExerciseId?: string; suggestedKg?: number | null };

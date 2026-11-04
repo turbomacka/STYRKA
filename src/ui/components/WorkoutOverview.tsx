@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { refreshPreparedSession } from '../../application/refreshPreview';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { exercise, type ExerciseId } from '../../domain/catalog';
 import { addSet, previewSwap, swapCandidates, swapExercise } from '../../application/training';
@@ -48,6 +49,14 @@ export function WorkoutOverview() {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [checked, setChecked] = useState<string | null>(null);
+  const [refreshed, setRefreshed] = useState(false);
+  useEffect(() => {
+    let alive=true;
+    void refreshPreparedSession(ctx,id!).then(changed=>{if(alive){setRefreshed(changed);setChecked(id!);}})
+      .catch(()=>{if(alive){setError('Kunde inte uppdatera förslagen. Öppna passet igen för att försöka på nytt.');setChecked(id!);}});
+    return()=>{alive=false;};
+  },[ctx,id]);
   const [removed, setRemoved] = useState<string[]>([]);
   const loadCandidates = useCallback(() => swapCandidates(ctx, swap!.id), [ctx, swap]);
   const preview = useCallback(
@@ -66,7 +75,7 @@ export function WorkoutOverview() {
       );
     }
   };
-  if (!session || !exs || !sets)
+  if (!session || !exs || !sets || checked!==id)
     return (
       <p className="page" aria-busy="true">
         Hämtar passet…
@@ -81,6 +90,7 @@ export function WorkoutOverview() {
   return (
     <div className="page full stack workout-overview">
       <PageHeader title={prepared ? 'Ditt pass' : 'Hela passet'} back={() => nav(prepared ? '/' : returnTo)} />
+      {prepared && refreshed && <Banner kind="info">Förslagen är uppdaterade inför idag. Dina egna ändringar är kvar.</Banner>}
       <p className="muted">
         {prepared ? 'Ändra fritt inför idag.' : 'Dina genomförda set finns kvar.'} {work.filter((s) => s.status === 'done').length}/
         {work.length} set klara.
@@ -115,6 +125,7 @@ export function WorkoutOverview() {
               </div>
               {open === e.id && (
                 <div className="stack">
+                  {e.snapshot.doseContext?.workingLevel && e.snapshot.reasons.includes('TEMPORARY_LOAD_REDUCED') && <p className="small">Tillfälligt lättare för återhämtning. Ordinarie arbetsdos: {e.snapshot.doseContext.workingLevel.kg} kg × {e.snapshot.doseContext.workingLevel.reps}. Den nivån ligger kvar.</p>}
                   <ul className="list set-list">
                     {rows.map((s) => (
                       <li key={s.id}>

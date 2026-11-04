@@ -440,7 +440,8 @@ export class SyncEngine {
     for (const list of bySession.values()) {
       for (const se of list) {
         const snapshot = se.recommendation_snapshot as { substitutionReason?: string; substitutionFrom?: string };
-        const replaces = (se.recommendation_snapshot as { substitution?: { replacesSessionExerciseId?: string } })?.substitution?.replacesSessionExerciseId;
+        const prescription = se.recommendation_snapshot as { refreshOfSessionExerciseId?: string; substitution?: { replacesSessionExerciseId?: string } };
+        const replaces = prescription?.refreshOfSessionExerciseId ?? prescription?.substitution?.replacesSessionExerciseId;
         if (replaces && list.some((x) => x.id === replaces)) {
           replacedBy.set(replaces, se.id as string);
         } else if (snapshot?.substitutionReason === 'USER_SWAP') {
