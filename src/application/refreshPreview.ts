@@ -8,7 +8,7 @@ import { hashOf, uuidFromSeed } from '../domain/hash';
 import type { PlannedExercise } from '../domain/model';
 import type { LocalSessionExercise, LocalSet, StyrkaDB } from '../storage/db';
 import { sessionExerciseRow } from '../server/mapping';
-import { detailFor, displayOrder, initialConfiguration, mutateSet, plannedSetsFor, trainingTransaction } from './training';
+import { detailFor, displayOrder, initialConfiguration, mutateSet, nextOrderIndex, plannedSetsFor, trainingTransaction } from './training';
 
 const running = new WeakMap<StyrkaDB, Map<string, Promise<boolean>>>();
 
@@ -62,11 +62,12 @@ async function refresh(ctx: AppContext, id: string): Promise<boolean> {
     if (JSON.stringify(await ctx.db.sets.where('sessionId').equals(id).toArray()) !== JSON.stringify(before)) return false;
     for (const {old} of changes) if ((await ctx.db.sessionExercises.get(old.id))?.replacedById) return false;
     const now = ctx.clock.now();
+    let orderIndex = nextOrderIndex(await ctx.db.sessionExercises.where('sessionId').equals(id).toArray());
     for (const {old,next,rows} of changes) {
       const work = rows.filter(s => s.kind === 'work');
       const keepCount = work.length !== old.snapshot.sets || work.some(s => s.deleted || edited(s,old));
       const ne: LocalSessionExercise = {...old,id:uuidFromSeed(`refresh|${old.id}|${hashOf(next)}`),createdAt:now,syncState:'queued',replacesId:old.id,replacedById:null,
-        mode:next.mode,bandMin:next.bandMin,bandMax:next.bandMax,targetSets:next.sets,
+        orderIndex:orderIndex++,mode:next.mode,bandMin:next.bandMin,bandMax:next.bandMax,targetSets:next.sets,
         snapshot:{...next,refreshOfSessionExerciseId:old.id},configuration:old.configuration??initialConfiguration(next,profile,id)};
       let replacements = plannedSetsFor(ctx,id,ne,now,{deterministic:true});
       if (keepCount) replacements = work.map(s => ({...plannedSetsFor(ctx,id,{...ne,snapshot:{...ne.snapshot,sets:1}},now)[0],id:uuidFromSeed(`${ne.id}|set|${s.ordinal}|work`),ordinal:s.ordinal,deleted:s.deleted}));

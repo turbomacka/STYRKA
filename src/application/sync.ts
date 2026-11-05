@@ -16,6 +16,7 @@ import type { PlanSnapshot } from '../domain/model';
 import { outbox, type AppContext } from './context';
 import { cleanCalibrations, deletedWorkouts, purgeWorkout } from './deleteWorkout';
 import { invalidateFeedback } from './feedbackCache';
+import { repairPreviewSync } from './repairPreviewSync';
 
 function sameValue(a: unknown, b: unknown): boolean {
   if (a === b) return true;
@@ -131,6 +132,7 @@ export class SyncEngine {
     }
     this.lastState = 'syncing';
     this.emit();
+    await repairPreviewSync(this.ctx);
     const blocked = new Set<string>();
     for (;;) {
       const entries = await this.ctx.db.outbox.orderBy('seq').toArray();

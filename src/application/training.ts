@@ -581,16 +581,26 @@ export async function getFamiliarities(ctx: AppContext): Promise<Partial<Record<
 
 /** Aktiva övningar i ett pass i visningsordning (ersättare på originalets plats). */
 export function displayOrder(exs: LocalSessionExercise[]): LocalSessionExercise[] {
-  const root = (e: LocalSessionExercise) => (e.orderIndex >= 100 ? Math.floor((e.orderIndex - 100) / 10) : e.orderIndex);
+  const byId = new Map(exs.map(e => [e.id, e]));
+  const root = (e: LocalSessionExercise): number => {
+    const seen = new Set<string>();
+    while (!seen.has(e.id)) {
+      seen.add(e.id);
+      const parentId = e.replacesId ?? e.snapshot.refreshOfSessionExerciseId;
+      const parent = parentId && byId.get(parentId);
+      if (!parent) break;
+      e = parent;
+    }
+    // Retain the historical encoding when an old replacement's parent is unavailable.
+    return e.orderIndex >= 100 ? Math.floor((e.orderIndex - 100) / 10) : e.orderIndex;
+  };
   return exs.filter((e) => !e.replacedById).sort((a, b) => root(a) - root(b) || a.orderIndex - b.orderIndex);
 }
 
-function nextOrderIndex(old: LocalSessionExercise): number {
-  // Ersättare får deterministisk ordning: 100 + 10 × ursprunglig position + kedjedjup (1–9).
-  if (old.orderIndex < 100) return 100 + old.orderIndex * 10 + 1;
-  const depth = (old.orderIndex - 100) % 10;
-  if (depth >= 9) throw new AppError('VALIDATION_ERROR', 'too_many_swaps');
-  return old.orderIndex + 1;
+export function nextOrderIndex(all: LocalSessionExercise[]): number {
+  // Storage order is unique across the whole session, including replaced nodes.
+  // Display order follows the replacement chain instead.
+  return Math.max(-1, ...all.map(e => e.orderIndex)) + 1;
 }
 
 /** Kandidater för bytesvyn (S09 v2) för en övning i ett pågående pass. */
@@ -674,7 +684,7 @@ export async function swapExercise(ctx: AppContext, sessionExerciseId: string, t
     sessionId: old.sessionId,
     exerciseId: to,
     variantKey,
-    orderIndex: nextOrderIndex(old),
+    orderIndex: nextOrderIndex(all),
     mode: planned.mode,
     bandMin: planned.bandMin,
     bandMax: planned.bandMax,
@@ -691,6 +701,7 @@ export async function swapExercise(ctx: AppContext, sessionExerciseId: string, t
   await trainingTransaction(ctx, async () => {
     const fresh = await ctx.db.sessionExercises.get(old.id);
     if (fresh?.replacedById) throw new AppError('INVALID_STATE', 'ALREADY_REPLACED');
+    ne.orderIndex = nextOrderIndex(await ctx.db.sessionExercises.where('sessionId').equals(old.sessionId).toArray());
     await dismissExerciseRests(ctx,old.id);
     await ctx.db.sessionExercises.put({ ...old, replacedById: ne.id });
     await ctx.db.sessionExercises.put(ne);
