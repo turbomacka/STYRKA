@@ -106,6 +106,8 @@ export type LocalSession = {
   timezone: string;
   startedAt: string | null;
   finishedAt: string | null;
+  /** First time this ordinary workout counted; stable when reopened or finished again. */
+  firstCountedAt?: string;
   plannedMinutes: number;
   readiness: Readiness | null;
   templateKey: string | null;

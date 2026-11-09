@@ -16,6 +16,7 @@ import { SetRow } from '../components/SetRow';
 import { ExecutionControl, PerformanceRow, SavedRestTimer, WarmupControl } from '../components/TrainingFlow';
 import { comparisonKey, defaultConfiguration, SIDE_LABELS, trainingPreferences } from '../../domain/trainingFlow';
 import { SkipExercise } from '../components/SkipExercise';
+import { ReopenWorkout } from '../components/ReopenWorkout';
 import { SubstitutionSheet } from '../components/SubstitutionSheet';
 import { ExerciseSwapSheet } from '../components/widgets';
 import { FLAGS, useServices } from '../services';
@@ -110,6 +111,7 @@ export function Train() {
     return (
       <div className="page stack">
         <Banner kind="info">Passet är avslutat.</Banner>
+        {['completed','partial','abandoned'].includes(session.status) && <ReopenWorkout sessionId={session.id}/>}
         <button type="button" className="btn block" onClick={() => nav('/')}>
           Till planen
         </button>

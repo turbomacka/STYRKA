@@ -27,7 +27,7 @@ test('active workout: add, undo, delete, restore, offline reload and real replan
   await expect(first).toHaveCount(0);
   await page.locator('.toast').filter({hasText:'Setet borttaget'}).getByRole('button',{name:'Ångra',exact:true}).click();
   await expect(first.getByRole('button',{name:'Ångra registrering',exact:true})).toBeVisible();
-  const dir='docs/evidence/adaptive-2026-10-22/'+info.project.name;mkdirSync(dir,{recursive:true});
+  const dir=info.outputPath('adaptive-training');mkdirSync(dir,{recursive:true});
   await page.screenshot({path:dir+'/added-exercise.png',fullPage:true});
   expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze()).violations).toEqual([]);
   // Windows WebKit cannot validate offline service worker reload; Android does.
@@ -48,14 +48,25 @@ test('active workout: add, undo, delete, restore, offline reload and real replan
   await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
   await page.getByRole('button',{name:'Visa genomfört pass'}).click();
   await page.locator('.plan-row-head').first().click();
+  await page.getByRole('button',{name:'Redigera pass',exact:true}).click();
   await page.getByRole('button',{name:'Korrigera set 1',exact:true}).click();
   const correction=page.getByRole('dialog',{name:'Korrigera registrering'});
   expect((await correction.getByLabel('Registrerad vikt (kg)').boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await correction.getByLabel('Registrerad vikt (kg)').fill('10');
+  await correction.getByLabel('Hur kändes setet?').selectOption('easy');
   await correction.getByRole('button',{name:'Spara korrigering'}).click();
   await expect(correction.getByRole('status')).toContainText('planen är uppdaterad');
   await page.screenshot({path:dir+'/history-correction.png',fullPage:true});
   expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze()).violations).toEqual([]);
-  await correction.getByRole('button',{name:'Stäng',exact:true}).click();
+  await correction.getByRole('button',{name:'Klart',exact:true}).click();
   await expect(page.getByText('Korrigeringshistorik',{exact:true})).toBeVisible();
+  await expect(page.getByText('Känsla: Lätt',{exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Synkstatus: Synkat. Visa detaljer'})).toBeVisible();
+  await page.reload();
+  await page.locator('.plan-row-head').first().click();
+  await expect(page.getByText('Känsla: Lätt',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Redigera pass',exact:true}).click();
+  await page.getByRole('button',{name:'Korrigera set 1',exact:true}).click();
+  await expect(correction.getByLabel('Registrerad vikt (kg)')).toHaveValue('10');
+  await expect(correction.getByLabel('Hur kändes setet?')).toHaveValue('easy');
 });

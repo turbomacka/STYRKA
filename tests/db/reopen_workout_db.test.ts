@@ -1,0 +1,52 @@
+import 'fake-indexeddb/auto';
+import { randomUUID } from 'node:crypto';
+import { afterAll, beforeAll, expect, it } from 'vitest';
+import { StyrkaDB } from '../../src/storage/db';
+import { SupabaseTransport } from '../../src/server/supabaseTransport';
+import { SyncEngine } from '../../src/application/sync';
+import { completeOnboarding } from '../../src/application/profile';
+import { addSet, finishSession, logSet, previewNext, reopenSession, startSession } from '../../src/application/training';
+import { ordinarySequence } from '../../src/application/trainingPlan';
+import { ONBOARDING, TestClock } from '../unit/appHarness';
+import { closeSql, newUser, sql, withProfile, type TestUser } from './dbHelpers';
+
+let a: TestUser, b: TestUser;
+const dbs: StyrkaDB[] = [], syncs: SyncEngine[] = [];
+beforeAll(async () => { a = await newUser('reopen-a'); b = await newUser('reopen-b'); await withProfile(b); });
+afterAll(async () => {
+  for (const sync of syncs) sync.dispose(); for (const db of dbs) await db.delete();
+  await sql('delete from auth.users where id=any($1::uuid[])', [[a?.id, b?.id].filter(Boolean)]); await closeSql();
+});
+it('roundtrips reopening and additional work with stable identity, numbering and RLS', async () => {
+  const make = () => {
+    const db = new StyrkaDB(`reopen-${randomUUID()}`); dbs.push(db);
+    const ctx = { db, userId: a.id, transport: new SupabaseTransport(a.client), clock: new TestClock(), ids: { uuid: randomUUID }, isOnline: () => true };
+    const sync = new SyncEngine(ctx); syncs.push(sync); return { ctx, db, sync };
+  };
+  const A = make(); await completeOnboarding(A.ctx, ONBOARDING);
+  const plan = await previewNext(A.ctx), bench = plan.exercises.find(e => e.exerciseId === 'bench_press')!;
+  const session = await startSession(A.ctx, { ...plan, exercises: [{ ...bench, kg: 60, sets: 2 }] });
+  const sets = await A.db.sets.where('sessionId').equals(session.id).sortBy('ordinal');
+  await logSet(A.ctx, sets[0].id, {}); const first = await finishSession(A.ctx, session.id);
+  expect(await A.sync.syncNow()).toMatchObject({ rejected: 0, conflicts: 0, stoppedBy: null });
+  A.ctx.clock.advanceHours(0.2); await reopenSession(A.ctx, session.id);
+  expect(await A.sync.syncNow()).toMatchObject({ rejected: 0, conflicts: 0, stoppedBy: null });
+  const B = make(); await B.sync.pull();
+  expect(await B.db.sessions.get(session.id)).toMatchObject({ status: 'in_progress', finishedAt: null });
+  expect(Date.parse((await B.db.sessions.get(session.id))!.firstCountedAt!)).toBe(Date.parse(first.finishedAt!));
+  expect((await ordinarySequence(B.ctx)).get(session.id)).toBe(1);
+  B.ctx.clock.advanceHours(0.3);
+  await logSet(B.ctx, sets[1].id, {});
+  const extra = await addSet(B.ctx, sets[0].sessionExerciseId); await logSet(B.ctx, extra.id, {});
+  await finishSession(B.ctx, session.id);
+  expect(await B.sync.syncNow()).toMatchObject({ rejected: 0, conflicts: 0, stoppedBy: null });
+  await A.sync.pull();
+  expect((await A.db.sessions.get(session.id))!.status).toBe('completed');
+  expect((await A.db.programs.toArray())[0].rotationIndex).toBe(1);
+  expect(await A.db.sessions.count()).toBe(1);
+  expect(await A.db.sets.where('sessionId').equals(session.id).count()).toBe(3);
+  expect((await ordinarySequence(A.ctx)).get(session.id)).toBe(1);
+  expect((await b.client.from('training_sessions').select('id').eq('id', session.id)).data).toEqual([]);
+  expect((await b.client.from('training_sessions').update({ status: 'in_progress', first_counted_at: null }).eq('id', session.id).select('id')).data).toEqual([]);
+  expect((await a.client.from('training_sessions').select('status,first_counted_at').eq('id', session.id).single()).data?.status).toBe('completed');
+});

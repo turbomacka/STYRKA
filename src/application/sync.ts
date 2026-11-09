@@ -504,9 +504,12 @@ export class SyncEngine {
         // Finishing can be acknowledged while this older snapshot is in flight.
         // An empty outbox then says nothing about the freshness of the response.
         if (keep(local) || !sameValue(sessionsAtStart.get(r.id as string), local)) continue;
+        if (local && typeof r.revision === 'number' && r.revision < local.revision) continue;
         const audit = auditsBySession.get(r.id as string);
         const snapshot = (audit?.plan_snapshot ?? { exercises: [], budgetMinutes: r.planned_minutes, kind: r.kind === 'extra' ? 'extra' : 'planned' }) as PlanSnapshot;
-        await db.sessions.put(sessionFromRow(r, snapshot));
+        const incoming = sessionFromRow(r, snapshot);
+        await db.sessions.put(incoming);
+        if (local && (local.status !== incoming.status || local.finishedAt !== incoming.finishedAt)) await invalidateFeedback(db, { sessionId: incoming.id });
       }
       for (const r of snap.sessionExercises) if (!keep(await db.sessionExercises.get(r.id as string))) await db.sessionExercises.put(sessionExerciseFromRow(r, replacedBy.get(r.id as string) ?? null));
       for (const r of snap.sets) {

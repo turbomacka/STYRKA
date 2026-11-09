@@ -386,6 +386,26 @@ export async function setStatus(ctx: AppContext, sessionId: string, to: SessionS
 export const pauseSession = (ctx: AppContext, id: string) => setStatus(ctx, id, 'paused');
 export const resumeSession = (ctx: AppContext, id: string) => setStatus(ctx, id, 'in_progress');
 
+/** Continue the same saved workout. Keep observations, prescriptions and its already consumed slot. */
+export async function reopenSession(ctx: AppContext, sessionId: string): Promise<LocalSession> {
+  return trainingTransaction(ctx, async () => {
+    const s = await ctx.db.sessions.get(sessionId);
+    if (!s) throw new AppError('NOT_FOUND');
+    const active = await activeSession(ctx);
+    if (active && active.id !== sessionId) throw new AppError('INVALID_STATE', 'active_session_exists');
+    if (s.status === 'in_progress' || s.status === 'paused') return s;
+    if (!['completed', 'partial', 'abandoned'].includes(s.status)) throw new AppError('INVALID_STATE');
+    const hadCountedWork = s.kind === 'planned' && ['completed', 'partial'].includes(s.status) &&
+      await ctx.db.sets.where('sessionId').equals(sessionId).filter(x => !x.deleted && x.kind === 'work' && x.status === 'done').count() > 0;
+    const firstCountedAt = s.firstCountedAt ?? (hadCountedWork ? s.finishedAt ?? s.startedAt ?? s.clientCreatedAt : undefined);
+    const reopened: LocalSession = { ...s, ...(firstCountedAt ? { firstCountedAt } : {}), status: 'in_progress', finishedAt: null, revision: s.revision + 1, syncState: 'queued' };
+    await ctx.db.sessions.put(reopened);
+    await ctx.db.outbox.add(outbox(ctx, sessionId, { type: 'upsert', table: 'training_sessions', row: sessionRow(ctx.userId, reopened) }));
+    await invalidateFeedback(ctx.db, { sessionId });
+    return reopened;
+  });
+}
+
 export type FinishOptions = { status?: 'completed' | 'partial' | 'abandoned'; keepLoggedSets?: boolean };
 
 /**
@@ -413,11 +433,12 @@ export async function finishSession(ctx: AppContext, sessionId: string, opts: Fi
         await ctx.db.sets.put(after);
       }
     }
-    out = { ...s, status, finishedAt: now, revision: s.revision + 1, syncState: 'queued' };
+    const firstCountedAt = s.firstCountedAt ?? (s.kind === 'planned' && ['completed', 'partial'].includes(status) && doneWork > 0 ? now : undefined);
+    out = { ...s, ...(firstCountedAt ? { firstCountedAt } : {}), status, finishedAt: now, revision: s.revision + 1, syncState: 'queued' };
     await ctx.db.sessions.put(out);
     await ctx.db.outbox.add(outbox(ctx, sessionId, { type: 'upsert', table: 'training_sessions', row: sessionRow(ctx.userId, out) }));
     if (status === 'completed' || status === 'partial') await updateCalibrationsTx(ctx, sessionId);
-    if (s.kind === 'planned' && (status === 'completed' || status === 'partial') && doneWork > 0 && s.programId) {
+    if (!s.firstCountedAt && s.kind === 'planned' && (status === 'completed' || status === 'partial') && doneWork > 0 && s.programId) {
       const program = await ctx.db.programs.get(s.programId);
       if (program && program.active === 1 && s.rotationIndex === program.rotationIndex) {
         const next = { ...program, rotationIndex: program.rotationIndex + 1, revision: program.revision + 1, syncState: 'queued' as const };

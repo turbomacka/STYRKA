@@ -89,17 +89,18 @@ const FINISHED = new Set(['completed', 'partial', 'abandoned']);
  */
 export async function ordinarySequence(ctx: AppContext): Promise<Map<string, number>> {
   const { db } = ctx;
-  const sessions = (await db.sessions.toArray()).filter((s) => FINISHED.has(s.status));
+  const sessions = (await db.sessions.toArray()).filter((s) => FINISHED.has(s.status) || s.firstCountedAt || s.countsAsPlannedAt);
   const doneBySession = new Set((await db.sets.toArray()).filter((x) => x.status === 'done' && !x.deleted && x.kind === 'work').map((x) => x.sessionId));
   const seen = new Set<string>();
   const counted: Array<{ id: string; at: string }> = [];
-  const byFinish = [...sessions].sort((a, b) => (a.finishedAt ?? '').localeCompare(b.finishedAt ?? '') || a.id.localeCompare(b.id));
+  const countedAt = (s: LocalSession) => s.firstCountedAt ?? s.finishedAt ?? '';
+  const byFinish = [...sessions].sort((a, b) => countedAt(a).localeCompare(countedAt(b)) || a.id.localeCompare(b.id));
   for (const s of byFinish) {
-    if (s.kind === 'planned' && (s.status === 'completed' || s.status === 'partial') && doneBySession.has(s.id)) {
+    if (s.kind === 'planned' && (s.firstCountedAt || (s.status === 'completed' || s.status === 'partial') && doneBySession.has(s.id))) {
       const key = `${s.programId}|${s.rotationIndex}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      counted.push({ id: s.id, at: s.finishedAt ?? '' });
+      counted.push({ id: s.id, at: countedAt(s) });
     } else if (s.kind === 'extra' && s.countsAsPlannedAt) {
       counted.push({ id: s.id, at: s.countsAsPlannedAt });
     }

@@ -1,10 +1,11 @@
 import {HistoryCorrection} from '../components/HistoryCorrection';
+import { ReopenWorkout } from '../components/ReopenWorkout';
 import { NextWorkout, SyncLink } from './Today';
 import type { SavedWorkoutFeedback } from '../../application/workoutFeedback';
 import { PerformanceHistory } from '../components/TrainingHistory';
 /**
  * ÄA-PLAN-001 "Min träningsplan": Kommande (levande, preliminär plan) och Genomförda (träningsdagbok).
- * En rad per pass i stängt läge; detaljer bara för det användaren expanderar. Ingen vy här ändrar träningsdata;
+ * En rad per pass i stängt läge; detaljer bara för det användaren expanderar. Redigering sparas uttryckligen;
  * att öppna, expandera, byta flik eller skriva ut skapar ingen planrevision.
  */
 import { useEffect, useId, useRef, useState } from 'react';
@@ -312,14 +313,18 @@ export function SlotRow({ slot, live, activeSession: act, readOnly, printing }: 
 
 function Done({ printing, onPrinted }: { printing: { includeNotes: boolean } | null; onPrinted: () => void }) {
   const { ctx } = useServices();
-  const changeKey = useLiveQuery(async () => JSON.stringify((await ctx.db.sets.toArray()).map(s=>[s.id,s.status,s.deleted,s.actualGrams,s.actualReps,s.actualSeconds,s.detail?.performances])), [ctx]);
+  const changeKey = useLiveQuery(async () => JSON.stringify([
+    (await ctx.db.sessions.toArray()).map(s=>[s.id,s.status,s.finishedAt,s.revision]),
+    (await ctx.db.sets.toArray()).map(s=>[s.id,s.status,s.deleted,s.actualGrams,s.actualReps,s.actualSeconds,s.detail?.performances]),
+  ]), [ctx]);
   const [items, setItems] = useState<WorkoutSummary[] | null>(null);
   const [next, setNext] = useState<string | null>(null);
   const [all, setAll] = useState(false);
+  const [limit, setLimit] = useState(30);
 
   useEffect(() => {
     let alive = true;
-    void getWorkoutHistory(ctx, { limit: printing || all ? 100_000 : 30 }).then((r) => {
+    void getWorkoutHistory(ctx, { limit: printing || all ? 100_000 : limit }).then((r) => {
       if (!alive) return;
       setItems(r.items);
       setNext(r.next);
@@ -327,16 +332,9 @@ function Done({ printing, onPrinted }: { printing: { includeNotes: boolean } | n
     return () => {
       alive = false;
     };
-  }, [ctx, changeKey, printing, all]);
+  }, [ctx, changeKey, printing, all, limit]);
 
   usePrint(!!printing, !!items, onPrinted);
-
-  const more = async () => {
-    if (!next || !items) return;
-    const r = await getWorkoutHistory(ctx, { before: next, limit: 30 });
-    setItems([...items, ...r.items]);
-    setNext(r.next);
-  };
 
   if (!items) return <p aria-busy="true">Hämtar dina pass…</p>;
   if (!items.length) return <p className="muted">{PLAN.EMPTY_DONE}</p>;
@@ -350,7 +348,7 @@ function Done({ printing, onPrinted }: { printing: { includeNotes: boolean } | n
       </ol>
       {next && !all && (
         <div className="row no-print">
-          <button type="button" className="btn grow" onClick={more}>
+          <button type="button" className="btn grow" onClick={() => setLimit(limit + 30)}>
             {PLAN.SHOW_MORE_HISTORY}
           </button>
           <button type="button" className="btn ghost" onClick={() => setAll(true)}>
@@ -365,6 +363,7 @@ function Done({ printing, onPrinted }: { printing: { includeNotes: boolean } | n
 function DoneRow({ w, printing }: { w: WorkoutSummary; printing: { includeNotes: boolean } | null }) {
   const { ctx } = useServices();
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   const id = useId();
   const expanded = open || !!printing;
   const s = w.session;
@@ -384,6 +383,11 @@ function DoneRow({ w, printing }: { w: WorkoutSummary; printing: { includeNotes:
       </button>
       <Expandable open={expanded} id={`${id}-d`}>
         <div className="plan-row-body stack">
+          {!printing && detail && <div className="stack no-print">
+            <ReopenWorkout sessionId={s.id}/>
+            <button type="button" className="btn" aria-pressed={editing} onClick={() => setEditing(!editing)}>{editing ? 'Klar med redigeringen' : 'Redigera pass'}</button>
+            {editing && <p className="small">Välj det set du vill ändra. Varje sparad korrigering uppdaterar kommande pass utifrån din träningshistorik.</p>}
+          </div>}
           {!detail ? (
             <p aria-busy="true">Hämtar set…</p>
           ) : (
@@ -395,7 +399,7 @@ function DoneRow({ w, printing }: { w: WorkoutSummary; printing: { includeNotes:
                 </p>
                 <ul className="list small">
                   {sets.map((x, i) => (
-                    <SetLine key={x.id} instance={se} set={x} no={i + 1} lk={se.snapshot.loadKind} perHand={se.snapshot.loadBasis === 'per_hand_kg'} />
+                    <SetLine key={x.id} instance={se} set={x} no={i + 1} lk={se.snapshot.loadKind} perHand={se.snapshot.loadBasis === 'per_hand_kg'} editing={editing && !printing} />
                   ))}
                 </ul>
               </div>
@@ -409,11 +413,11 @@ function DoneRow({ w, printing }: { w: WorkoutSummary; printing: { includeNotes:
   );
 }
 
-function SetLine({ set: x, no, lk, perHand, instance }: { instance: LocalSessionExercise; set: LocalSet; no: number; lk: LoadKind; perHand: boolean }) {
+function SetLine({ set: x, no, lk, perHand, instance, editing }: { instance: LocalSessionExercise; set: LocalSet; no: number; lk: LoadKind; perHand: boolean; editing: boolean }) {
   if (x.detail) {
     const d = x.detail, e = d.configuration.equipment;
     const target = d.targetLoadValue != null ? `${d.targetLoadValue.toLocaleString('sv-SE')}${d.targetSecondLoadValue != null ? ` / ${d.targetSecondLoadValue.toLocaleString('sv-SE')}` : ''} ${e.unit === 'level' ? 'nivå' : 'kg'} × ${x.targetReps} reps` : x.targetGrams === null && lk !== 'duration_sec' && lk !== 'reps_only' ? 'egen belastning' : loadText(x.targetGrams,x.targetReps,x.targetSeconds,lk,e.measurement === 'per_dumbbell');
-    return <li className="set-line"><PerformanceHistory set={x} /><span className="small muted">{PLAN.RECOMMENDED_THEN}: {target}</span><HistoryCorrection set={x} instance={instance}/></li>;
+    return <li className="set-line"><PerformanceHistory set={x} /><span className="small muted">{PLAN.RECOMMENDED_THEN}: {target}</span>{editing&&<HistoryCorrection set={x} instance={instance}/>}</li>;
   }
   const corrected = x.status === 'done' && x.occurredAt !== null && Date.parse(x.updatedAt) - Date.parse(x.occurredAt) > 1000;
   const status = x.status === 'done' ? PLAN.PERFORMED : x.status === 'skipped' ? 'Överhoppat' : 'Inte utfört';
@@ -429,7 +433,7 @@ function SetLine({ set: x, no, lk, perHand, instance }: { instance: LocalSession
         {' '}
         ({PLAN.RECOMMENDED_THEN}: {x.targetGrams === null && lk !== 'duration_sec' && lk !== 'reps_only' ? 'egen vikt' : loadText(x.targetGrams, x.targetReps, x.targetSeconds, lk, perHand)})
       </span>
-      <HistoryCorrection set={x} instance={instance}/>
+      {editing&&<HistoryCorrection set={x} instance={instance}/>}
     </li>
   );
 }

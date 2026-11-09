@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ALL_AREAS, AREA_LABEL_SV, exercise, type Area } from '../../domain/catalog';
 import { SkipExercise } from '../components/SkipExercise';
+import { ReopenWorkout } from '../components/ReopenWorkout';
 import { refreshFuturePlan, type FuturePlanningResult } from '../../application/trainingPlan';
 import { savedWorkoutFeedback } from '../../application/workoutFeedback';
 import type { Side, SymptomReaction } from '../../domain/model';
@@ -95,6 +96,7 @@ export function Finish() {
   }
   if(done)return <div className="page stack">
     <h1>Passet är sparat</h1><p className="finish-feedback">{done.text}</p>
+    <ReopenWorkout sessionId={session.id} disabled={busy || calculating}/>
     <section aria-label="Omplanering" aria-busy={calculating}>
       <ol>{['Genomförd träning', 'Belastning och återhämtning', 'Kommande rekommendationer', 'Uppdaterad plan'].map((label,i) => <li key={label}>{steps > i ? '✓ ' : ''}{label}{calculating && steps === i ? ' …' : ''}</li>)}</ol>
       <p role="status">{calculating ? 'Beräknar från sparade träningsdata…' : comparison ? 'Beräkningen är klar.' : ''}</p>

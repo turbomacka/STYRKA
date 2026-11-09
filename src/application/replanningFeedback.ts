@@ -19,6 +19,9 @@ export function observedDose(h:PerformedExercise):string|null {
   const work=actualWork(h);if(!work.length)return null;
   const performances=work.flatMap(s=>s.detail?.performances.filter(p=>p.status==='done')??[]);
   if(performances.length) {
+    // Legacy aggregate sets have no side/equipment detail. Never extrapolate the
+    // detailed subset's dose or effort to the whole exercise after a correction.
+    if(work.some(s=>!s.detail?.performances.some(p=>p.status==='done')))return `${work.length} arbetsset registrerade.`;
     const first=performances[0];
     if(!performances.every(p=>p.loadValue===first.loadValue&&p.secondLoadValue===first.secondLoadValue&&p.repetitions===first.repetitions&&p.seconds===first.seconds))return `${work.length} arbetsset registrerade.`;
     const sides=new Set(performances.map(p=>p.side));
