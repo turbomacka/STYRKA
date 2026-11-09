@@ -117,6 +117,23 @@ it('rolls back a failed local save and never restores a deleted workout', async 
   await expect(reopenSession(h.ctx, session.id)).rejects.toThrow('NOT_FOUND');
 });
 
+it('keeps completion feedback when sync only changes the timestamp representation', async () => {
+  const h = await setup(), { session, sets } = await workout(h);
+  await logSet(h.ctx, sets[0].id, {}); await finishSession(h.ctx, session.id); await h.sync.syncNow();
+  const key = `workout-feedback:${session.id}`, feedback = { sessionId: session.id, text: 'Completed' };
+  await h.db.meta.put({ key, value: feedback });
+  const snapshot = structuredClone(await h.server.pullAll(h.userId));
+  const row = snapshot.sessions.find(s => s.id === session.id)!;
+  row.finished_at = (row.finished_at as string).replace('Z', '+00:00');
+  vi.spyOn(h.server, 'pullAll').mockResolvedValueOnce(snapshot);
+  await h.sync.pull();
+  expect((await h.db.meta.get(key))?.value).toEqual(feedback);
+  row.finished_at = new Date(Date.parse(row.finished_at as string) + 1000).toISOString();
+  vi.spyOn(h.server, 'pullAll').mockResolvedValueOnce(snapshot);
+  await h.sync.pull();
+  expect(await h.db.meta.get(key)).toBeUndefined();
+});
+
 it('remote reopening clears completion feedback and stale pulls cannot close the reopened workout', async () => {
   const h = await setup(), { session, sets } = await workout(h);
   await logSet(h.ctx, sets[0].id, {}); await finishSession(h.ctx, session.id); await h.sync.syncNow();

@@ -10,7 +10,7 @@ import { canonicalJson } from '../domain/hash';
 import { applyServerSetValues, consentFromRow, exerciseSettingsFromRow, profileFromRow, programFromRow, restrictionFromRow, sessionExerciseFromRow, sessionFromRow, setFromRow, setFullPatch, symptomFromRow, auditFromRow, profileRow, calibrationFromRow, substitutionEventFromRow, noteFromRow, noteRow, planRevisionFromRow, balanceDecisionFromRow } from '../server/mapping';
 import { TransportError } from '../server/transport';
 import { skipEventFromRow, workoutOrderEventFromRow } from '../server/mapping';
-import type { ConflictEntry, LocalProfile, LocalSet, OutboxEntry, ServerTable, SyncState } from '../storage/db';
+import type { ConflictEntry, LocalProfile, LocalSession, LocalSet, OutboxEntry, ServerTable, SyncState } from '../storage/db';
 import type { ExerciseId } from '../domain/catalog';
 import type { PlanSnapshot } from '../domain/model';
 import { outbox, type AppContext } from './context';
@@ -509,7 +509,9 @@ export class SyncEngine {
         const snapshot = (audit?.plan_snapshot ?? { exercises: [], budgetMinutes: r.planned_minutes, kind: r.kind === 'extra' ? 'extra' : 'planned' }) as PlanSnapshot;
         const incoming = sessionFromRow(r, snapshot);
         await db.sessions.put(incoming);
-        if (local && (local.status !== incoming.status || local.finishedAt !== incoming.finishedAt)) await invalidateFeedback(db, { sessionId: incoming.id });
+        // Postgres returns offsets while local timestamps use Z; compare the actual instant.
+        const finishedTime = (s: LocalSession) => s.finishedAt ? Date.parse(s.finishedAt) : null;
+        if (local && (local.status !== incoming.status || finishedTime(local) !== finishedTime(incoming))) await invalidateFeedback(db, { sessionId: incoming.id });
       }
       for (const r of snap.sessionExercises) if (!keep(await db.sessionExercises.get(r.id as string))) await db.sessionExercises.put(sessionExerciseFromRow(r, replacedBy.get(r.id as string) ?? null));
       for (const r of snap.sets) {
