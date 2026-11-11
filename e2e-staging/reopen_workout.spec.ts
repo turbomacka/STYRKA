@@ -15,7 +15,9 @@ test('staging: reopen, add sets, replan and sync without duplicate workouts', as
   const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
   expect(error).toBeNull();
   const userId = data.user!.id;
+  const userClient = createClient(`https://${ref}.supabase.co`, keys.find(k => k.type === 'publishable')!.api_key, { auth: { persistSession: false, autoRefreshToken: false } });
   try {
+  expect((await userClient.auth.signInWithPassword({ email, password })).error).toBeNull();
   await page.goto('/');
   await page.getByLabel('E-post', { exact: true }).fill(email);
   await page.getByLabel('Lösenord', { exact: true }).fill(password);
@@ -78,11 +80,12 @@ test('staging: reopen, add sets, replan and sync without duplicate workouts', as
   await expect(page.getByRole('listitem', { name: 'Arbetsset 1', exact: true }).getByRole('button', { name: /Vikt set 1:/ })).toContainText('60');
 
   await expect.poll(async () => {
-    const result = await admin.from('training_sessions').select('id,status,first_counted_at').eq('user_id', userId);
+    const result = await userClient.from('training_sessions').select('id,status,first_counted_at').eq('user_id', userId);
     expect(result.error).toBeNull();
     return result.data?.length === 1 && result.data[0].status === 'in_progress' && !!result.data[0].first_counted_at;
   }, { timeout: 30000 }).toBe(true);
   } finally {
+    await userClient.auth.signOut();
     expect((await admin.auth.admin.deleteUser(userId)).error).toBeNull();
   }
 });
