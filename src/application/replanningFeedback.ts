@@ -5,11 +5,11 @@ import type { PerformedExercise, PlannedExercise } from '../domain/model';
 import { prescriptionSignature, prescriptionText } from '../domain/prescriptionDisplay';
 import { futurePlanningHorizon, planInputs, type FuturePlanningResult } from './trainingPlan';
 
-export const REPLANNING_FEEDBACK_VERSION='REPLAN-FEEDBACK/2.1.0';
+export const REPLANNING_FEEDBACK_VERSION='REPLAN-FEEDBACK/3.0.0';
 export type AdaptationDecision={
   exerciseId:PlannedExercise['exerciseId'];variantKey:string;kind:'constraint'|'selected'|'trial_return'|'trial'|'restored'|'recovery'|'changed'|'hold'|'unavailable';
   before:PlannedExercise|null;after:PlannedExercise|null;reasons:string[];assumedAtUtc:string;rotationIndex:number;
-  observed:string|null;message:string;changed:boolean;
+  observed:string|null;recommendation?:string;message:string;changed:boolean;
 };
 export type ReplanningFeedback={version:string;inputsHash:string;sessionId:string;revisionId:string|null;sourceSessionIds:string[];sourceSetIds:string[];before:PlannedExercise[];after:PlannedExercise[];decisions:AdaptationDecision[];messages:string[]};
 const key=(e:Pick<PlannedExercise,'exerciseId'|'variantKey'>)=>e.exerciseId+'|'+(e.variantKey??'default');
@@ -44,8 +44,8 @@ function decision(previous:PlannedExercise|null,next:PlannedExercise,observation
   const observed=observation?observedDose(observation):null;
   const name=exercise(next.exerciseId).nameSv;
   const target=`Nästa förslag för ${name.toLocaleLowerCase('sv-SE')}: ${prescriptionText(next)}.`;
-  const reason=kind==='constraint'?'Din aktuella begränsning gäller även för nästa förslag.':kind==='selected'?'Förslaget utgår från den dos du genomfört.':kind==='trial_return'?"Vi utgår från den tidigare genomförda nivån innan ett nytt högre försök.":kind==='restored'?'Den tillfälliga begränsningen har upphört och ett ordinarie set ryms igen.':kind==='trial'?'Dina registrerade pass ger stöd för att prova ett litet steg.':kind==='recovery'?'De senaste passens dos och ansträngning vägs in.':has('WAIT_FOR_SECOND_CONFIRMED_PASS')?'Vi behåller nivån för ett till jämförbart pass.':!changed?'Samma nivå behålls med det underlag som finns.':'';
-  return {exerciseId:next.exerciseId,variantKey:next.variantKey??'default',kind,before:previous,after:next,reasons,assumedAtUtc:at,rotationIndex:rotation,observed,message:[observed,target,reason].filter(Boolean).join(' '),changed};
+  const reason=kind==='constraint'?'Din aktuella begränsning gäller även för nästa förslag.':kind==='selected'?'Förslaget utgår från den dos du genomfört.':kind==='trial_return'?"Vi utgår från den tidigare genomförda nivån innan ett nytt högre försök.":kind==='restored'?'Den tillfälliga begränsningen har upphört och ett ordinarie set ryms igen.':kind==='trial'?'Dina genomförda pass ger stöd för att prova ett litet steg.':kind==='recovery'?'De senaste passens dos och ansträngning vägs in.':has('WAIT_FOR_SECOND_CONFIRMED_PASS')?'Vi behåller nivån för ett till jämförbart pass.':!changed?'Samma nivå behålls med det underlag som finns.':'';
+  return {exerciseId:next.exerciseId,variantKey:next.variantKey??'default',kind,before:previous,after:next,reasons,assumedAtUtc:at,rotationIndex:rotation,observed,recommendation:[`Nästa förslag: ${prescriptionText(next)}.`,reason].filter(Boolean).join(' '),message:[observed,target,reason].filter(Boolean).join(' '),changed};
 }
 /** Compare the same future occurrence with/without this session. Never simulate successful future performances. */
 export async function compareSessionRecommendations(ctx:AppContext,sessionId:string,computed?:FuturePlanningResult):Promise<ReplanningFeedback> {
@@ -66,11 +66,11 @@ export async function compareSessionRecommendations(ctx:AppContext,sessionId:str
   for(const h of current)if(!seen.has(key(h.plan))) {
     const reasons=plans.flatMap(p=>p.removed.filter(e=>e.exerciseId===h.exerciseId).map(e=>e.reason));
     const blocked=reasons.some(r=>['USER_BLOCK_EXERCISE','USER_RESTRICTION','SYMPTOM_REVIEW_REQUIRED','READINESS_PAIN_AREA'].includes(r));
-    decisions.push({exerciseId:h.exerciseId,variantKey:h.plan.variantKey??'default',kind:blocked?'constraint':'unavailable',before:null,after:null,reasons,assumedAtUtc:input.nowUtc,rotationIndex:input.rotationIndex,observed:observedDose(h),changed:false,message:`${exercise(h.exerciseId).nameSv}: ditt genomförda arbete är registrerat. ${blocked?'Din aktuella begränsning gör att övningen inte föreslås nu.':'Övningen har inget nytt förslag inom den närmaste planeringen.'}`});
+    decisions.push({exerciseId:h.exerciseId,variantKey:h.plan.variantKey??'default',kind:blocked?'constraint':'unavailable',before:null,after:null,reasons,assumedAtUtc:input.nowUtc,rotationIndex:input.rotationIndex,observed:observedDose(h),changed:false,recommendation:blocked?'Din aktuella begränsning gör att övningen inte föreslås nu.':'Övningen har inget nytt förslag inom den närmaste planeringen.',message:`${exercise(h.exerciseId).nameSv}: ditt genomförda arbete finns med. ${blocked?'Din aktuella begränsning gör att övningen inte föreslås nu.':'Övningen har inget nytt förslag inom den närmaste planeringen.'}`});
   }
   decisions.sort((a,b)=>priority[a.kind]-priority[b.kind]||Number(relevant.has(key(b)))-Number(relevant.has(key(a)))||a.rotationIndex-b.rotationIndex||a.exerciseId.localeCompare(b.exerciseId));
   const extra=current.some(h=>h.plan.substitutionReason==='USER_ADDED'||actualWork(h).length>h.plan.sets);
-  const messages=decisions.slice(0,extra?1:2).map(d=>d.message);
+  const messages=decisions.map(d=>d.message);
   if(extra)messages.unshift('Dina extra arbetsset räknas in när kommande träningsdos planeras.');
   if(!messages.length)messages.push(current.length?'Samma nivå behålls med det underlag som finns.':'Inga nya arbetsset finns att använda i planeringen.');
   const sourceSessionIds=[...new Set(input.history.map(h=>h.sessionId))].sort();

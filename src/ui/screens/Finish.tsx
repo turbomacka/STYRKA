@@ -6,7 +6,9 @@ import { ALL_AREAS, AREA_LABEL_SV, exercise, type Area } from '../../domain/cata
 import { SkipExercise } from '../components/SkipExercise';
 import { ReopenWorkout } from '../components/ReopenWorkout';
 import { refreshFuturePlan, type FuturePlanningResult } from '../../application/trainingPlan';
-import { savedWorkoutFeedback } from '../../application/workoutFeedback';
+import { savedWorkoutFeedback, type SavedWorkoutFeedback } from '../../application/workoutFeedback';
+import { WorkoutFeedbackList } from '../components/WorkoutFeedbackList';
+import { workoutExerciseFeedback } from '../../application/workoutExerciseFeedback';
 import type { Side, SymptomReaction } from '../../domain/model';
 import { canOfferCountAsPlanned, countExtraAsPlanned, finishSession, reportSymptom } from '../../application/training';
 import { Banner, PageHeader } from '../components/common';
@@ -35,23 +37,30 @@ export function Finish() {
   const [done, setDone] = useState<null | { status: string; offer: boolean; text: string }>(null);
   const saving=useRef(false),symptomSaved=useRef(false);
   const [calculating,setCalculating]=useState(false);
-  const [steps, setSteps] = useState(0);
+  const [feedback, setFeedback] = useState<SavedWorkoutFeedback | null>(null);
+  // History corrections, deleted sets and symptom changes also refresh an open finish view.
+  const feedbackSources = useLiveQuery(async () => ({
+    sessions: await ctx.db.sessions.toArray(), sets: await ctx.db.sets.toArray(),
+    symptoms: await ctx.db.symptoms.toArray(), cached: await ctx.db.meta.get(`workout-feedback:${id}`),
+  }), [ctx,id]);
   const [comparison, setComparison] = useState<ReplanningFeedback | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!session || !['completed','partial','abandoned'].includes(session.status) || done || saving.current) return;
+    if (!session || !['completed','partial','abandoned'].includes(session.status) || saving.current) return;
     let cancelled=false;
     void (async()=>{
       const feedback=await savedWorkoutFeedback(ctx,session.id);
       const calculation=feedback.decisionHash ? (await ctx.db.meta.get(`replanning:${session.id}:${feedback.decisionHash}`))?.value as ReplanningFeedback|undefined : undefined;
       if(cancelled)return;
+      setFeedback(feedback);
       setDone({status:session.status,offer:session.kind==='extra'&&!session.countsAsPlannedAt,text:feedback.text});
-      if(calculation){setComparison(calculation);setSteps(4);}
-      else if(session.kind!=='extra'||session.countsAsPlannedAt)setErr('Passet finns sparat. Beräkna kommande rekommendationer från dina lokala data.');
+      if(calculation){setComparison(calculation);}
+      else setComparison(null);
+      if(!calculation&&(session.kind!=='extra'||session.countsAsPlannedAt))setErr('Passet finns sparat. Beräkna kommande rekommendationer från dina lokala data.');
     })().catch(()=>{if(!cancelled){setDone({status:session.status,offer:false,text:'Dina registrerade set är sparade.'});setErr('Träningen är sparad. Återkopplingen kunde inte läsas. Försök beräkna igen.');}});
     return ()=>{cancelled=true;};
-  }, [session, done, ctx]);
+  }, [session, sets, exs, feedbackSources, ctx]);
 
   if (!session || !sets || !exs) return <p className="page" aria-busy="true">Laddar…</p>;
   const active = exs.filter((e) => !e.replacedById);
@@ -64,13 +73,11 @@ export function Finish() {
   async function returnToPlan() {
     setCalculating(true);setComparison(null);setErr(null);setDone((d)=>d ? {...d,offer:false}:d);
     try {
-      setSteps(0);
       let result:FuturePlanningResult|undefined;
-      await refreshFuturePlan(ctx, { onProgress: (step) => setSteps(step === 'inputs' ? 1 : step === 'computed' ? 2 : 3), onPlanningResult: value=>{result=value;} });
+      await refreshFuturePlan(ctx, { onPlanningResult: value=>{result=value;} });
       const next=await compareSessionRecommendations(ctx, id!, result);
       const feedback=await savedWorkoutFeedback(ctx,id!,next);
-      setComparison(next);setDone(d=>d?{...d,text:feedback.text}:d);
-      setSteps(4);
+      setFeedback(feedback);setComparison(next);setDone(d=>d?{...d,text:feedback.text}:d);
     }
     catch { setErr('Träningen är sparad. Nästa pass kunde inte räknas fram just nu.'); }
     finally { setCalculating(false); }
@@ -83,8 +90,9 @@ export function Finish() {
       const fin=await finishSession(ctx,session!.id,abandon?{status:'abandoned',keepLoggedSets:keep}:{});
       // The completed session is already committed even if feedback or planning fails.
       setDone({status:fin.status,offer:false,text:'Dina registrerade set är sparade.'});
+      const saved=await savedWorkoutFeedback(ctx,fin.id);setFeedback(saved);
       const offer=fin.kind==='extra'?await canOfferCountAsPlanned(ctx,fin.id):false;
-      setDone({status:fin.status,offer,text:'Dina registrerade set är sparade.'});
+      setDone({status:fin.status,offer,text:saved.text});
       if(!offer)await returnToPlan();
     } catch {
       const stored=await ctx.db.sessions.get(id!);
@@ -96,12 +104,10 @@ export function Finish() {
   }
   if(done)return <div className="page stack">
     <h1>Passet är sparat</h1><p className="finish-feedback">{done.text}</p>
+    <WorkoutFeedbackList exercises={feedback?.exercises??workoutExerciseFeedback({sessionId:session.id,at:session.finishedAt??session.clientCreatedAt,currentSets:sets,historySets:[],sessions:[session],seed:0,exercises:exs,symptoms:feedbackSources?.symptoms??[],decisions:[]})} planningReady={!!comparison&&!calculating&&!err}/>
+    <p role="status">{calculating?'Beräknar kommande rekommendationer…':comparison?'Kommande rekommendationer är klara.':''}</p>
     <ReopenWorkout sessionId={session.id} disabled={busy || calculating}/>
-    <section aria-label="Omplanering" aria-busy={calculating}>
-      <ol>{['Genomförd träning', 'Belastning och återhämtning', 'Kommande rekommendationer', 'Uppdaterad plan'].map((label,i) => <li key={label}>{steps > i ? '✓ ' : ''}{label}{calculating && steps === i ? ' …' : ''}</li>)}</ol>
-      <p role="status">{calculating ? 'Beräknar från sparade träningsdata…' : comparison ? 'Beräkningen är klar.' : ''}</p>
-    </section>
-    {comparison && !calculating && <section className="card stack"><h2>Så påverkas kommande träning</h2><ul>{comparison.messages.map((text) => <li key={text}>{text}</li>)}</ul><p className="small muted">Förslagen är preliminära. De räknas om från aktuella uppgifter när du öppnar ett pass.</p><button type="button" className="btn primary" onClick={() => nav(`/?klart=${id}`, { replace:true })}>Till planen</button></section>}
+    {comparison&&!calculating&&!err&&<button type="button" className="btn primary" onClick={()=>nav(`/?klart=${id}`,{replace:true})}>Till planen</button>}
     {done.offer&&!calculating&&<div className="card stack"><p>Räkna spontanpasset som ditt ordinarie pass?</p><button type="button" className="btn primary" disabled={busy} onClick={async()=>{setBusy(true);try{await countExtraAsPlanned(ctx,id!);await returnToPlan();}catch{setErr('Passet är sparat. Kunde inte ändra hur det räknas.');}finally{setBusy(false);}}}>Räkna som ordinarie</button><button type="button" className="btn" onClick={()=>void returnToPlan()}>Behåll som spontanpass</button></div>}
     {err&&<><Banner kind="warn">{err}</Banner><button type="button" className="btn" disabled={calculating} onClick={()=>void returnToPlan()}>Försök beräkna igen</button><button type="button" className="btn" onClick={()=>nav(`/?klart=${id}`,{replace:true})}>Till planen</button></>}
   </div>;

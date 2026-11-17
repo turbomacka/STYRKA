@@ -4,6 +4,7 @@ import { workoutPerformanceInsight } from '../../src/domain/workoutPerformanceIn
 import { selectFeedback, WORKOUT_FEEDBACK, WORKOUT_FEEDBACK_VERSION, type FeedbackChoice } from '../../src/domain/workoutFeedback';
 import type { ExerciseId } from '../../src/domain/catalog';
 import type { LocalSession, LocalSet } from '../../src/storage/db';
+import { workoutExerciseFeedback } from '../../src/application/workoutExerciseFeedback';
 
 function sampleSet(sessionId:string,ordinal:number,reps:number,load:number|null,options:{
   exerciseId?:ExerciseId;targetReps?:number|null;targetLoad?:number|null;
@@ -62,6 +63,19 @@ it('does not compare results across different equipment profiles or sides',()=>{
   expect(insight(sets('today',8,60,3,{equipmentId:'machine-b'}),sets('before',6,60,3,{equipmentId:'machine-a'}))).toBeNull();
   expect(insight(sets('today',8,60,3,{side:'right'}),sets('before',6,60,3,{side:'left'}))).toBeNull();
   expect(insight(sets('today',8,60,3,{side:'right'}),sets('before',6,60,3,{side:'right'}))?.text).toContain('höger sida');
+  const current=[...sets('today',8,60,3,{side:'right',equipmentId:'a'}),...sets('today',7,60,3,{side:'left',equipmentId:'a'}),
+    ...sets('today',5,20,1,{side:'left',equipmentId:'b'})].map((s,i)=>({...s,id:`side-${i}`,status:'partial' as const}));
+  const result=workoutExerciseFeedback({sessionId:'today',at:'2026-10-20T12:00:00.000Z',currentSets:current,
+    historySets:[...sets('before',6,60,3,{side:'right',equipmentId:'a'}),...sets('before',6,60,3,{side:'left',equipmentId:'a'})],
+    sessions:[session('today',20),session('before',17)],seed:0,exercises:[],decisions:[],
+    symptoms:[{id:'left-knee',sessionId:'today',area:'knee',side:'left',reaction:'transient',pain:null,reportedAt:'2026-10-20T12:00:00.000Z',resolvedAt:null,syncState:'local'}]});
+  expect(result).toHaveLength(1);
+  expect(result[0].variants).toHaveLength(2);
+  expect(result[0].variants[0].observations.find(o=>o.side==='right')?.insight).toMatchObject({kind:'reps',difference:6});
+  expect(result[0].variants[0].observations.find(o=>o.side==='left')?.insight).toBeUndefined();
+  expect(result[0].variants[1].observations[0].work).toContain('20 kg');
+  expect(result[0].setCount).toBe(7);
+  expect(result[0].variants.every(v=>v.recommendation===null)).toBe(true);
 });
 it('treats reduced assisted load as progress, not a heavier lift',()=>{
   const before=sets('before',8,30,3,{exerciseId:'assisted_pullup',assistance:true});

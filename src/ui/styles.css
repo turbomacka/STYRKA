@@ -339,3 +339,14 @@ small svg, .small svg.ico { width: 16px; height: 16px; vertical-align: -3px; }
 
 /* A status-aligned action still needs a full mobile touch target. */
 button.set-status { min-height: 44px; }
+
+/* Completion feedback: a single quiet list, with optional detail below each row. */
+.workout-feedback-list { list-style: none; padding: 0; margin: 0; }
+.workout-feedback-list > li { padding: 1rem 0; border-bottom: 1px solid var(--border); }
+.workout-feedback-list h3 { margin: 0; font-size: 1.05rem; }
+.workout-feedback-list p { margin: .4rem 0; overflow-wrap: anywhere; }
+.workout-feedback-list summary { min-height: 44px; padding: .65rem 0; cursor: pointer; }
+.workout-feedback-details { padding: .25rem 0 .5rem; }
+.workout-feedback-details > div + div { margin-top: 1rem; }
+.workout-feedback-details h4 { margin: .5rem 0; }
+.workout-feedback-list .feedback-recommendation { margin-top: .8rem; }

@@ -1,0 +1,660 @@
+{
+  "results": [
+    {
+      "browser": "android",
+      "exerciseCount": 4,
+      "details": true,
+      "axeViolations": 0,
+      "reflow320": true
+    },
+    {
+      "browser": "iphone",
+      "exerciseCount": 4,
+      "details": true,
+      "axeViolations": 0,
+      "reflow320": true
+    }
+  ],
+  "example": {
+    "version": "WORKOUT-FEEDBACK/4.0.0",
+    "exercises": [
+      {
+        "exerciseId": "cable_row",
+        "name": "Sittande kabelrodd",
+        "headline": "4 fler repetitioner på samma belastning.",
+        "setCount": 2,
+        "added": false,
+        "variants": [
+          {
+            "key": "[\"default\",\"c1d9ee04f130e9d6631f1adfec5975f1\"]",
+            "comparisonKey": "c1d9ee04f130e9d6631f1adfec5975f1",
+            "variantKey": "default",
+            "label": "Kabelrodd A",
+            "observations": [
+              {
+                "side": "both",
+                "setIds": [
+                  "80c5f243-d786-5df0-9b6b-25f71bc4f21d",
+                  "716ace99-9dc5-5967-884e-54f5dbf25f34"
+                ],
+                "work": "2 × 10 reps · 40 kg.",
+                "headline": "4 fler repetitioner på samma belastning.",
+                "comparison": "comparable",
+                "adjusted": false,
+                "insight": {
+                  "kind": "reps",
+                  "priority": 104,
+                  "exerciseId": "cable_row",
+                  "difference": 4,
+                  "previousSessionId": "4cf16c3d-3dc8-5da4-aa88-1b261524b966",
+                  "comparisonKey": "c1d9ee04f130e9d6631f1adfec5975f1",
+                  "side": "both",
+                  "text": "Samma belastning, samma antal set, 4 fler repetitioner i Sittande kabelrodd. Det är ett konkret framsteg."
+                },
+                "previousWork": "2 × 8 reps · 40 kg."
+              }
+            ],
+            "recommendation": {
+              "exerciseId": "cable_row",
+              "variantKey": "default",
+              "kind": "unavailable",
+              "before": null,
+              "after": null,
+              "reasons": [],
+              "assumedAtUtc": "2026-10-07T19:00:00.000Z",
+              "rotationIndex": 1,
+              "observed": "Du genomförde 2 × 10 reps · 40 kg.",
+              "changed": false,
+              "recommendation": "Övningen har inget nytt förslag inom den närmaste planeringen.",
+              "message": "Sittande kabelrodd: ditt genomförda arbete finns med. Övningen har inget nytt förslag inom den närmaste planeringen."
+            }
+          }
+        ]
+      },
+      {
+        "exerciseId": "squat",
+        "name": "Knäböj",
+        "headline": "2 fler repetitioner på samma belastning.",
+        "setCount": 2,
+        "added": false,
+        "variants": [
+          {
+            "key": "[\"default\",\"6cacf4c42b52693a8ecc77c45c149ae1\"]",
+            "comparisonKey": "6cacf4c42b52693a8ecc77c45c149ae1",
+            "variantKey": "default",
+            "label": "Skivstång totalt",
+            "observations": [
+              {
+                "side": "both",
+                "setIds": [
+                  "81866df3-298f-59da-bb72-bce9b9fe44ec",
+                  "42508324-3f15-545b-9b6e-bda568ac130a"
+                ],
+                "work": "2 × 7 reps · 60 kg.",
+                "headline": "2 fler repetitioner på samma belastning.",
+                "comparison": "comparable",
+                "adjusted": false,
+                "insight": {
+                  "kind": "reps",
+                  "priority": 102,
+                  "exerciseId": "squat",
+                  "difference": 2,
+                  "previousSessionId": "4cf16c3d-3dc8-5da4-aa88-1b261524b966",
+                  "comparisonKey": "6cacf4c42b52693a8ecc77c45c149ae1",
+                  "side": "both",
+                  "text": "Samma belastning, samma antal set, 2 fler repetitioner i Knäböj. Det är ett konkret framsteg."
+                },
+                "previousWork": "2 × 6 reps · 60 kg."
+              }
+            ],
+            "recommendation": {
+              "exerciseId": "squat",
+              "variantKey": "default",
+              "kind": "changed",
+              "before": {
+                "doseContext": {
+                  "version": "DOSE/2.1.0",
+                  "ordinarySets": 2,
+                  "temporaryReasons": []
+                },
+                "exerciseId": "squat",
+                "loadKind": "external_kg",
+                "role": "supplementary",
+                "mode": "light",
+                "sets": 2,
+                "reps": 6,
+                "bandMin": 8,
+                "bandMax": 12,
+                "kg": 60,
+                "targetSeconds": null,
+                "state": "normal",
+                "reasons": [
+                  "TEMPLATE_C",
+                  "GOAL_PRIORITY_ORDER",
+                  "WAIT_FOR_SECOND_CONFIRMED_PASS",
+                  "ROUNDED_DOWN_TO_EQUIPMENT"
+                ],
+                "confidence": "low",
+                "engineVersion": "2.3.0",
+                "calibration": false,
+                "incrementKg": 2.5,
+                "estimatedOneRM": 120,
+                "substitutionFrom": null,
+                "substitutionReason": null,
+                "acceptedByUserAt": null,
+                "loadBasis": "total_kg",
+                "maxEvidence": {
+                  "source": "input",
+                  "confidence": "low"
+                },
+                "adaptive": {
+                  "version": "ADAPTIVE/2.3.0",
+                  "confirmed": null,
+                  "attempted": null,
+                  "chosenDose": null,
+                  "workingDose": {
+                    "kg": 60,
+                    "reps": 6,
+                    "sets": 2
+                  },
+                  "trialBaseline": null,
+                  "chosenReason": null,
+                  "chosenDimensions": [],
+                  "capacity": {
+                    "estimatedMax": null,
+                    "observations": 1,
+                    "confidence": "low"
+                  },
+                  "completedReps": 12,
+                  "decision": "WAIT_FOR_SECOND_CONFIRMED_PASS"
+                },
+                "recommendation": {
+                  "version": "STARTING-LOAD/1.0.0",
+                  "source": "history",
+                  "confidence": "low",
+                  "suggestedKg": 60
+                }
+              },
+              "after": {
+                "doseContext": {
+                  "version": "DOSE/2.1.0",
+                  "ordinarySets": 2,
+                  "temporaryReasons": []
+                },
+                "exerciseId": "squat",
+                "loadKind": "external_kg",
+                "role": "supplementary",
+                "mode": "light",
+                "sets": 2,
+                "reps": 7,
+                "bandMin": 8,
+                "bandMax": 12,
+                "kg": 60,
+                "targetSeconds": null,
+                "state": "normal",
+                "reasons": [
+                  "TEMPLATE_C",
+                  "GOAL_PRIORITY_ORDER",
+                  "WAIT_FOR_SECOND_CONFIRMED_PASS",
+                  "ROUNDED_DOWN_TO_EQUIPMENT"
+                ],
+                "confidence": "low",
+                "engineVersion": "2.3.0",
+                "calibration": false,
+                "incrementKg": 2.5,
+                "estimatedOneRM": 120,
+                "substitutionFrom": null,
+                "substitutionReason": null,
+                "acceptedByUserAt": null,
+                "loadBasis": "total_kg",
+                "maxEvidence": {
+                  "source": "input",
+                  "confidence": "low"
+                },
+                "adaptive": {
+                  "version": "ADAPTIVE/2.3.0",
+                  "confirmed": null,
+                  "attempted": null,
+                  "chosenDose": null,
+                  "workingDose": {
+                    "kg": 60,
+                    "reps": 7,
+                    "sets": 2
+                  },
+                  "trialBaseline": null,
+                  "chosenReason": null,
+                  "chosenDimensions": [],
+                  "capacity": {
+                    "estimatedMax": 72,
+                    "observations": 2,
+                    "confidence": "low"
+                  },
+                  "completedReps": 14,
+                  "decision": "WAIT_FOR_SECOND_CONFIRMED_PASS"
+                },
+                "recommendation": {
+                  "version": "STARTING-LOAD/1.0.0",
+                  "source": "history",
+                  "confidence": "low",
+                  "suggestedKg": 60
+                }
+              },
+              "reasons": [
+                "TEMPLATE_C",
+                "GOAL_PRIORITY_ORDER",
+                "WAIT_FOR_SECOND_CONFIRMED_PASS",
+                "ROUNDED_DOWN_TO_EQUIPMENT"
+              ],
+              "assumedAtUtc": "2026-10-11T07:00:00.000Z",
+              "rotationIndex": 2,
+              "observed": "Du genomförde 2 × 7 reps · 60 kg.",
+              "recommendation": "Nästa förslag: 2 × 7 reps · 60 kg. Vi behåller nivån för ett till jämförbart pass.",
+              "message": "Du genomförde 2 × 7 reps · 60 kg. Nästa förslag för knäböj: 2 × 7 reps · 60 kg. Vi behåller nivån för ett till jämförbart pass.",
+              "changed": true
+            }
+          }
+        ]
+      },
+      {
+        "exerciseId": "bench_press",
+        "name": "Bänkpress",
+        "headline": "Anpassad dos i 2 arbetsset.",
+        "setCount": 2,
+        "added": false,
+        "variants": [
+          {
+            "key": "[\"default\",\"f445c6379c401282f8c965a289f9eaa9\"]",
+            "comparisonKey": "f445c6379c401282f8c965a289f9eaa9",
+            "variantKey": "default",
+            "label": "Skivstång totalt",
+            "observations": [
+              {
+                "side": "both",
+                "setIds": [
+                  "91ac8bfe-8973-5c6d-9414-24a1ca80ac85",
+                  "bfa48512-589d-5f9c-bb77-9894b7cb7f2a"
+                ],
+                "work": "2 × 6 reps · 40 kg.",
+                "headline": "Anpassad dos i 2 arbetsset.",
+                "comparison": "comparable",
+                "adjusted": true
+              }
+            ],
+            "recommendation": {
+              "exerciseId": "bench_press",
+              "variantKey": "default",
+              "kind": "selected",
+              "before": {
+                "doseContext": {
+                  "version": "DOSE/2.1.0",
+                  "ordinarySets": 3,
+                  "temporaryReasons": []
+                },
+                "adaptive": {
+                  "version": "ADAPTIVE/2.3.0",
+                  "confirmed": null,
+                  "attempted": null,
+                  "chosenDose": null,
+                  "workingDose": {
+                    "kg": 50,
+                    "reps": 8,
+                    "sets": 2
+                  },
+                  "trialBaseline": null,
+                  "chosenReason": null,
+                  "chosenDimensions": [],
+                  "capacity": {
+                    "estimatedMax": null,
+                    "observations": 1,
+                    "confidence": "low"
+                  },
+                  "completedReps": 16,
+                  "decision": "WAIT_FOR_SECOND_CONFIRMED_PASS"
+                },
+                "exerciseId": "bench_press",
+                "loadKind": "external_kg",
+                "role": "supplementary",
+                "mode": "heavy",
+                "sets": 2,
+                "reps": 8,
+                "bandMin": 5,
+                "bandMax": 7,
+                "kg": 50,
+                "targetSeconds": null,
+                "state": "normal",
+                "reasons": [
+                  "TEMPLATE_B",
+                  "GOAL_PRIORITY_ORDER",
+                  "WAIT_FOR_SECOND_CONFIRMED_PASS",
+                  "NO_RELEVANT_HISTORY"
+                ],
+                "confidence": "low",
+                "engineVersion": "2.3.0",
+                "calibration": false,
+                "incrementKg": 2.5,
+                "estimatedOneRM": 100,
+                "substitutionFrom": null,
+                "substitutionReason": null,
+                "acceptedByUserAt": null,
+                "loadBasis": "total_kg",
+                "maxEvidence": {
+                  "source": "input",
+                  "confidence": "low"
+                },
+                "recommendation": {
+                  "version": "STARTING-LOAD/1.0.0",
+                  "source": "history",
+                  "confidence": "low",
+                  "suggestedKg": 50
+                }
+              },
+              "after": {
+                "doseContext": {
+                  "version": "DOSE/2.1.0",
+                  "ordinarySets": 3,
+                  "temporaryReasons": []
+                },
+                "adaptive": {
+                  "version": "ADAPTIVE/2.3.0",
+                  "confirmed": null,
+                  "attempted": null,
+                  "chosenDose": {
+                    "kg": 40,
+                    "reps": 6,
+                    "sets": 2
+                  },
+                  "workingDose": {
+                    "kg": 40,
+                    "reps": 6,
+                    "sets": 2
+                  },
+                  "trialBaseline": null,
+                  "chosenReason": "manual",
+                  "chosenDimensions": [
+                    "load",
+                    "reps"
+                  ],
+                  "capacity": {
+                    "estimatedMax": 48,
+                    "observations": 2,
+                    "confidence": "low"
+                  },
+                  "completedReps": 12,
+                  "decision": "MANUAL_WORKING_DOSE"
+                },
+                "exerciseId": "bench_press",
+                "loadKind": "external_kg",
+                "role": "supplementary",
+                "mode": "heavy",
+                "sets": 2,
+                "reps": 6,
+                "bandMin": 5,
+                "bandMax": 7,
+                "kg": 40,
+                "targetSeconds": null,
+                "state": "normal",
+                "reasons": [
+                  "TEMPLATE_B",
+                  "GOAL_PRIORITY_ORDER",
+                  "MANUAL_WORKING_DOSE",
+                  "NO_RELEVANT_HISTORY"
+                ],
+                "confidence": "low",
+                "engineVersion": "2.3.0",
+                "calibration": false,
+                "incrementKg": 2.5,
+                "estimatedOneRM": 100,
+                "substitutionFrom": null,
+                "substitutionReason": null,
+                "acceptedByUserAt": null,
+                "loadBasis": "total_kg",
+                "maxEvidence": {
+                  "source": "input",
+                  "confidence": "low"
+                },
+                "recommendation": {
+                  "version": "STARTING-LOAD/1.0.0",
+                  "source": "history",
+                  "confidence": "low",
+                  "suggestedKg": 40
+                }
+              },
+              "reasons": [
+                "TEMPLATE_B",
+                "GOAL_PRIORITY_ORDER",
+                "MANUAL_WORKING_DOSE",
+                "NO_RELEVANT_HISTORY"
+              ],
+              "assumedAtUtc": "2026-10-07T19:00:00.000Z",
+              "rotationIndex": 1,
+              "observed": "Du genomförde 2 × 6 reps · 40 kg.",
+              "recommendation": "Nästa förslag: 2 × 6 reps · 40 kg. Förslaget utgår från den dos du genomfört.",
+              "message": "Du genomförde 2 × 6 reps · 40 kg. Nästa förslag för bänkpress: 2 × 6 reps · 40 kg. Förslaget utgår från den dos du genomfört.",
+              "changed": true
+            }
+          }
+        ]
+      },
+      {
+        "exerciseId": "biceps_curl",
+        "name": "Bicepscurl",
+        "headline": "2 arbetsset. En första referens finns nu.",
+        "setCount": 2,
+        "added": true,
+        "variants": [
+          {
+            "key": "[\"default\",\"307ad4187f4e27abae64d8752049ac0a\"]",
+            "comparisonKey": "307ad4187f4e27abae64d8752049ac0a",
+            "variantKey": "default",
+            "label": "Fri vikt",
+            "observations": [
+              {
+                "side": "both",
+                "setIds": [
+                  "9a05d3aa-e31a-5b0e-b6a5-877c45e13e34",
+                  "e2a7cdcc-30ad-580a-bbbd-15a3c0c04744"
+                ],
+                "work": "2 × 6 reps · 21 kg.",
+                "headline": "2 arbetsset. En första referens finns nu.",
+                "comparison": "first",
+                "adjusted": false
+              }
+            ],
+            "recommendation": {
+              "exerciseId": "biceps_curl",
+              "variantKey": "default",
+              "kind": "changed",
+              "before": {
+                "doseContext": {
+                  "version": "DOSE/2.1.0",
+                  "ordinarySets": 2,
+                  "temporaryReasons": []
+                },
+                "exerciseId": "biceps_curl",
+                "loadKind": "external_kg",
+                "role": "accessory",
+                "mode": "light",
+                "sets": 2,
+                "reps": 8,
+                "bandMin": 8,
+                "bandMax": 12,
+                "kg": 18,
+                "targetSeconds": null,
+                "state": "normal",
+                "reasons": [
+                  "TEMPLATE_B",
+                  "GOAL_PRIORITY_ORDER",
+                  "INITIAL_HEURISTIC",
+                  "ROUNDED_DOWN_TO_EQUIPMENT"
+                ],
+                "confidence": "low",
+                "engineVersion": "2.3.0",
+                "calibration": false,
+                "incrementKg": 1,
+                "estimatedOneRM": 30,
+                "substitutionFrom": null,
+                "substitutionReason": null,
+                "acceptedByUserAt": null,
+                "loadBasis": "total_kg",
+                "maxEvidence": {
+                  "source": "input",
+                  "confidence": "low"
+                },
+                "recommendation": {
+                  "version": "STARTING-LOAD/1.0.0",
+                  "source": "estimate",
+                  "confidence": "low",
+                  "suggestedKg": 18
+                }
+              },
+              "after": {
+                "doseContext": {
+                  "version": "DOSE/2.1.0",
+                  "ordinarySets": 2,
+                  "temporaryReasons": []
+                },
+                "exerciseId": "biceps_curl",
+                "loadKind": "external_kg",
+                "role": "accessory",
+                "mode": "light",
+                "sets": 2,
+                "reps": 6,
+                "bandMin": 8,
+                "bandMax": 12,
+                "kg": 21,
+                "targetSeconds": null,
+                "state": "normal",
+                "reasons": [
+                  "TEMPLATE_B",
+                  "GOAL_PRIORITY_ORDER",
+                  "WAIT_FOR_SECOND_CONFIRMED_PASS",
+                  "ROUNDED_DOWN_TO_EQUIPMENT"
+                ],
+                "confidence": "low",
+                "engineVersion": "2.3.0",
+                "calibration": false,
+                "incrementKg": 1,
+                "estimatedOneRM": 30,
+                "substitutionFrom": null,
+                "substitutionReason": null,
+                "acceptedByUserAt": null,
+                "loadBasis": "total_kg",
+                "maxEvidence": {
+                  "source": "input",
+                  "confidence": "low"
+                },
+                "adaptive": {
+                  "version": "ADAPTIVE/2.3.0",
+                  "confirmed": null,
+                  "attempted": null,
+                  "chosenDose": null,
+                  "workingDose": {
+                    "kg": 21,
+                    "reps": 6,
+                    "sets": 2
+                  },
+                  "trialBaseline": null,
+                  "chosenReason": null,
+                  "chosenDimensions": [],
+                  "capacity": {
+                    "estimatedMax": null,
+                    "observations": 1,
+                    "confidence": "low"
+                  },
+                  "completedReps": 12,
+                  "decision": "WAIT_FOR_SECOND_CONFIRMED_PASS"
+                },
+                "recommendation": {
+                  "version": "STARTING-LOAD/1.0.0",
+                  "source": "history",
+                  "confidence": "low",
+                  "suggestedKg": 21
+                }
+              },
+              "reasons": [
+                "TEMPLATE_B",
+                "GOAL_PRIORITY_ORDER",
+                "WAIT_FOR_SECOND_CONFIRMED_PASS",
+                "ROUNDED_DOWN_TO_EQUIPMENT"
+              ],
+              "assumedAtUtc": "2026-10-07T19:00:00.000Z",
+              "rotationIndex": 1,
+              "observed": "Du genomförde 2 × 6 reps · 21 kg.",
+              "recommendation": "Nästa förslag: 2 × 6 reps · 21 kg. Vi behåller nivån för ett till jämförbart pass.",
+              "message": "Du genomförde 2 × 6 reps · 21 kg. Nästa förslag för bicepscurl: 2 × 6 reps · 21 kg. Vi behåller nivån för ett till jämförbart pass.",
+              "changed": true
+            }
+          }
+        ]
+      }
+    ],
+    "insights": [
+      {
+        "kind": "reps",
+        "priority": 104,
+        "exerciseId": "cable_row",
+        "difference": 4,
+        "previousSessionId": "4cf16c3d-3dc8-5da4-aa88-1b261524b966",
+        "comparisonKey": "c1d9ee04f130e9d6631f1adfec5975f1",
+        "side": "both",
+        "text": "Samma belastning, samma antal set, 4 fler repetitioner i Sittande kabelrodd. Det är ett konkret framsteg."
+      },
+      {
+        "kind": "reps",
+        "priority": 102,
+        "exerciseId": "squat",
+        "difference": 2,
+        "previousSessionId": "4cf16c3d-3dc8-5da4-aa88-1b261524b966",
+        "comparisonKey": "6cacf4c42b52693a8ecc77c45c149ae1",
+        "side": "both",
+        "text": "Samma belastning, samma antal set, 2 fler repetitioner i Knäböj. Det är ett konkret framsteg."
+      }
+    ],
+    "inputsHash": "ffe5dd5eedfd6e88d7644bb16eb14c894d03f68dce22d307cc8ec70ab0be50e9",
+    "observationsHash": "ba3cfc675424e39b2a235fc57a2530ff54cbda03be033ab8f6ef951aa9bdeed7",
+    "text": "2 övningar tog ett steg framåt i dag. Du anpassade dagens dos och fick träning gjord. Bra jobbat. Nu får även vikterna en paus.",
+    "insight": {
+      "kind": "reps",
+      "priority": 104,
+      "exerciseId": "cable_row",
+      "difference": 4,
+      "previousSessionId": "4cf16c3d-3dc8-5da4-aa88-1b261524b966",
+      "comparisonKey": "c1d9ee04f130e9d6631f1adfec5975f1",
+      "side": "both",
+      "text": "Samma belastning, samma antal set, 4 fler repetitioner i Sittande kabelrodd. Det är ett konkret framsteg."
+    },
+    "category": "adjusted",
+    "sessionId": "aac77684-0317-5006-b9ed-ee29620e35bf",
+    "createdAt": "2026-10-04T07:00:00.000Z",
+    "sourceSessionIds": [
+      "4cf16c3d-3dc8-5da4-aa88-1b261524b966",
+      "aac77684-0317-5006-b9ed-ee29620e35bf"
+    ],
+    "sourceSetIds": [
+      "14cf87a3-0846-5f26-8c70-b7a5b611f7fe",
+      "329928b6-5d8c-5228-9669-1a23d2900044",
+      "3849a4e3-1440-5801-9013-4495e0a5c32f",
+      "42508324-3f15-545b-9b6e-bda568ac130a",
+      "64b8d50a-3d1b-555d-af0f-7984ba8ab5d2",
+      "716ace99-9dc5-5967-884e-54f5dbf25f34",
+      "80c5f243-d786-5df0-9b6b-25f71bc4f21d",
+      "81866df3-298f-59da-bb72-bce9b9fe44ec",
+      "91ac8bfe-8973-5c6d-9414-24a1ca80ac85",
+      "9a05d3aa-e31a-5b0e-b6a5-877c45e13e34",
+      "bfa48512-589d-5f9c-bb77-9894b7cb7f2a",
+      "cb192ce7-db8a-5d41-987c-30fb3e46bca1",
+      "dae2ab6e-a952-51d1-80fb-cc8ad256e8c3",
+      "e2a7cdcc-30ad-580a-bbbd-15a3c0c04744"
+    ],
+    "decisionHash": "23ab1ff9808b5e7c614b5e529bc8899d4b069eb7a8f58b84108fc3129eede006",
+    "messages": [
+      "Dina extra arbetsset räknas in när kommande träningsdos planeras.",
+      "Sittande kabelrodd: ditt genomförda arbete finns med. Övningen har inget nytt förslag inom den närmaste planeringen.",
+      "Du genomförde 2 × 6 reps · 40 kg. Nästa förslag för bänkpress: 2 × 6 reps · 40 kg. Förslaget utgår från den dos du genomfört.",
+      "Du genomförde 2 × 6 reps · 21 kg. Nästa förslag för bicepscurl: 2 × 6 reps · 21 kg. Vi behåller nivån för ett till jämförbart pass.",
+      "Du genomförde 2 × 7 reps · 60 kg. Nästa förslag för knäböj: 2 × 7 reps · 60 kg. Vi behåller nivån för ett till jämförbart pass.",
+      "Nästa förslag för sittande kabelrodd: 2 × 10 reps · 40 kg. Vi behåller nivån för ett till jämförbart pass."
+    ],
+    "planRevisionId": null
+  }
+}

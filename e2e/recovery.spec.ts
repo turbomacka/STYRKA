@@ -15,7 +15,7 @@ for (const scenario of [{ feeling: 'Lätt', nextMode: 'Tung' }, { feeling: 'Lago
     await first.getByRole('button',{name:scenario.feeling==='Maxansträngning'?/Maxansträngning/:scenario.feeling,exact:scenario.feeling!=='Maxansträngning'}).click();
     await expect(first).toContainText(`Känsla: ${scenario.feeling}`);
     await page.getByRole('button',{name:'Avsluta',exact:true}).click();
-    await page.getByRole('button',{name:'Avsluta och spara',exact:true}).click(); await expect(page.getByRole('heading',{name:'Så påverkas kommande träning'})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
+    await page.getByRole('button',{name:'Avsluta och spara',exact:true}).click(); await expect(page.getByText('Kommande rekommendationer är klara.',{exact:true})).toBeVisible(); await page.getByRole('button',{name:'Till planen',exact:true}).click();
     await expect(page.getByRole('heading',{name:'Min träningsplan'})).toBeVisible();
     await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
     await context.setOffline(true);
