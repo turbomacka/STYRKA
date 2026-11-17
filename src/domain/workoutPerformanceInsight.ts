@@ -9,6 +9,8 @@ export type PerformanceInsight = {
   exerciseId?: ExerciseId;
   difference?: number;
   previousSessionId?: string;
+  comparisonKey?: string;
+  side?: PerformanceSide;
 };
 type Observation = {
   sessionId: string; exerciseId: ExerciseId; key: string; side: PerformanceSide;
@@ -56,7 +58,7 @@ function groups(sets: LocalSet[]): Group[] {
     s.sessionId===g.sessionId && s.exerciseId===g.exerciseId && !s.deleted
     && s.kind==='work' && s.status==='done' && !s.detail)}));
 }
-type InsightInput = {sessionId:string;at:string;currentSets:LocalSet[];historySets:LocalSet[];sessions:LocalSession[];seed:number};
+export type InsightInput = {sessionId:string;at:string;currentSets:LocalSet[];historySets:LocalSet[];sessions:LocalSession[];seed:number};
 function comparisons(args:InsightInput): Array<{current:Group;previous:Group}> {
   const at=Date.parse(args.at);
   const order=new Map(args.sessions.filter(s=>s.id!==args.sessionId && !!s.finishedAt
@@ -74,6 +76,16 @@ function comparisons(args:InsightInput): Array<{current:Group;previous:Group}> {
 export function hasRepeatedPerformance(args:InsightInput): boolean {
   return comparisons(args).some(({current,previous})=>current.reps===previous.reps
     && current.load===previous.load && current.secondLoad===previous.secondLoad);
+}
+/** No older, more flattering baseline is substituted for an unusable recent one. */
+export function performanceComparison(args:InsightInput, key:string, side:PerformanceSide):'first'|'uncertain'|'repeated'|'comparable' {
+  const pair=comparisons(args).find(p=>p.current.key===key&&p.current.side===side);
+  if(pair)return pair.current.reps===pair.previous.reps&&pair.current.load===pair.previous.load
+    &&pair.current.secondLoad===pair.previous.secondLoad?'repeated':'comparable';
+  const current=groups(args.currentSets).find(g=>g.key===key&&g.side===side);
+  const earlier=new Set(args.sessions.filter(s=>s.id!==args.sessionId&&s.finishedAt
+    &&(Date.parse(s.finishedAt)<Date.parse(args.at)||Date.parse(s.finishedAt)===Date.parse(args.at)&&s.id<args.sessionId)).map(s=>s.id));
+  return current?.valid&&current.consistent&&!groups(args.historySets).some(g=>g.key===key&&g.side===side&&earlier.has(g.sessionId))?'first':'uncertain';
 }
 const number = (n: number): string =>
   new Intl.NumberFormat('sv-SE', { maximumFractionDigits: 2 }).format(Number(n.toFixed(2)));
@@ -127,17 +139,17 @@ function render(kind: PerformanceInsightKind, seed: number, exerciseId: Exercise
 }
 
 /** A descriptive comparison is never interpreted as a personal best or a physiological claim. */
-export function workoutPerformanceInsight(args: InsightInput): PerformanceInsight | null {
+export function workoutPerformanceInsights(args: InsightInput): PerformanceInsight[] {
   const currentSets=args.currentSets.filter(s=>s.sessionId===args.sessionId);
   if(!currentSets.some(s=>!s.deleted && s.kind==='work' && (s.detail
-    ?s.detail.performances.some(p=>p.status==='done'):s.status==='done')))return null;
+    ?s.detail.performances.some(p=>p.status==='done'):s.status==='done')))return [];
   const candidates: Array<PerformanceInsight & { priority: number }> = [];
   for (const {current,previous} of comparisons(args)) {
     const sameLoad = current.load === previous.load && current.secondLoad === previous.secondLoad;
     if (sameLoad && current.reps > previous.reps) {
       const difference = current.reps - previous.reps;
       candidates.push({kind:'reps',priority:100 + difference,exerciseId:current.exerciseId,
-        difference,previousSessionId:previous.sessionId,
+        difference,previousSessionId:previous.sessionId,comparisonKey:current.key,side:current.side,
         text:render('reps',args.seed,current.exerciseId,difference,current.side)});
     } else if (current.load !== null && previous.load !== null
       && current.secondLoad === previous.secondLoad && current.reps >= previous.reps && current.unit === 'kg') {
@@ -145,19 +157,19 @@ export function workoutPerformanceInsight(args: InsightInput): PerformanceInsigh
       const difference = assistance ? previous.load - current.load : current.load - previous.load;
       if (difference > 0) candidates.push({kind:assistance?'assistance':'load',
         priority:90 + difference,exerciseId:current.exerciseId,difference,
-        previousSessionId:previous.sessionId,
+        previousSessionId:previous.sessionId,comparisonKey:current.key,side:current.side,
         text:render(assistance?'assistance':'load',args.seed,current.exerciseId,difference,current.side)});
     }
   }
   // A repetition goal is beaten only if the load is at least as demanding as prescribed.
-  const overTargets = new Map<string,{exerciseId:ExerciseId;side:PerformanceSide;extra:number;valid:boolean}>();
+  const overTargets = new Map<string,{exerciseId:ExerciseId;side:PerformanceSide;comparisonKey:string;extra:number;valid:boolean}>();
   for (const set of currentSets) {
     if (set.deleted || set.kind !== 'work' || !set.detail) continue;
     const detail=set.detail;
     for (const side of requiredSides(detail.configuration)) {
       const p=detail.performances.find(p=>p.side===side);
       const key=JSON.stringify([set.exerciseId,p?.comparisonKey??comparisonKey(set.exerciseId,detail.configuration),side]);
-      const value=overTargets.get(key)??{exerciseId:set.exerciseId,side,extra:0,valid:true};
+      const value=overTargets.get(key)??{exerciseId:set.exerciseId,side,comparisonKey:p?.comparisonKey??comparisonKey(set.exerciseId,detail.configuration),extra:0,valid:true};
       overTargets.set(key,value);
       const planned=detail.plannedSides?.[side];
       const goal=planned?planned.reps:set.targetReps;
@@ -174,6 +186,7 @@ export function workoutPerformanceInsight(args: InsightInput): PerformanceInsigh
   }
   for (const target of overTargets.values()) if (target.valid && target.extra > 0)
     candidates.push({kind:'target',priority:50 + target.extra,exerciseId:target.exerciseId,
+      comparisonKey:target.comparisonKey,side:target.side,
       difference:target.extra,text:render('target',args.seed,target.exerciseId,target.extra,target.side)});
   const latest = Date.parse(args.at);
   if (Number.isFinite(latest)) {
@@ -190,5 +203,15 @@ export function workoutPerformanceInsight(args: InsightInput): PerformanceInsigh
       text:render('consistency',args.seed,undefined,recent.size)});
   }
   candidates.sort((a,b) => b.priority - a.priority || a.text.localeCompare(b.text));
-  return candidates[0] ?? null;
+  const seen=new Set<string>();
+  return candidates.filter(c=>{
+    const key=JSON.stringify([c.exerciseId,c.comparisonKey,c.side]);
+    if(seen.has(key))return false;
+    seen.add(key);return true;
+  });
+}
+
+/** Compatibility for consumers that still request a single highlight. */
+export function workoutPerformanceInsight(args: InsightInput): PerformanceInsight | null {
+  return workoutPerformanceInsights(args)[0]??null;
 }

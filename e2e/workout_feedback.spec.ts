@@ -35,12 +35,12 @@ test('feedback: real rep progress, compact accessible finish, reload and symptom
     },{name:fixture.name,rows:fixture.rows});
     await page.goto(`/pass/${fixture.sessionId}/avsluta`);
     await page.getByRole('button',{name:'Avsluta och spara',exact:true}).click();
-    await expect(page.getByRole('heading',{name:'Så påverkas kommande träning'})).toBeVisible();
+    await expect(page.getByText('Kommande rekommendationer är klara.',{exact:true})).toBeVisible();
     const feedback=page.locator('.finish-feedback');
-    await expect(feedback).toContainText(/6 (fler|extra) repetitioner|med 6 på samma belastning|6 fler utan/);
+    await expect(page.locator('.workout-feedback-list')).toContainText('6 fler repetitioner');
     const text=await feedback.innerText();expect(text.length).toBeLessThan(400);
     await page.reload();await expect(feedback).toHaveText(text);
-    const dir=`docs/evidence/feedback-pr3/${info.project.name}`;mkdirSync(dir,{recursive:true});
+    const dir=`docs/evidence/feedback-v4/${info.project.name}`;mkdirSync(dir,{recursive:true});
     for(const colorScheme of ['light','dark'] as const){
       await page.emulateMedia({colorScheme});
       await page.screenshot({path:`${dir}/finish-${colorScheme}.png`,fullPage:true});
@@ -59,7 +59,7 @@ test('feedback: real rep progress, compact accessible finish, reload and symptom
       });
     },{name:fixture.name,sessionId:fixture.sessionId,at:fixture.at});
     await page.reload();await expect(feedback).not.toHaveText(text);
-    await expect(feedback).not.toContainText(/fler repetitioner|extra repetitioner|konkret framsteg/);
+    await expect(page.locator('.workout-feedback-list')).not.toContainText('6 fler repetitioner');
     await expect(feedback).toContainText(/hänsyn|begränsningar|förutsättningar|anpass|underlag/);
     await page.screenshot({path:`${dir}/finish-symptom.png`,fullPage:true});
 });

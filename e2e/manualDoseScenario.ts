@@ -23,16 +23,17 @@ export async function runManualDoseScenario(page:Page,dir:string):Promise<void> 
   }
   await page.getByRole('button',{name:'Avsluta',exact:true}).click();
   await page.getByRole('button',{name:'Avsluta och spara',exact:true}).click();
-  const comparison=page.locator('section').filter({has:page.getByRole('heading',{name:'Så påverkas kommande träning',exact:true})});
+  const comparison=page.locator('section').filter({has:page.getByRole('heading',{name:'Ditt pass, övning för övning',exact:true})});
   await expect(comparison).toBeVisible();
+  await page.getByLabel('Detaljer och nästa förslag för Knäböj',{exact:true}).click();
   await expect(comparison).toContainText('Du markerade seten som lätta.');
   // A category change alone must not suppress a supported trial from the chosen dose.
   // C's light day adds one repetition; A's heavy day can use the supported weight step.
-  await expect(comparison).toContainText(/Nästa förslag för knäböj: 2 × 11 reps · 50 kg/);
-  await expect(comparison).toContainText('Dina registrerade pass ger stöd för att prova ett litet steg');
+  await expect(comparison).toContainText(/Nästa förslag: 2 × 11 reps · 50 kg/);
+  await expect(comparison).toContainText('Dina genomförda pass ger stöd för att prova ett litet steg');
   await expect(comparison).toContainText('Förslagen är preliminära');
   const before=await comparison.innerText();
-  await page.reload();await expect.poll(()=>comparison.innerText()).toBe(before);
+  await page.reload();await page.getByLabel('Detaljer och nästa förslag för Knäböj',{exact:true}).click();await expect.poll(()=>comparison.innerText()).toBe(before);
   mkdirSync(dir,{recursive:true});
   await page.screenshot({path:`${dir}/manual-easy-trial.png`,fullPage:true});
   expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze()).violations).toEqual([]);
